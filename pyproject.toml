@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "solverr"
+version = "0.1.0"
+description = ""
+package-mode = false
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pytest = "^8.3.1"
+fastapi = "^0.111.1"
+nodriver = "^0.34"
+asyncio = "^3.4.3"
+coloredlogs = "^15.0.1"
+requests = "^2.32.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.lint]
+ignore = [
+    "D203",
+    "D212",
+    "D100",
+    "D400",
+    "EM101",
+    "S101",
+    "D104",
+    "ANN201",
+    "TD003",
+    "PLR0913",
+    "ERA001",
+    "COM812",
+    "ISC001",
+    "TCH003",
+    "TCH002",
+    "TCH001",
+    "TD002",
+    "E501",
+    "D101",
+    "G004",
+    "ANN001",
+    "ANN204",
+]
+select = ["ALL"]
+extend-safe-fixes = ["D415"]

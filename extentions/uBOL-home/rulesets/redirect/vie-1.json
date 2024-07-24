@@ -1,0 +1,21 @@
+[
+{
+ "action": {
+  "redirect": {
+   "extensionPath": "/web_accessible_resources/google-ima.js"
+  },
+  "type": "redirect"
+ },
+ "condition": {
+  "initiatorDomains": [
+   "vtvcab.vn"
+  ],
+  "resourceTypes": [
+   "script"
+  ],
+  "urlFilter": "||on-web-cdn.gviet.vn/public/js/player/ads/ima3.js"
+ },
+ "id": 2,
+ "priority": 2
+}
+]

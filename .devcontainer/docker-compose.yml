@@ -1,0 +1,11 @@
+services:
+  app:
+    command: sleep infinity
+    ports:
+      - 8191:8191
+    volumes:
+      - ../..:/workspace:cached
+    build:
+      target: devcontainer
+  selenium:
+    image: selenium/standalone-chromium:latest

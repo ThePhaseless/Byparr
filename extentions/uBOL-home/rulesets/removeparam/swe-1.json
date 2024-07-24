@@ -1,0 +1,120 @@
+[
+{
+ "action": {
+  "redirect": {
+   "transform": {
+    "queryTransform": {
+     "removeParams": [
+      "autoplay"
+     ]
+    }
+   }
+  },
+  "type": "redirect"
+ },
+ "condition": {
+  "initiatorDomains": [
+   "di.se",
+   "expressen.se"
+  ],
+  "resourceTypes": [
+   "sub_frame"
+  ],
+  "urlFilter": "&autoplay"
+ },
+ "id": 1
+},
+{
+ "action": {
+  "redirect": {
+   "transform": {
+    "queryTransform": {
+     "removeParams": [
+      "autoPlay"
+     ]
+    }
+   }
+  },
+  "type": "redirect"
+ },
+ "condition": {
+  "initiatorDomains": [
+   "expressen.se"
+  ],
+  "resourceTypes": [
+   "sub_frame"
+  ],
+  "urlFilter": "?autoplay"
+ },
+ "id": 2
+},
+{
+ "action": {
+  "redirect": {
+   "transform": {
+    "queryTransform": {
+     "removeParams": [
+      "autoplay"
+     ]
+    }
+   }
+  },
+  "type": "redirect"
+ },
+ "condition": {
+  "initiatorDomains": [
+   "expressen.se"
+  ],
+  "resourceTypes": [
+   "sub_frame"
+  ],
+  "urlFilter": "?autoplay=true"
+ },
+ "id": 3
+},
+{
+ "action": {
+  "redirect": {
+   "transform": {
+    "queryTransform": {
+     "removeParams": [
+      "autoplay"
+     ]
+    }
+   }
+  },
+  "type": "redirect"
+ },
+ "condition": {
+  "resourceTypes": [
+   "sub_frame"
+  ],
+  "urlFilter": "||embed.viaplay.com/*autoplay=true"
+ },
+ "id": 4
+},
+{
+ "action": {
+  "redirect": {
+   "transform": {
+    "queryTransform": {
+     "removeParams": [
+      "autoplay"
+     ]
+    }
+   }
+  },
+  "type": "redirect"
+ },
+ "condition": {
+  "initiatorDomains": [
+   "kritiker.se"
+  ],
+  "resourceTypes": [
+   "sub_frame"
+  ],
+  "urlFilter": "||youtube.com/embed/*autoplay"
+ },
+ "id": 5
+}
+]
