@@ -6,6 +6,10 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
+	"runArgs": [
+		"-p",
+		"8181:8191"
+	],
 	"customizations": {
 		"vscode": {
 			"extensions": [
