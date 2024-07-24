@@ -21,7 +21,7 @@ class ProtectionTriggeredError(Exception):
 class Solution(BaseModel):
     url: str
     status: int
-    cookies: list[dict]
+    cookies: list
     userAgent: str  # noqa: N815 # Ignore to preserve compatibility
     headers: dict[str, Any]
     response: str
@@ -45,11 +45,7 @@ class LinkResponse(BaseModel):
     ):
         message = "Passed challenge" if challenged else "Challenge not detected"
 
-        user_agent = await page.js_dumps("navigator")
-        if not isinstance(user_agent, dict):
-            raise ProtectionTriggeredError("User agent is not a dictionary")
-        user_agent = user_agent["userAgent"]
-        re.sub(pattern="HEADLESS", repl="", string=user_agent, flags=re.IGNORECASE)
+        user_agent = await cls.get_useragent(page)
 
         # cookies = await page.browser.cookies.get_all(requests_cookie_format=True)
         # # Convert cookies to json
@@ -70,6 +66,15 @@ class LinkResponse(BaseModel):
             solution=solution,
             startTimestamp=start_timestamp,
         )
+
+    @classmethod
+    async def get_useragent(cls, page):
+        user_agent = await page.js_dumps("navigator")
+        if not isinstance(user_agent, dict):
+            raise ProtectionTriggeredError("User agent is not a dictionary")
+        user_agent = user_agent["userAgent"]
+        re.sub(pattern="HEADLESS", repl="", string=user_agent, flags=re.IGNORECASE)
+        return user_agent
 
 
 class NoChromeExtentionError(Exception):
