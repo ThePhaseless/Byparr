@@ -5,6 +5,7 @@ import time
 from typing import Any
 
 from nodriver import Tab
+from nodriver.cdp import storage
 from pydantic import BaseModel
 
 
@@ -55,11 +56,13 @@ class LinkResponse(BaseModel):
         # # Convert cookies to json
         # cookies = [cookie.to_json() for cookie in cookies]
 
-        cookies = []
+        cookies = storage.get_cookies()
+
+        cookies = await page.send(cookies)
         solution = Solution(
             url=page.url,
             status=200,
-            cookies=cookies,
+            cookies=cookies if cookies else [],
             userAgent=user_agent,
             headers={},
             response=await page.get_content(),
@@ -70,3 +73,7 @@ class LinkResponse(BaseModel):
             solution=solution,
             startTimestamp=start_timestamp,
         )
+
+
+class NoChromeExtentionError(Exception):
+    """No chrome extention found."""

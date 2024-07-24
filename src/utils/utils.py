@@ -1,14 +1,9 @@
-import logging
 from venv import logger
 
 import nodriver as webdriver
 from nodriver.core.element import Element
 
 from src.utils.consts import CHALLENGE_TITLES
-
-
-def get_logger():
-    return logging.getLogger("uvicorn.error")
 
 
 async def new_browser():

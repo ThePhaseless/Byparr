@@ -10,8 +10,8 @@ from fastapi.responses import RedirectResponse
 
 from src.models.requests import LinkRequest, LinkResponse
 from src.utils import logger
+from src.utils.browser import bypass_cloudflare, new_browser
 from src.utils.extentions import download_extentions
-from src.utils.misc import bypass_cloudflare, new_browser
 
 download_extentions()
 app = FastAPI(debug=True)
@@ -35,10 +35,8 @@ async def read_item(request: LinkRequest):
     challenged = await asyncio.wait_for(
         bypass_cloudflare(page), timeout=request.maxTimeout
     )
-    if challenged:
-        logger.info("Challenged")
-    else:
-        logger.info("Not challenged")
+
+    logger.info(f"Got webpage: {request.url}")
 
     response = await LinkResponse.create(
         page=page,
