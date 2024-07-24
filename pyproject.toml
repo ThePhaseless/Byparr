@@ -44,6 +44,7 @@ ignore = [
     "G004",
     "ANN001",
     "ANN204",
+    "ANN206",
 ]
 select = ["ALL"]
 extend-safe-fixes = ["D415"]
