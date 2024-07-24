@@ -1,3 +1,5 @@
+from pathlib import Path
+
 CHALLENGE_TITLES = [
     # Cloudflare
     "Just a moment...",
@@ -12,4 +14,4 @@ EXTENTION_REPOSITIORIES = [
 
 SLEEP_SECONDS = 1
 
-EXTENTIONS_PATH = "./.extentions"
+EXTENTIONS_PATH = Path(".extentions")
