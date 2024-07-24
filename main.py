@@ -27,6 +27,7 @@ def read_root():
 @app.post("/v1")
 async def read_item(request: LinkRequest):
     """Handle POST requests."""
+    # request.url = "https://nowsecure.nl"
     logger.info(f"Request: {request}")
     start_time = int(time.time() * 1000)
     browser = await new_browser()
