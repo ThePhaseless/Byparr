@@ -6,7 +6,6 @@
 	"build": {
 		"dockerfile": "Dockerfile"
 	},
-	"workspaceFolder": "/workspace/${localWorkspaceFolderBasename}",
 	"customizations": {
 		"vscode": {
 			"extensions": [
