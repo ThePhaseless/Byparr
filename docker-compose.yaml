@@ -4,5 +4,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      - LOG_LEVEL=DEBUG
     ports:
       - "8191:8191"
+    volumes:
+      - ./screenshots:/app/screenshots
