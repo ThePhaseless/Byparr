@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "solverr"
+name = "byparr"
 version = "0.1.0"
 description = ""
 package-mode = false
