@@ -15,7 +15,7 @@ nodriver_path = Path(env_path + "/lib/python3.11/site-packages/nodriver/cdp/netw
 new_cookie_partition_key = """\
         if isinstance(json, str):
             return cls(top_level_site=json, has_cross_site_ancestor=False)
-        elif isinstance(json_input, dict):
+        elif isinstance(json, dict):
             return cls(
                 top_level_site=str(json["topLevelSite"]),
                 has_cross_site_ancestor=bool(json["hasCrossSiteAncestor"]),
