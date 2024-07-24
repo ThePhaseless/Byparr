@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
-nodriver_path = Path(".venv/lib/python3.11/site-packages/nodriver/cdp/network.py")
+env_path = os.getenv("VIRTUAL_ENV")
+if env_path is None:
+    env_path = Path(os.__file__).parent.parent.parent.as_posix()
+nodriver_path = Path(env_path + "/lib/python3.11/site-packages/nodriver/cdp/network.py")
 
 
 new_cookie_partition_key = """\
