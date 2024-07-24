@@ -5,7 +5,6 @@ import time
 from typing import Any
 
 from nodriver import Tab
-from nodriver.cdp import storage
 from pydantic import BaseModel
 
 
@@ -56,9 +55,7 @@ class LinkResponse(BaseModel):
         # # Convert cookies to json
         # cookies = [cookie.to_json() for cookie in cookies]
 
-        cookies = storage.get_cookies()
-
-        cookies = await page.send(cookies)
+        cookies = await page.browser.cookies.get_all()
         solution = Solution(
             url=page.url,
             status=200,
