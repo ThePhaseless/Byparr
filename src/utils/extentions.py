@@ -45,7 +45,7 @@ def download_extentions():
                 downloaded_extentions.append(path.as_posix())
                 continue
         response = httpx.get(extention.browser_download_url)
-        Path("{EXTENTIONS_PATH}").mkdir(exist_ok=True)
+        Path(EXTENTIONS_PATH).mkdir(exist_ok=True)
         if not Path(f"{EXTENTIONS_PATH}/{extention.name}").is_file():
             with Path(f"{EXTENTIONS_PATH}/{extention.name}").open("wb") as f:
                 f.write(response.content)
