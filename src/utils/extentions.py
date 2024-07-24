@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import io
 import json
 from pathlib import Path
 from zipfile import ZipFile
 
 import httpx
+import requests
 
 from src.models.github import GithubResponse
 from src.models.requests import NoChromeExtentionError
@@ -40,17 +42,19 @@ def download_extentions():
         path = Path(f"{EXTENTIONS_PATH}/{extention_name}")
         try:
             extention = get_latest_github_release(repository)
+            logger.info(
+                f"Downloading {extention_name} from {extention.browser_download_url}"
+            )
         except httpx.NetworkError:
             if path.is_dir():
+                logger.error(f"Error downloading {extention_name}, using local copy")
                 downloaded_extentions.append(path.as_posix())
                 continue
-        response = httpx.get(extention.browser_download_url)
+        zip_file = requests.get(extention.browser_download_url, timeout=10)
         Path(EXTENTIONS_PATH).mkdir(exist_ok=True)
-        if not Path(f"{EXTENTIONS_PATH}/{extention.name}").is_file():
-            with Path(f"{EXTENTIONS_PATH}/{extention.name}").open("wb") as f:
-                f.write(response.content)
+        with ZipFile(io.BytesIO(zip_file.content)) as zip_obj:
+            zip_obj.extractall(f"{EXTENTIONS_PATH}/{extention_name}")
+            logger.debug(f"Extracted {extention_name} to {path}")
 
-            with ZipFile(f"{EXTENTIONS_PATH}/{extention.name}", "r") as zip_obj:
-                zip_obj.extractall(f"{EXTENTIONS_PATH}/{extention_name}")
-
+        logger.info(f"Successfully downloaded {extention_name} to {path}")
         downloaded_extentions.append(path.as_posix())
