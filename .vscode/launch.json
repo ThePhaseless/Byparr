@@ -9,7 +9,7 @@
             "type": "debugpy",
             "justMyCode": false,
             "env": {
-                "LOG_LEVEL": "DEBUG"
+                "LOG_LEVEL": "DEBUG",
             },
             "request": "launch",
             "program": "main.py",
