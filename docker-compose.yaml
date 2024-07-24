@@ -1,0 +1,8 @@
+services:
+  byparr:
+    image: thephaseless/byparr
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8191:8191"

@@ -10,11 +10,17 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_NO_INTERACTION=1\
     HEADLESS=1
 
-WORKDIR /app
-COPY pyproject.toml poetry.lock ./
-RUN curl -sSL https://install.python-poetry.org | python3 -
-ENV PATH="~/.local/share/pypoetry:$PATH"
-RUN poetry install
 
-COPY . .
-ENTRYPOINT ["python", "run", "main.py"]
+RUN apt update && apt upgrade -y
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+RUN apt install -y ./google-chrome-stable_current_amd64.deb
+
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="root/.local/bin:$PATH"
+RUN /root/.local/bin/poetry install
+
+WORKDIR /app
+COPY . /app
+RUN poetry install
+RUN python fix_nodriver.py
+ENTRYPOINT ["python", "main.py"]
