@@ -11,8 +11,6 @@ python = "^3.11"
 pytest = "^8.3.1"
 fastapi = "^0.111.1"
 nodriver = "^0.34"
-asyncio = "^3.4.3"
-coloredlogs = "^15.0.1"
 requests = "^2.32.3"
 
 
