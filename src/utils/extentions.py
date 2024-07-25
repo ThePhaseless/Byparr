@@ -11,15 +11,30 @@ import requests
 from src.models.github import GithubResponse
 from src.models.requests import NoChromeExtentionError
 from src.utils import logger
-from src.utils.consts import EXTENTION_REPOSITIORIES, EXTENTIONS_PATH
-
-downloaded_extentions: list[str] = []  # Do not modify, use download_extentions()
+from src.utils.consts import EXTENTION_REPOSITIORIES, EXTENTIONS_PATH, GITHUB_WEBSITES
 
 
-def get_latest_github_release(url: str):
-    """Get the latest release from GitHub."""
-    url = "https://api.github.com/repos/" + url
-    url += "/releases/latest"
+def get_latest_github_chrome_release(url: str):
+    """
+    Get the latest release for chrome from GitHub for a given repository URL.
+
+    Args:
+    ----
+        url (str): The URL of the GitHub repository.
+
+    Returns:
+    -------
+        GithubResponse: The latest release asset with 'chrom' in its name.
+
+    Raises:
+    ------
+        httpx.NetworkError: If the request to GitHub API returns a 403 Forbidden status code.
+        NoChromeExtentionError: If no release asset with 'chrom' in its name is found.
+
+    """
+    if url.startswith(tuple(GITHUB_WEBSITES)):
+        url = "/".join(url.split("/")[-2:])
+    url = "https://api.github.com/repos/" + url + "/releases/latest"
 
     response = httpx.get(url)
     if response.status_code == httpx.codes.FORBIDDEN:
@@ -36,12 +51,24 @@ def get_latest_github_release(url: str):
 
 
 def download_extentions():
-    """Download the extention."""
+    """
+    Download extensions from the specified repositories and saves them locally.
+
+    Returns
+    -------
+        list[str]: A list of paths to the downloaded extensions.
+
+    Raises
+    ------
+        httpx.NetworkError: If there is an error downloading an extension.
+
+    """
+    downloaded_extentions: list[str] = []
     for repository in EXTENTION_REPOSITIORIES:
         extention_name = repository.split("/")[-1]
         path = Path(f"{EXTENTIONS_PATH}/{extention_name}")
         try:
-            extention = get_latest_github_release(repository)
+            extention = get_latest_github_chrome_release(repository)
             logger.info(
                 f"Downloading {extention_name} from {extention.browser_download_url}"
             )
@@ -58,3 +85,4 @@ def download_extentions():
 
         logger.info(f"Successfully downloaded {extention_name} to {path}")
         downloaded_extentions.append(path.as_posix())
+    return downloaded_extentions
