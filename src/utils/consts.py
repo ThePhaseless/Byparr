@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 LOG_LEVEL = os.getenv("LOG_LEVEL") or "INFO"
-LOG_LEVEL = logging.getLevelName(LOG_LEVEL)
+LOG_LEVEL = logging.getLevelName(LOG_LEVEL.upper())
 
 CHALLENGE_TITLES = [
     # Cloudflare
