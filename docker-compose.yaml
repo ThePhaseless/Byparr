@@ -1,6 +1,6 @@
 services:
   byparr:
-    image: thephaseless/byparr
+    image: ghcr.io/thephaseless/byparr
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,5 +8,3 @@ services:
       - LOG_LEVEL=INFO
     ports:
       - "8191:8191"
-    volumes:
-      - ./screenshots:/app/screenshots
