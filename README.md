@@ -33,3 +33,4 @@ services:
 - [ ] Add more anti-bot challenges
 - [ ] Add docstrings
 - [ ] Use tabs instead of sprawning new browsers
+- [ ] Implement versioning
