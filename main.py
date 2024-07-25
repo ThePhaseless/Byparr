@@ -33,6 +33,7 @@ async def read_item(request: LinkRequest):
     start_time = int(time.time() * 1000)
     browser = await new_browser()
     page = await browser.get(request.url)
+    await page.bring_to_front()
 
     challenged = await asyncio.wait_for(
         bypass_cloudflare(page), timeout=request.maxTimeout
