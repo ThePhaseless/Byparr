@@ -28,7 +28,7 @@ services:
       - "8191:8191" # Optional if used with *arr network
 ```
 
-## Future Development
+## Need help with / TODO
 
 - [ ] Add more anti-bot challenges
 - [ ] Add docstrings
