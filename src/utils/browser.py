@@ -1,4 +1,4 @@
-from pathlib import Path
+import asyncio
 
 import nodriver as webdriver
 from nodriver.core.element import Element
@@ -19,18 +19,19 @@ async def new_browser():
 async def bypass_cloudflare(page: webdriver.Tab):
     challenged = False
     while True:
-        await page
         await page.wait(0.5)
-        logger.debug(page.target.title)
+        logger.debug(f"Current page: {page.target.title}")
         if page.target.title not in CHALLENGE_TITLES:
             return challenged
         if not challenged:
             logger.info("Found challenge")
-            await page.save_screenshot(Path("screenshots/screenshot.png"))
             challenged = True
-            Path("screenshots").mkdir(exist_ok=True)
-        logger.debug("Clicking element")
-        await page.save_screenshot(Path("screenshots/screenshot.png"))
-        elem = await page.query_selector(".cf-turnstile-wrapper")
+        try:
+            elem = await asyncio.wait_for(
+                page.query_selector(".cf-turnstile-wrapper"), timeout=3
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Timed out waiting for element, trying again")
+            continue
         if isinstance(elem, Element):
             await elem.mouse_click()
