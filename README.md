@@ -30,7 +30,10 @@ services:
 
 ## Need help with / TODO
 
+- [ ] Slimming container (~3GB bruh)
 - [ ] Add more anti-bot challenges
 - [ ] Add docstrings
 - [ ] Use tabs instead of sprawning new browsers
 - [ ] Implement versioning
+- [ ] Proxy support
+- [ ] Add more architectures support
