@@ -12,9 +12,7 @@ from src.models.requests import LinkRequest, LinkResponse
 from src.utils import logger
 from src.utils.browser import bypass_cloudflare, new_browser
 from src.utils.consts import LOG_LEVEL
-from src.utils.extentions import download_extentions
 
-download_extentions()
 app = FastAPI(debug=True)
 
 
@@ -32,21 +30,25 @@ async def read_item(request: LinkRequest):
     logger.info(f"Request: {request}")
     start_time = int(time.time() * 1000)
     browser = await new_browser()
-    page = await browser.get(request.url)
-    await page.bring_to_front()
+    try:
+        page = await browser.get(request.url)
+        await page.bring_to_front()
 
-    challenged = await asyncio.wait_for(
-        bypass_cloudflare(page), timeout=request.maxTimeout
-    )
+        challenged = await asyncio.wait_for(
+            bypass_cloudflare(page), timeout=request.maxTimeout
+        )
 
-    logger.info(f"Got webpage: {request.url}")
+        logger.info(f"Got webpage: {request.url}")
 
-    response = await LinkResponse.create(
-        page=page,
-        start_timestamp=start_time,
-        challenged=challenged,
-    )
-    browser.stop()
+        response = await LinkResponse.create(
+            page=page,
+            start_timestamp=start_time,
+            challenged=challenged,
+        )
+    except asyncio.TimeoutError:
+        logger.fatal("Couldn't complete the request")
+    finally:
+        browser.stop()
     return response
 
 
