@@ -1,7 +1,8 @@
 import logging
-import os
+
+from src.utils.consts import LOG_LEVEL
 
 logger = logging.getLogger("uvicorn.error")
-logger.setLevel(os.getenv("LOG_LEVEL") or logging.INFO)
+logger.setLevel(LOG_LEVEL)
 if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
