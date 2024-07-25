@@ -12,6 +12,13 @@ CHALLENGE_TITLES = [
     "DDoS-Guard",
 ]
 
+GITHUB_WEBSITES = [
+    "https://github.com/",
+    "https://www.github.com/",
+    "github.com",
+    "www.github.com",
+]
+
 EXTENTION_REPOSITIORIES = [
     "OhMyGuus/I-Still-Dont-Care-About-Cookies",
     "uBlockOrigin/uBOL-home",
