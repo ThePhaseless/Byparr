@@ -5,9 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - LOG_LEVEL=DEBUG
+      - LOG_LEVEL=INFO
     ports:
       - "8191:8191"
-      - "6080:6080"
     volumes:
       - ./screenshots:/app/screenshots
