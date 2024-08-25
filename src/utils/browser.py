@@ -1,4 +1,5 @@
 import asyncio
+from typing import List
 
 import nodriver as webdriver
 from nodriver.core.element import Element
@@ -70,28 +71,53 @@ async def bypass_cloudflare(page: webdriver.Tab):
                 "Verify you are human by completing the action below.",
                 timeout=3,
             )
+        # If challenge solves by itself
         except asyncio.TimeoutError:
             if page.target.title not in CHALLENGE_TITLES:
                 return challenged
             raise
 
-        logger.debug("Timed out waiting for element, trying again")
         if elem is None:
+            logger.debug("Couldn't find the title, trying again")
             continue
 
         elem = elem.parent
-        for _ in range(3):
+        # Get the element containing the shadow root
+        for _ in range(4):
             if elem is not None:
-                elem = await elem.query_selector("div")  # type: ignore reportAttributeAccessIssue
+                elem = get_first_div(elem)
             else:
                 raise InvalidElementError
 
-            continue
-        if isinstance(elem, Element):
-            logger.debug("Clicking element")
-            await elem.mouse_click()
+        if isinstance(elem, Element) and elem.shadow_roots:
+            inner_elem = Element(elem.shadow_roots[0], page, elem.tree).children[0]
+            if isinstance(inner_elem, Element):
+                logger.debug("Clicking element")
+                await inner_elem.mouse_click()
+            else:
+                logger.warn(
+                    "Element is a string, please report this to Byparr dev"
+                )  # I really hope this never happens
         else:
             logger.warn("Coulnd't find checkbox, trying again...")
+
+
+def get_first_div(elem):
+    """
+    Retrieve the first div element from the given element's children.
+
+    Args:
+    ----
+        elem: The parent element to search for a div child.
+
+    Returns:
+    -------
+        The first div element found, or the original element if no div is found.
+
+    """
+    if isinstance(elem.children, List):
+        elem = next(x for x in elem.children if x.tag_name == "div")
+    return elem
 
 
 class InvalidElementError(Exception):
