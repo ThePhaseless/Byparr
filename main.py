@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 
 import uvicorn
@@ -13,7 +14,7 @@ from src.utils import logger
 from src.utils.browser import bypass_cloudflare, new_browser
 from src.utils.consts import LOG_LEVEL
 
-app = FastAPI(debug=True)
+app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
 
 
 @app.get("/")
