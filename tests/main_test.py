@@ -1,7 +1,12 @@
-import pytest
+from http import HTTPStatus
 
-from main import read_item
+import pytest
+from starlette.testclient import TestClient
+
+from main import app
 from src.models.requests import LinkRequest
+
+client = TestClient(app)
 
 test_websites = [
     "https://ext.to/",
@@ -9,10 +14,12 @@ test_websites = [
     "https://extratorrent.st/",
     "https://idope.se/",
 ]
-pytest_plugins = ("pytest_asyncio",)
 
 
 @pytest.mark.parametrize("website", test_websites)
-@pytest.mark.asyncio
-async def test_bypass(website: str):
-    await read_item(LinkRequest(url=website, maxTimeout=5, cmd=""))
+def test_bypass(website: str):
+    response = client.post(
+        "/v1",
+        json=LinkRequest(url=website, maxTimeout=60, cmd="request.get").model_dump(),
+    )
+    assert response.status_code == HTTPStatus.OK
