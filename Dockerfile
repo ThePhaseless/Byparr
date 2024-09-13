@@ -29,7 +29,8 @@ COPY novnc.sh .
 RUN ./novnc.sh
 ENV DISPLAY=:1.0
 
-COPY . .
+COPY fix_nodriver.py ./
 RUN . /app/.venv/bin/activate && python fix_nodriver.py
-
+COPY . .
+RUN /usr/local/share/desktop-init.sh && poetry run pytest
 CMD /usr/local/share/desktop-init.sh && . /app/.venv/bin/activate && python main.py
