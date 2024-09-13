@@ -9,7 +9,7 @@ from pathlib import Path
 env_path = os.getenv("VIRTUAL_ENV")
 if env_path is None:
     env_path = Path(os.__file__).parent.parent.parent.as_posix()
-nodriver_path = Path(env_path + "/lib/python3.11/site-packages/nodriver/cdp/network.py")
+nodriver_path = Path(env_path + "/lib/python3.12/site-packages/nodriver/cdp/network.py")
 if not nodriver_path.exists():
     msg = f"{nodriver_path} not found"
     raise FileNotFoundError(msg)
