@@ -31,25 +31,23 @@ async def read_item(request: LinkRequest):
     logger.info(f"Request: {request}")
     start_time = int(time.time() * 1000)
     browser = await new_browser()
-    try:
-        page = await browser.get(request.url)
-        await page.bring_to_front()
+    page = await browser.get(request.url)
+    await page.bring_to_front()
+    timeout = request.maxTimeout
+    if timeout == 0:
+        timeout = None
 
-        challenged = await asyncio.wait_for(
-            bypass_cloudflare(page), timeout=request.maxTimeout
-        )
+    challenged = await asyncio.wait_for(bypass_cloudflare(page), timeout=timeout)
 
-        logger.info(f"Got webpage: {request.url}")
+    logger.info(f"Got webpage: {request.url}")
 
-        response = await LinkResponse.create(
-            page=page,
-            start_timestamp=start_time,
-            challenged=challenged,
-        )
-    except asyncio.TimeoutError:
-        logger.fatal("Couldn't complete the request")
-    finally:
-        browser.stop()
+    response = await LinkResponse.create(
+        page=page,
+        start_timestamp=start_time,
+        challenged=challenged,
+    )
+
+    browser.stop()
     return response
 
 
