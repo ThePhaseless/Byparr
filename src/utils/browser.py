@@ -74,12 +74,14 @@ async def bypass_cloudflare(page: webdriver.Tab):
         except asyncio.TimeoutError:
             if page.target.title not in CHALLENGE_TITLES:
                 return challenged
-            raise
 
         if elem is None:
-            logger.debug("Couldn't find the title, trying again")
+            logger.debug("Couldn't find the title, trying other method...")
             continue
 
+        if not isinstance(elem, Element):
+            logger.fatal("Element is a string, please report this to Byparr dev")
+            raise InvalidElementError
         elem = elem.parent
         # Get the element containing the shadow root
         for _ in range(3):
