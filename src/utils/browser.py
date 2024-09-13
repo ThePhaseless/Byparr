@@ -82,13 +82,10 @@ async def bypass_cloudflare(page: webdriver.Tab):
         if not isinstance(elem, Element):
             logger.fatal("Element is a string, please report this to Byparr dev")
             raise InvalidElementError
+
+        elem = await page.find("input")
         elem = elem.parent
         # Get the element containing the shadow root
-        for _ in range(3):
-            if elem is not None:
-                elem = get_first_div(elem)
-            else:
-                raise InvalidElementError
 
         if isinstance(elem, Element) and elem.shadow_roots:
             inner_elem = Element(elem.shadow_roots[0], page, elem.tree).children[0]
@@ -96,11 +93,11 @@ async def bypass_cloudflare(page: webdriver.Tab):
                 logger.debug("Clicking element")
                 await inner_elem.mouse_click()
             else:
-                logger.warn(
+                logger.warning(
                     "Element is a string, please report this to Byparr dev"
                 )  # I really hope this never happens
         else:
-            logger.warn("Coulnd't find checkbox, trying again...")
+            logger.warning("Coulnd't find checkbox, trying again...")
 
 
 def get_first_div(elem):
