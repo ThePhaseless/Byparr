@@ -1,5 +1,4 @@
 import asyncio
-from typing import List
 
 import nodriver as webdriver
 from nodriver.core.element import Element
@@ -83,7 +82,7 @@ async def bypass_cloudflare(page: webdriver.Tab):
 
         elem = elem.parent
         # Get the element containing the shadow root
-        for _ in range(4):
+        for _ in range(3):
             if elem is not None:
                 elem = get_first_div(elem)
             else:
@@ -115,9 +114,10 @@ def get_first_div(elem):
         The first div element found, or the original element if no div is found.
 
     """
-    if isinstance(elem.children, List):
-        elem = next(x for x in elem.children if x.tag_name == "div")
-    return elem
+    for child in elem.children:
+        if child.tag_name == "div":
+            return child
+    raise InvalidElementError
 
 
 class InvalidElementError(Exception):
