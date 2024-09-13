@@ -7,7 +7,7 @@ authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 pytest = "^8.3.1"
 fastapi = "^0.111.1"
 nodriver = "^0.34"
