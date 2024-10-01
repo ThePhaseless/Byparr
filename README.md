@@ -21,7 +21,7 @@ I focus maily on Cloudflare, which is tested daily, any other anti-bot challenge
 4. Open forwarded port from `Ports` tab in your browser to see emulated display 
 5. Check if `chrome` works by running in VNCs terminal command `chrome --no-sandbox`
 6. If chrome works, run API by pressing F5 in vscode
-7. In Prowlarr (or target client) change port byparrs port to `8191` instead of `8181` (Port pointing to devcontainer)
+7. In Prowlarr (or target client) change port byparrs port to `8181` instead of `8191` (Port opened by and pointing to devcontainer)
 8. Check if everything works by testing byparr and observing VNC in browser
 
 ## Usage
