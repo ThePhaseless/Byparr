@@ -1,16 +1,16 @@
 # Byparr
 
-An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as drop-in replacement, build with [nodriver](https://github.com/ultrafunkamsterdam/nodriver) and [FastAPI](https://fastapi.tiangolo.com).
+An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, build with [nodriver](https://github.com/ultrafunkamsterdam/nodriver) and [FastAPI](https://fastapi.tiangolo.com).
 
 > [!IMPORTANT]
-> Currenly, due to [bug in nodriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver/issues/1954), if you run ouside of prebuild container, you have to run `python fix_nodriver.py` after creating venv.
+> Currenly, due to [bug in nodriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver/issues/1954), if you want to run this project ouside of prebuild container, you have to run `python fix_nodriver.py` after creating venv to patch the library.
 
 > [!NOTE]
 > Thanks to FastAPI implementation, now you can also see the API documentation at `/docs` or `/` (redirect to `/docs`) endpoints.
 
 ## Early Development
 
-Long story short, I created it in like 3 days, so if you get any bugs/hangs etc. please report, so both of us can enjoy unblocked websites!
+Long story short, I created it in like 3 days, so if you get any bugs/hangs etc. please report it, so both of us can enjoy unblocked websites!
 
 I focus maily on Cloudflare, which is tested daily, any other anti-bot challenges should pass out of the box, but if any issues, please report these providers with an example website ❤️
 
@@ -42,8 +42,7 @@ services:
 
 - [ ] Slimming container (~3GB bruh)
 - [ ] Add more anti-bot challenges
-- [ ] Add docstrings
-- [ ] Use tabs instead of sprawning new browsers
+- [x] Add docstrings
 - [ ] Implement versioning
 - [ ] Proxy support
 - [ ] Add more architectures support
