@@ -10,9 +10,19 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 
 ## Early Development
 
-Long story short, I created it in like 3 days, so if you get any bugs/hangs etc. please report, so both of us can enjoy non-blocked websites!
+Long story short, I created it in like 3 days, so if you get any bugs/hangs etc. please report, so both of us can enjoy unblocked websites!
 
-I focues maily on Cloudflare, which should be passing normally, I see one other anti-bot challenge, which passed normally, but please report these providers with example website ❤️
+I focus maily on Cloudflare, which is tested daily, any other anti-bot challenges should pass out of the box, but if any issues, please report these providers with an example website ❤️
+
+## Troubleshooting
+1. Clone repo to the host that has the container has issues on.
+2. Using vscode and `SSH extention`, connect to the host and open repo in it.
+3. Download `devcontainers` extention and reopen repo in container (with `CTRL + SHIFT + P` -> `Reopen in devcontainer`)
+4. Open forwarded port from `Ports` tab in your browser to see emulated display 
+5. Check if `chrome` works by running in VNCs terminal command `chrome --no-sandbox`
+6. If chrome works, run API by pressing F5 in vscode
+7. In Prowlarr (or target client) change port byparrs port to `8191` instead of `8181` (Port pointing to devcontainer)
+8. Check if everything works by testing byparr and observing VNC in browser
 
 ## Usage
 
