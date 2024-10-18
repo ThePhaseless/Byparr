@@ -15,14 +15,16 @@ Long story short, I created it in like 3 days, so if you get any bugs/hangs etc.
 I focus maily on Cloudflare, which is tested daily, any other anti-bot challenges should pass out of the box, but if any issues, please report these providers with an example website ❤️
 
 ## Troubleshooting
+
 1. Clone repo to the host that has the container has issues on.
 2. Using vscode and `SSH extention`, connect to the host and open repo in it.
 3. Download `devcontainers` extention and reopen repo in container (with `CTRL + SHIFT + P` -> `Reopen in devcontainer`)
-4. Open forwarded port from `Ports` tab in your browser to see emulated display 
-5. Check if `chrome` works by running in VNCs terminal command `chrome --no-sandbox`
-6. If chrome works, run API by pressing F5 in vscode
-7. In Prowlarr (or target client) change port byparrs port to `8181` instead of `8191` (Port opened by and pointing to devcontainer)
-8. Check if everything works by testing byparr and observing VNC in browser
+4. Write down the port in `Ports` tab in vscode
+5. Open <https://novnc.com/noVNC/vnc.html> in your pc's browser and using settings on left under websocket, set host to `localhost` nad port to the port you wrote down
+6. Check if `chromium` works by running in VNCs terminal command `chromium --no-sandbox`
+7. If chrome works, run API by pressing F5 in vscode
+8. In Prowlarr (or target client) change port byparr's port to `8181` instead of `8191` (Port opened by and pointing to devcontainer)
+9. Check if everything works by testing byparr and observing VNC in browser
 
 ## Usage
 
