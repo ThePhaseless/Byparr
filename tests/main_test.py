@@ -13,6 +13,7 @@ test_websites = [
     "https://btmet.com/",
     "https://extratorrent.st/",  # github is blocking these
     "https://idope.se/",  # github is blocking these
+    "https://www.ygg.re/",
 ]
 
 
@@ -20,9 +21,7 @@ test_websites = [
 def test_bypass(website: str):
     response = client.post(
         "/v1",
-        json=LinkRequest(
-            url=website, maxTimeout=120 * len(test_websites), cmd="request.get"
-        ).model_dump(),
+        json=LinkRequest(url=website, maxTimeout=30, cmd="request.get").model_dump(),
     )
     if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
         # if rate limited
