@@ -14,4 +14,6 @@ x11vnc -display :0 -forever -ncache 10 &
 # Add delay
 sleep 5
 
+# Activate virtual environment
+export DISPLAY=:0
 . .venv/bin/activate && python3 main.py
