@@ -66,23 +66,32 @@ async def bypass_cloudflare(page: webdriver.Tab):
         if not challenged:
             logger.info("Found challenge")
             challenged = True
+
+        try:
+            elem = await page.find("lds-ring", timeout=3)
+        except asyncio.TimeoutError:
+            logger.debug("Challenge loaded")
+        else:
+            logger.debug("Challenge still loading")
+            continue
+
+        await page
         try:
             elem = await page.find(
                 "Verify you are human by completing the action below.",
-                timeout=3,
+                timeout=1,
             )
         # If challenge solves by itself
         except asyncio.TimeoutError:
             if page.target.title not in CHALLENGE_TITLES:
                 return challenged
 
-        if elem is None:
-            logger.debug("Couldn't find the title, trying other method...")
+        logger.debug(msg=f"Clicking element {elem}")
+        if isinstance(elem, Element):
+            await elem.mouse_click()
             continue
 
-        if not isinstance(elem, Element):
-            raise InvalidElementError
-
+        logger.debug("Couldn't find the title, trying other method...")
         elem = await page.find("input")
         elem = elem.parent
         # Get the element containing the shadow root
@@ -96,6 +105,7 @@ async def bypass_cloudflare(page: webdriver.Tab):
                 logger.warning(
                     "Element is a string, please report this to Byparr dev"
                 )  # I really hope this never happens
+                logger.warning(inner_elem)
         else:
             logger.warning("Coulnd't find checkbox, trying again...")
 
