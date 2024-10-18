@@ -9,7 +9,7 @@ Xvfb :0 -screen 0 1280x720x16 &
 fluxbox -display :0 &
 
 # Run x11vnc on display 0
-x11vnc -display :0 -forever -nchache 10 &
+x11vnc -display :0 -forever -ncache 10 &
 
 # Add delay
 sleep 5
