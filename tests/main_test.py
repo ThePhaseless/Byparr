@@ -24,4 +24,7 @@ def test_bypass(website: str):
             url=website, maxTimeout=120 * len(test_websites), cmd="request.get"
         ).model_dump(),
     )
+    if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+        # if rate limited
+        assert True
     assert response.status_code == HTTPStatus.OK
