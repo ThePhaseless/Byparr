@@ -67,30 +67,24 @@ async def bypass_cloudflare(page: webdriver.Tab):
             logger.info("Found challenge")
             challenged = True
 
+        loaded = False
         try:
             elem = await page.find("lds-ring", timeout=3)
+            parent = elem.parent
+            if not isinstance(parent, Element) or parent.attributes is None:
+                continue
+            for attr in parent.attributes:
+                if attr == "display: none; visibility: hidden;":
+                    loaded = True
+
         except asyncio.TimeoutError:
             logger.debug("Challenge loaded")
         else:
-            logger.debug("Challenge still loading")
-            continue
+            if not loaded:
+                logger.debug("Challenge still loading")
+                continue
 
         await page
-        try:
-            elem = await page.find(
-                "Verify you are human by completing the action below.",
-                timeout=1,
-            )
-        # If challenge solves by itself
-        except asyncio.TimeoutError:
-            if page.target.title not in CHALLENGE_TITLES:
-                return challenged
-
-        logger.debug(msg=f"Clicking element {elem}")
-        if isinstance(elem, Element):
-            await elem.mouse_click()
-            continue
-
         logger.debug("Couldn't find the title, trying other method...")
         elem = await page.find("input")
         elem = elem.parent
@@ -101,6 +95,7 @@ async def bypass_cloudflare(page: webdriver.Tab):
             if isinstance(inner_elem, Element):
                 logger.debug("Clicking element")
                 await inner_elem.mouse_click()
+                await asyncio.sleep(3)
             else:
                 logger.warning(
                     "Element is a string, please report this to Byparr dev"
