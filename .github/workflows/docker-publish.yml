@@ -88,6 +88,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Upload error logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-screenshots
+          path: ./errors
+
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
       # repository is public to avoid leaking data.  If you would like to publish
