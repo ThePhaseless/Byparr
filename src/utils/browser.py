@@ -23,8 +23,9 @@ async def new_browser():
         Any exceptions that may occur during the creation of the browser instance.
 
     """
-    config: webdriver.Config = webdriver.Config()
-    config.sandbox = False
+    config: webdriver.Config = webdriver.Config(
+        browser_executable_path="/usr/bin/chromium", sandbox=True
+    )
     config.add_argument(f"--load-extension={','.join(downloaded_extentions)}")
 
     return await webdriver.start(config=config)
