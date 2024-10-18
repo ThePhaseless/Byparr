@@ -13,3 +13,5 @@ x11vnc -display :0 -forever -ncache 10 &
 
 # Add delay
 sleep 5
+
+. .venv/bin/activate && poetry run start
