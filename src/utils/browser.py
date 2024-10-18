@@ -81,7 +81,6 @@ async def bypass_cloudflare(page: webdriver.Tab):
             continue
 
         if not isinstance(elem, Element):
-            logger.fatal("Element is a string, please report this to Byparr dev")
             raise InvalidElementError
 
         elem = await page.find("input")

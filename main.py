@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from pathlib import Path
 
 import uvicorn
 import uvicorn.config
@@ -39,16 +38,14 @@ async def read_item(request: LinkRequest):
         timeout = None
     try:
         challenged = await asyncio.wait_for(bypass_cloudflare(page), timeout=timeout)
-    except asyncio.TimeoutError as e:
-        i = 0
-        while Path(f"errors/error{i}.png").is_file():
-            i += 1
-        await page.save_screenshot(f"errors/error{i}.png")
-        raise HTTPException(detail="Timeout", status_code=408) from e
+    except Exception as e:
+        logger.error(await page.get_content())
+        logger.fatal("Element is a string, please report this to Byparr dev")
+        raise HTTPException(detail="Couldn't bypass", status_code=408) from e
 
     logger.info(f"Got webpage: {request.url}")
 
-    response = LinkResponse.create(
+    response = await LinkResponse.create(
         page=page,
         start_timestamp=start_time,
         challenged=challenged,
