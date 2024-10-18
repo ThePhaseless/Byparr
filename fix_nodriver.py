@@ -5,11 +5,13 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
+from platform import python_version
 
 env_path = os.getenv("VIRTUAL_ENV")
 if env_path is None:
     env_path = Path(os.__file__).parent.parent.parent.as_posix()
-nodriver_path = Path(env_path + "/lib/python3.12/site-packages/nodriver/cdp/network.py")
+python_version = python_version().split(".")[0:2]
+nodriver_path = Path(env_path + f"/lib/python{'.'.join(python_version)}/site-packages/nodriver/cdp/network.py")
 if not nodriver_path.exists():
     msg = f"{nodriver_path} not found"
     raise FileNotFoundError(msg)

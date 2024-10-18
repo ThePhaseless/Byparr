@@ -6,7 +6,12 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "runArgs": ["-p", "8181:8191"],
+  "runArgs": [
+    "-p",
+    "8181:8191",
+    "--cap-add",
+    "SYS_ADMIN"
+  ],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -19,15 +24,13 @@
       }
     }
   },
-  "postStartCommand": "poetry install",
+  "postStartCommand": "./entrypoint.sh",
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  "forwardPorts": [6080],
-  "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
-    "ghcr.io/devcontainers/features/desktop-lite:1": {}
-  }
+  "forwardPorts": [
+    5900
+  ]
   // Use 'postCreateCommand' to run commands after the container is created.
   // "postCreateCommand": "pip3 install --user -r requirements.txt",
   // Configure tool-specific properties.

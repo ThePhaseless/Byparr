@@ -77,7 +77,12 @@ def download_extentions():
                 logger.error(f"Error downloading {extention_name}, using local copy")
                 downloaded_extentions.append(path.as_posix())
                 continue
-        zip_file = requests.get(extention.browser_download_url, timeout=10)
+        try:
+            zip_file = requests.get(extention.browser_download_url, timeout=10)
+        except UnboundLocalError as e:
+            logger.error(f"Error downloading {extention_name}, skipping")
+            logger.error(e)
+            continue
         Path(EXTENTIONS_PATH).mkdir(exist_ok=True)
         with ZipFile(io.BytesIO(zip_file.content)) as zip_obj:
             zip_obj.extractall(f"{EXTENTIONS_PATH}/{extention_name}")
