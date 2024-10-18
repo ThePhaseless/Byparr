@@ -1,3 +1,3 @@
-if [ "$(uname -m)" == "x86_64" ]; then
-    ./entrypoint.sh &&. /app/.venv/bin/activate && poetry run pytest
+if [ $(arch) = "x86_64" ]; then
+    ./entrypoint.sh && . ./.venv/bin/activate && poetry run pytest
 fi

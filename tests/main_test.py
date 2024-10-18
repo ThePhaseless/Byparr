@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from time import sleep
 
 import pytest
 from starlette.testclient import TestClient
@@ -19,6 +20,7 @@ test_websites = [
 
 @pytest.mark.parametrize("website", test_websites)
 def test_bypass(website: str):
+    sleep(3)
     response = client.post(
         "/v1",
         json=LinkRequest(url=website, maxTimeout=30, cmd="request.get").model_dump(),
