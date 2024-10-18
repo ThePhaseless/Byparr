@@ -8,7 +8,9 @@
   },
   "runArgs": [
     "-p",
-    "8181:8191"
+    "8181:8191",
+    "--cap-add",
+    "SYS_ADMIN"
   ],
   "customizations": {
     "vscode": {
