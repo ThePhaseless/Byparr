@@ -13,5 +13,3 @@ x11vnc -display :0 -forever -nchache 10 &
 
 # Add delay
 sleep 5
-
-pytest
