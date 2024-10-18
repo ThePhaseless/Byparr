@@ -11,8 +11,8 @@ client = TestClient(app)
 test_websites = [
     "https://ext.to/",
     "https://btmet.com/",
-    # "https://extratorrent.st/", # github is blocking these
-    # "https://idope.se/", # github is blocking these
+    "https://extratorrent.st/",  # github is blocking these
+    "https://idope.se/",  # github is blocking these
 ]
 
 
