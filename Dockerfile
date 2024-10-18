@@ -1,4 +1,37 @@
-FROM python:3.12
+FROM python:3.12-alpine
+
+# Inspired by https://github.com/Hudrolax/uc-docker-alpine/
+
+# Install build dependencies
+RUN apk update && apk upgrade && \
+    apk add --no-cache --virtual .build-deps \
+    alpine-sdk \
+    curl \
+    wget \
+    unzip \
+    gnupg
+
+# Install dependencies
+RUN apk add --no-cache \
+    xvfb \
+    x11vnc \
+    fluxbox \
+    xterm \
+    libffi-dev \
+    openssl-dev \
+    zlib-dev \
+    bzip2-dev \
+    readline-dev \
+    git \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    pipx \
+    chromium \
+    chromium-chromedriver
 
 WORKDIR /app
 EXPOSE 8191
@@ -11,26 +44,15 @@ ENV \
     PYTHONDONTWRITEBYTECODE=1 \
     # do not ask any interactive question
     POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_IN_PROJECT=true
+    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    DISPLAY=:0
 
-RUN apt update && apt upgrade -y
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-RUN apt install -y --no-install-recommends --no-install-suggests ./google-chrome-stable_current_amd64.deb && rm ./google-chrome-stable_current_amd64.deb
-
-RUN apt install pipx -y
-RUN pipx ensurepath
 RUN pipx install poetry
 ENV PATH="/root/.local/bin:$PATH"
 COPY pyproject.toml poetry.lock ./
 RUN poetry install
 
-ENV INSTALL_NOVNC=false
-COPY novnc.sh .
-RUN ./novnc.sh
-ENV DISPLAY=:1.0
-
 COPY fix_nodriver.py ./
 RUN . /app/.venv/bin/activate && python fix_nodriver.py
 COPY . .
-RUN /usr/local/share/desktop-init.sh && poetry run pytest
-CMD /usr/local/share/desktop-init.sh && . /app/.venv/bin/activate && python main.py
+CMD ["./entrypoint.sh", "&&", ".", "/app/.venv/bin/activate", "&&", "python", "main.py"]

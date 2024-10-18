@@ -23,8 +23,9 @@ async def new_browser():
         Any exceptions that may occur during the creation of the browser instance.
 
     """
-    config: webdriver.Config = webdriver.Config()
-    config.sandbox = False
+    config: webdriver.Config = webdriver.Config(
+        browser_executable_path="/usr/bin/chromium", sandbox=True
+    )
     config.add_argument(f"--load-extension={','.join(downloaded_extentions)}")
 
     return await webdriver.start(config=config)
@@ -65,24 +66,26 @@ async def bypass_cloudflare(page: webdriver.Tab):
         if not challenged:
             logger.info("Found challenge")
             challenged = True
+
+        loaded = False
         try:
-            elem = await page.find(
-                "Verify you are human by completing the action below.",
-                timeout=3,
-            )
-        # If challenge solves by itself
+            elem = await page.find("lds-ring", timeout=3)
+            parent = elem.parent
+            if not isinstance(parent, Element) or parent.attributes is None:
+                continue
+            for attr in parent.attributes:
+                if attr == "display: none; visibility: hidden;":
+                    loaded = True
+
         except asyncio.TimeoutError:
-            if page.target.title not in CHALLENGE_TITLES:
-                return challenged
+            logger.debug("Challenge loaded")
+        else:
+            if not loaded:
+                logger.debug("Challenge still loading")
+                continue
 
-        if elem is None:
-            logger.debug("Couldn't find the title, trying other method...")
-            continue
-
-        if not isinstance(elem, Element):
-            logger.fatal("Element is a string, please report this to Byparr dev")
-            raise InvalidElementError
-
+        await page
+        logger.debug("Couldn't find the title, trying other method...")
         elem = await page.find("input")
         elem = elem.parent
         # Get the element containing the shadow root
@@ -92,10 +95,12 @@ async def bypass_cloudflare(page: webdriver.Tab):
             if isinstance(inner_elem, Element):
                 logger.debug("Clicking element")
                 await inner_elem.mouse_click()
+                await asyncio.sleep(3)
             else:
                 logger.warning(
                     "Element is a string, please report this to Byparr dev"
                 )  # I really hope this never happens
+                logger.warning(inner_elem)
         else:
             logger.warning("Coulnd't find checkbox, trying again...")
 

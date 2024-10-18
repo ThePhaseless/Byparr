@@ -6,7 +6,7 @@ import time
 
 import uvicorn
 import uvicorn.config
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 
 from src.models.requests import LinkRequest, LinkResponse
@@ -36,8 +36,12 @@ async def read_item(request: LinkRequest):
     timeout = request.maxTimeout
     if timeout == 0:
         timeout = None
-
-    challenged = await asyncio.wait_for(bypass_cloudflare(page), timeout=timeout)
+    try:
+        challenged = await asyncio.wait_for(bypass_cloudflare(page), timeout=timeout)
+    except Exception as e:
+        logger.error(await page.get_content())
+        logger.fatal("Element is a string, please report this to Byparr dev")
+        raise HTTPException(detail="Couldn't bypass", status_code=408) from e
 
     logger.info(f"Got webpage: {request.url}")
 
