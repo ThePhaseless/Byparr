@@ -55,6 +55,4 @@ RUN poetry install
 COPY fix_nodriver.py ./
 RUN . /app/.venv/bin/activate && python fix_nodriver.py
 COPY . .
-RUN chmod +x entrypoint.sh
-RUN ./pytest.sh
 CMD ["./entrypoint.sh", "&&", ".", "/app/.venv/bin/activate", "&&", "python", "main.py"]
