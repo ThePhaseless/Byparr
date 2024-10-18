@@ -23,4 +23,5 @@ RUN apt install -y \
     chromium
 
 RUN pipx install poetry
+ENV DISPLAY=:0
 # RUN poetry config virtualenvs.in-project true
