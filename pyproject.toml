@@ -14,6 +14,7 @@ nodriver = "^0.34"
 requests = "^2.32.3"
 httpx = "^0.27.2"
 pytest-asyncio = "^0.24.0"
+pytest-xdist = "^3.6.1"
 
 
 [build-system]
