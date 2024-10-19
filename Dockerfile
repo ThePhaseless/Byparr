@@ -9,7 +9,11 @@ RUN apk update && apk upgrade && \
     curl \
     wget \
     unzip \
-    gnupg
+    gnupg \
+    gcc \
+    python3-dev \
+    musl-dev \
+    linux-headers
 
 # Install dependencies
 RUN apk add --no-cache \
@@ -55,5 +59,5 @@ RUN poetry install
 COPY fix_nodriver.py ./
 RUN . /app/.venv/bin/activate && python fix_nodriver.py
 COPY . .
-RUN ./run_vnc.sh && . /app/.venv/bin/activate && poetry run pytest -n auto
+RUN ./run_vnc.sh && . /app/.venv/bin/activate && poetry run pytest -n logical
 CMD ["./entrypoint.sh"]
