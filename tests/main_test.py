@@ -28,5 +28,5 @@ def test_bypass(website: str):
     )
     if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
         # if rate limited
-        assert True
+        pytest.skip()
     assert response.status_code == HTTPStatus.OK
