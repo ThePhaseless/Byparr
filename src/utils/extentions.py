@@ -85,8 +85,9 @@ def download_extentions():
             continue
         Path(EXTENTIONS_PATH).mkdir(exist_ok=True)
         with ZipFile(io.BytesIO(zip_file.content)) as zip_obj:
-            zip_obj.extractall(f"{EXTENTIONS_PATH}/{extention_name}")
-            logger.debug(f"Extracted {extention_name} to {path}")
+            if not path.joinpath(extention_name).exists():
+                zip_obj.extractall(f"{EXTENTIONS_PATH}/{extention_name}")
+                logger.debug(f"Extracted {extention_name} to {path}")
 
         logger.info(f"Successfully downloaded {extention_name} to {path}")
         downloaded_extentions.append(path.as_posix())
