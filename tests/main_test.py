@@ -15,6 +15,7 @@ test_websites = [
     "https://extratorrent.st/",  # github is blocking these
     "https://idope.se/",  # github is blocking these
     "https://www.ygg.re/",
+    "https://speed.cd/browse/freeleech",
 ]
 
 

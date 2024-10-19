@@ -55,4 +55,5 @@ RUN poetry install
 COPY fix_nodriver.py ./
 RUN . /app/.venv/bin/activate && python fix_nodriver.py
 COPY . .
+RUN ./run_vnc.sh && . /app/.venv/bin/activate && poetry run pytest -n auto
 CMD ["./entrypoint.sh"]

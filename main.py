@@ -31,6 +31,7 @@ async def read_item(request: LinkRequest):
     logger.info(f"Request: {request}")
     start_time = int(time.time() * 1000)
     browser = await new_browser()
+    await asyncio.sleep(1)
     page = await browser.get(request.url)
     await page.bring_to_front()
     timeout = request.maxTimeout
@@ -38,9 +39,10 @@ async def read_item(request: LinkRequest):
         timeout = None
     try:
         challenged = await asyncio.wait_for(bypass_cloudflare(page), timeout=timeout)
+    except asyncio.TimeoutError:
+        logger.info("Timed out bypassing Cloudflare")
     except Exception as e:
-        logger.error(await page.get_content())
-        logger.fatal("Element is a string, please report this to Byparr dev")
+        browser.stop()
         raise HTTPException(detail="Couldn't bypass", status_code=408) from e
 
     logger.info(f"Got webpage: {request.url}")

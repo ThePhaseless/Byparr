@@ -59,69 +59,70 @@ async def bypass_cloudflare(page: webdriver.Tab):
     """
     challenged = False
     while True:
-        await page
+        await asyncio.sleep(1)
         logger.debug(f"Current page: {page.target.title}")
+
         if page.target.title not in CHALLENGE_TITLES:
             return challenged
+
         if not challenged:
             logger.info("Found challenge")
             challenged = True
 
+        if (
+            page.target.title != "Just a moment..."
+        ):  # If not in cloudflare, wait for autobypass
+            await asyncio.sleep(3)
+            logger.debug("Waiting for challenge to complete")
+            continue
+
         loaded = False
         try:
-            elem = await page.find("lds-ring", timeout=3)
-            parent = elem.parent
-            if not isinstance(parent, Element) or parent.attributes is None:
-                continue
-            for attr in parent.attributes:
-                if attr == "display: none; visibility: hidden;":
-                    loaded = True
+            elem = await page.find("lds-ring")
+        except asyncio.TimeoutError as e:
+            logger.error(
+                "Couldn't find lds-ring, probably not a cloudflare challenge, trying again..."
+            )
+            raise InvalidElementError from e
+        if elem is None:
+            logger.error("elem is None")
+            logger.debug(elem)
+            raise InvalidElementError
 
-        except asyncio.TimeoutError:
-            logger.debug("Challenge loaded")
-        else:
-            if not loaded:
-                logger.debug("Challenge still loading")
-                continue
+        parent = elem.parent
+        if not isinstance(parent, Element) or parent.attributes is None:
+            logger.error("parent is not an element or has no attributes")
+            logger.debug(parent)
+            raise InvalidElementError
 
-        await page
-        logger.debug("Couldn't find the title, trying other method...")
+        for attr in parent.attributes:
+            if attr == "display: none; visibility: hidden;":
+                loaded = True
+                logger.info("Page loaded")
+
+        if not loaded:
+            logger.debug("Challenge still loading")
+            continue
+
         elem = await page.find("input")
         elem = elem.parent
         # Get the element containing the shadow root
-
         if isinstance(elem, Element) and elem.shadow_roots:
+            logger.info("Found shadow root")
             inner_elem = Element(elem.shadow_roots[0], page, elem.tree).children[0]
             if isinstance(inner_elem, Element):
+                logger.info("Found elem inside shadow root")
                 logger.debug("Clicking element")
                 await inner_elem.mouse_click()
                 await asyncio.sleep(3)
             else:
                 logger.warning(
-                    "Element is a string, please report this to Byparr dev"
-                )  # I really hope this never happens
-                logger.warning(inner_elem)
+                    "Couldn't find element containing shadow root, trying again..."
+                )
+                logger.debug(inner_elem)
         else:
             logger.warning("Coulnd't find checkbox, trying again...")
-
-
-def get_first_div(elem):
-    """
-    Retrieve the first div element from the given element's children.
-
-    Args:
-    ----
-        elem: The parent element to search for a div child.
-
-    Returns:
-    -------
-        The first div element found, or the original element if no div is found.
-
-    """
-    for child in elem.children:
-        if child.tag_name == "div":
-            return child
-    raise InvalidElementError
+            logger.debug(elem)
 
 
 class InvalidElementError(Exception):
