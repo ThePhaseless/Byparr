@@ -60,7 +60,7 @@ async def read_item(request: LinkRequest):
         browser.stop()
     except Exception as e:
         browser.stop()
-        raise HTTPException(detail="Couldn't bypass", status_code=408) from e
+        raise HTTPException(detail="Couldn't bypass", status_code=500) from e
 
     logger.info(f"Got webpage: {request.url}")
 

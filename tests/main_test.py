@@ -7,6 +7,7 @@ from starlette.testclient import TestClient
 
 from main import app
 from src.models.requests import LinkRequest
+from src.utils import logger
 
 client = TestClient(app)
 
@@ -16,7 +17,7 @@ test_websites = [
     "https://extratorrent.st/",  # github is blocking these
     "https://idope.se/",  # github is blocking these
     "https://www.ygg.re/",
-    "https://speed.cd/browse/freeleech",
+    "https://speed.cd/",
 ]
 
 
@@ -27,6 +28,7 @@ def test_bypass(website: str):
         website,
     )
     if test_request.status_code != HTTPStatus.OK:
+        logger.info(f"Skipping {website} due to {test_request.status_code}")
         pytest.skip()
 
     response = client.post(
