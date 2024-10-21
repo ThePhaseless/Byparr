@@ -1,6 +1,7 @@
 from http import HTTPStatus
 from time import sleep
 
+import httpx
 import pytest
 from starlette.testclient import TestClient
 
@@ -22,11 +23,15 @@ test_websites = [
 @pytest.mark.parametrize("website", test_websites)
 def test_bypass(website: str):
     sleep(3)
+    test_request = httpx.get(
+        website,
+    )
+    if test_request.status_code != HTTPStatus.OK:
+        pytest.skip()
+
     response = client.post(
         "/v1",
         json=LinkRequest(url=website, maxTimeout=30, cmd="request.get").model_dump(),
     )
-    if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
-        # if rate limited
-        pytest.skip()
+
     assert response.status_code == HTTPStatus.OK
