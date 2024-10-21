@@ -49,5 +49,8 @@ ignore = [
 select = ["ALL"]
 extend-safe-fixes = ["D415"]
 
+[tool.pytest]
+log_cli = "True"
+
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
