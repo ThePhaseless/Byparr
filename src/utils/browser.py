@@ -4,7 +4,7 @@ import nodriver as webdriver
 from nodriver.core.element import Element
 
 from src.utils import logger
-from src.utils.consts import CHALLENGE_TITLES
+from src.utils.consts import CHALLENGE_TITLES, UBLOCK_TITLE
 from src.utils.extentions import download_extentions
 
 downloaded_extentions = download_extentions()
@@ -58,11 +58,13 @@ async def bypass_cloudflare(page: webdriver.Tab):
 
     """
     challenged = False
+    await page
     while True:
-        await asyncio.sleep(1)
         logger.debug(f"Current page: {page.target.title}")
 
         if page.target.title not in CHALLENGE_TITLES:
+            if page.target.title == UBLOCK_TITLE:
+                continue
             return challenged
 
         if not challenged:
@@ -78,12 +80,12 @@ async def bypass_cloudflare(page: webdriver.Tab):
 
         loaded = False
         try:
-            elem = await page.find("lds-ring")
-        except asyncio.TimeoutError as e:
+            elem = await page.find("lds-ring", timeout=3)
+        except asyncio.TimeoutError:
             logger.error(
                 "Couldn't find lds-ring, probably not a cloudflare challenge, trying again..."
             )
-            raise InvalidElementError from e
+            continue
         if elem is None:
             logger.error("elem is None")
             logger.debug(elem)
@@ -115,11 +117,11 @@ async def bypass_cloudflare(page: webdriver.Tab):
                 logger.debug("Clicking element")
                 await inner_elem.mouse_click()
                 await asyncio.sleep(3)
-            else:
-                logger.warning(
-                    "Couldn't find element containing shadow root, trying again..."
-                )
-                logger.debug(inner_elem)
+                continue
+            logger.warning(
+                "Couldn't find element containing shadow root, trying again..."
+            )
+            logger.debug(inner_elem)
         else:
             logger.warning("Coulnd't find checkbox, trying again...")
             logger.debug(elem)
