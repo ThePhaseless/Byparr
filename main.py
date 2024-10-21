@@ -24,6 +24,18 @@ def read_root():
     return RedirectResponse(url="/docs", status_code=301)
 
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    logger.info("Health check")
+    browser = await new_browser()
+    await browser.grant_all_permissions()
+    page = await browser.get("https://google.com")
+    await page.bring_to_front()
+    browser.stop()
+    return {"status": "ok"}
+
+
 @app.post("/v1")
 async def read_item(request: LinkRequest):
     """Handle POST requests."""
