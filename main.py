@@ -31,6 +31,7 @@ async def read_item(request: LinkRequest):
     logger.info(f"Request: {request}")
     start_time = int(time.time() * 1000)
     browser = await new_browser()
+    await browser.grant_all_permissions()
     await asyncio.sleep(1)
     page = await browser.get(request.url)
     await page.bring_to_front()
@@ -39,8 +40,12 @@ async def read_item(request: LinkRequest):
         timeout = None
     try:
         challenged = await asyncio.wait_for(bypass_cloudflare(page), timeout=timeout)
-    except asyncio.TimeoutError:
+    except asyncio.TimeoutError as e:
         logger.info("Timed out bypassing Cloudflare")
+        raise HTTPException(
+            detail="Timed out bypassing Cloudflare", status_code=408
+        ) from e
+        browser.stop()
     except Exception as e:
         browser.stop()
         raise HTTPException(detail="Couldn't bypass", status_code=408) from e

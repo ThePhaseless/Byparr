@@ -5,6 +5,8 @@ from pathlib import Path
 LOG_LEVEL = os.getenv("LOG_LEVEL") or "INFO"
 LOG_LEVEL = logging.getLevelNamesMapping()[LOG_LEVEL.upper()]
 
+UBLOCK_TITLE = "uBO Lite — Dashboard"
+
 CHALLENGE_TITLES = [
     # Cloudflare
     "Just a moment...",
