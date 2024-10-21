@@ -35,3 +35,8 @@ def test_bypass(website: str):
     )
 
     assert response.status_code == HTTPStatus.OK
+
+
+def test_health_check():
+    response = client.get("/health")
+    assert response.status_code == HTTPStatus.OK
