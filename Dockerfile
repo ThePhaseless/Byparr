@@ -2,6 +2,9 @@ FROM python:3.12-alpine
 
 # Inspired by https://github.com/Hudrolax/uc-docker-alpine/
 
+ARG GITHUB_BUILD=false
+ENV GITHUB_BUILD=${GITHUB_BUILD}
+
 # Install build dependencies
 RUN apk update && apk upgrade && \
     apk add --no-cache --virtual .build-deps \
