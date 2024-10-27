@@ -98,7 +98,7 @@ async def bypass_cloudflare(page: webdriver.Tab):
             raise InvalidElementError
 
         for attr in parent.attributes:
-            if attr == "display: none; visibility: hidden;":
+            if attr == "display: none; visibility: hidden;" and not loaded:
                 loaded = True
                 logger.info("Page loaded")
 
