@@ -3,7 +3,7 @@
 An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, build with [nodriver](https://github.com/ultrafunkamsterdam/nodriver) and [FastAPI](https://fastapi.tiangolo.com).
 
 > [!WARNING]
-> Due to recent challenge changes, this software does not guarantee that the Cloudflare challenge will be bypassed. Cloudflare likely requires valid network traffic originating from the user’s public IP address to mark a connection as legitimate. While this tool may bypass the initial browser check, it does not ensure that requests will consistently pass Cloudflare's validation. More testing and data are required to understand how Cloudflare identifies connections and requests as valid.
+> Due to recent challenge changes, this software does not guarantee that the Cloudflare challenge will be bypassed. Cloudflare likely requires valid network traffic originating from the user’s public IP address to mark a connection as legitimate. While this tool may bypass the initial browser check, it does not ensure that requests will consistently pass Cloudflare's validation. More testing and data are required to understand how Cloudflare identifies connections and requests as valid. Invalid requests will result in Byparr's looping and eventually timeouting.
 
 > [!IMPORTANT]
 > Currenly, due to [bug in nodriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver/issues/1954), if you want to run this project ouside of prebuild container, you have to run `python fix_nodriver.py` after creating venv to patch the library.
