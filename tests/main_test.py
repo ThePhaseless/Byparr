@@ -17,7 +17,7 @@ test_websites = [
     "https://extratorrent.st/",  # github is blocking these
     "https://idope.se/",  # github is blocking these
     "https://www.ygg.re/",
-    "https://speed.cd/",
+    "https://speed.cd/login",
 ]
 
 
@@ -27,7 +27,10 @@ def test_bypass(website: str):
     test_request = httpx.get(
         website,
     )
-    if test_request.status_code != HTTPStatus.OK:
+    if (
+        test_request.status_code != HTTPStatus.OK
+        and "Just a moment..." not in test_request.text
+    ):
         logger.info(f"Skipping {website} due to {test_request.status_code}")
         pytest.skip()
 
