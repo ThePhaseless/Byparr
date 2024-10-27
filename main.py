@@ -54,10 +54,10 @@ async def read_item(request: LinkRequest):
         challenged = await asyncio.wait_for(bypass_cloudflare(page), timeout=timeout)
     except asyncio.TimeoutError as e:
         logger.info("Timed out bypassing Cloudflare")
+        browser.stop()
         raise HTTPException(
             detail="Timed out bypassing Cloudflare", status_code=408
         ) from e
-        browser.stop()
     except Exception as e:
         browser.stop()
         raise HTTPException(detail="Couldn't bypass", status_code=500) from e
