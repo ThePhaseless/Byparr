@@ -2,8 +2,12 @@
 
 An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, build with [nodriver](https://github.com/ultrafunkamsterdam/nodriver) and [FastAPI](https://fastapi.tiangolo.com).
 
+> [!WARNING]
+> Due to recent challenge changes, this software does not guarantee that the Cloudflare challenge will be bypassed. Cloudflare likely requires valid network traffic originating from the user’s public IP address to mark a connection as legitimate. While this tool may bypass the initial browser check, it does not ensure that requests will consistently pass Cloudflare's validation. More testing and data are required to understand how Cloudflare identifies connections and requests as valid.
+
 > [!IMPORTANT]
 > Currenly, due to [bug in nodriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver/issues/1954), if you want to run this project ouside of prebuild container, you have to run `python fix_nodriver.py` after creating venv to patch the library.
+
 > [!NOTE]
 > Thanks to FastAPI implementation, now you can also see the API documentation at `/docs` or `/` (redirect to `/docs`) endpoints.
 
@@ -17,13 +21,16 @@ I focus maily on Cloudflare, which is tested daily, any other anti-bot challenge
 
 1. Clone repo to the host that has the container has issues on.
 2. Using vscode and `SSH extention`, connect to the host and open repo in it.
-3. Download `devcontainers` extention and reopen repo in container (with `CTRL + SHIFT + P` -> `Reopen in devcontainer`)
-4. Write down the port in `Ports` tab in vscode
-5. Open <https://novnc.com/noVNC/vnc.html> in your pc's browser and using settings on left under websocket, set host to `localhost` nad port to the port you wrote down
-6. Check if `chromium` works by running in VNCs terminal command `chromium --no-sandbox`
-7. If chrome works, run API by pressing F5 in vscode
-8. In Prowlarr (or target client) change port byparr's port to `8181` instead of `8191` (Port opened by and pointing to devcontainer)
-9. Check if everything works by testing byparr and observing VNC in browser
+4. Download `devcontainers` extention and reopen repo in container (with `CTRL + SHIFT + P` -> `Reopen in devcontainer`)
+3. Open vscode terminal (`` CTRL + ` ``) and run `./run_vnc.sh` script.
+5. Write down the port from `Forwarded Address` in `Ports` tab in vscode (probably 5900).
+6. Open <https://novnc.com/noVNC/vnc.html> in your pc's browser and using settings on left under websocket, set host to `localhost` nad port to the port you wrote down and disable encryption.
+7. Connect to the VNC server on container.
+8. Check if `chromium` works by running in VNC's terminal command `chromium --no-sandbox`
+9. If chromium works, run (or run debug) tests from VS Code.
+10. Check if everything works by observing VNC in the browser as code is being tested.
+11. If code works, congrats! (/s) You are on your own.
+12. If it does not, try another host or network and try again.
 
 ## Usage
 
