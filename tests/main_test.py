@@ -12,12 +12,12 @@ from src.utils import logger
 client = TestClient(app)
 
 test_websites = [
-    "https://ext.to/",
-    "https://btmet.com/",
-    "https://extratorrent.st/",  # github is blocking these
-    "https://idope.se/",  # github is blocking these
     "https://www.ygg.re/",
-    "https://speed.cd/login",
+    "https://ext.to/",
+    # "https://btmet.com/",
+    #     "https://extratorrent.st/",  # github is blocking these
+    #     "https://idope.se/",  # github is blocking these
+    #     "https://speed.cd/login",
 ]
 
 
