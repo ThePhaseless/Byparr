@@ -1,4 +1,5 @@
 import os
+import platform
 from http import HTTPStatus
 from time import sleep
 
@@ -8,7 +9,6 @@ from starlette.testclient import TestClient
 
 from main import app
 from src.models.requests import LinkRequest
-from src.utils import logger
 
 client = TestClient(app)
 
@@ -31,6 +31,9 @@ if os.getenv("GITHUB_ACTIONS") == "true":
 
 @pytest.mark.parametrize("website", test_websites)
 def test_bypass(website: str):
+    if (platform.machine() == "arm64") and os.getenv("GITHUB_ACTIONS") == "true":
+        pytest.skip("Skipping on arm64 due to lack of support")
+
     sleep(3)
     test_request = httpx.get(
         website,
@@ -39,8 +42,7 @@ def test_bypass(website: str):
         test_request.status_code != HTTPStatus.OK
         and "Just a moment..." not in test_request.text
     ):
-        logger.info(f"Skipping {website} due to {test_request.status_code}")
-        pytest.skip()
+        pytest.skip(f"Skipping {website} due to {test_request.status_code}")
 
     response = client.post(
         "/v1",
