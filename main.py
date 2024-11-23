@@ -59,6 +59,7 @@ async def read_item(request: LinkRequest):
             detail="Timed out bypassing Cloudflare", status_code=408
         ) from e
     except Exception as e:
+        logger.error(e)
         browser.stop()
         raise HTTPException(detail="Couldn't bypass", status_code=500) from e
 
