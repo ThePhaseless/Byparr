@@ -1,4 +1,4 @@
-FROM python:3.12-alpine
+FROM python:3.12-slim
 
 # Inspired by https://github.com/Hudrolax/uc-docker-alpine/
 
@@ -16,14 +16,12 @@ ENV \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     DISPLAY=:0
 
-# Install build dependencies
-RUN apk update && apk upgrade && apk add --no-cache \
-    xvfb \
-    chromium
-
 WORKDIR /app
 EXPOSE 8191
-
+ADD https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb ./
+RUN apt update &&\
+    apt install -y xvfb scrot python3-tk curl ./google-chrome-stable_current_amd64.deb &&\
+    rm ./google-chrome-stable_current_amd64.deb
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="${HOME}/.local/bin:$PATH"
