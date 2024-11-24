@@ -1,27 +1,5 @@
 FROM python:3.12
 
-# Inspired by https://github.com/Hudrolax/uc-docker-alpine/
+RUN apt update && apt upgrade -y && apt install -y chromium xvfb
 
-# Install build dependencies
-RUN apt update && apt upgrade -y && apt install -y\
-    curl \
-    wget \
-    unzip \
-    gnupg \
-    bash \
-    stow
-
-# Install dependencies
-RUN apt install -y \
-    xvfb \
-    x11vnc \
-    fluxbox \
-    xterm \
-    git \
-    ca-certificates \
-    pipx \
-    chromium
-
-RUN pipx install poetry
-ENV DISPLAY=:0
-# RUN poetry config virtualenvs.in-project true
+RUN curl -sSL https://install.python-poetry.org | python3 -

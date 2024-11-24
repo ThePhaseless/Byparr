@@ -10,10 +10,13 @@ readme = "README.md"
 python = "^3.12"
 pytest = "^8"
 fastapi = { extras = ["standard"], version = "^0" }
-nodriver = "^0"
 requests = "^2"
-httpx = "^0"
+httpx = "^0.27"
 pytest-asyncio = "^0"
+ruff = "^0.8.0"
+seleniumbase = "^4.32.12"
+pyautogui = "^0.9.54"
+beautifulsoup4 = "^4.12.3"
 
 
 [build-system]
@@ -35,9 +38,9 @@ ignore = [
     "ERA001",
     "COM812",
     "ISC001",
-    "TCH003",
-    "TCH002",
-    "TCH001",
+    "TC003",
+    "TC002",
+    "TC001",
     "TD002",
     "E501",
     "D101",
