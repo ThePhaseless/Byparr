@@ -16,6 +16,7 @@ pytest-asyncio = "^0"
 ruff = "^0.8.0"
 seleniumbase = "^4.32.12"
 pyautogui = "^0.9.54"
+beautifulsoup4 = "^4.12.3"
 
 
 [build-system]
