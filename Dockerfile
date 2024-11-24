@@ -5,41 +5,7 @@ FROM python:3.12-alpine
 ARG GITHUB_BUILD=false
 ENV GITHUB_BUILD=${GITHUB_BUILD}
 
-# Install build dependencies
-RUN apk update && apk upgrade && \
-    apk add --no-cache --virtual .build-deps \
-    alpine-sdk \
-    curl \
-    wget \
-    unzip \
-    gnupg
-
-# Install dependencies
-RUN apk add --no-cache \
-    xvfb \
-    x11vnc \
-    fluxbox \
-    xterm \
-    libffi-dev \
-    openssl-dev \
-    zlib-dev \
-    bzip2-dev \
-    readline-dev \
-    git \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    pipx \
-    chromium \
-    chromium-chromedriver
-
-WORKDIR /app
-EXPOSE 8191
-
-# python
+ENV HOME=/root
 ENV \
     DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -50,13 +16,19 @@ ENV \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     DISPLAY=:0
 
-RUN pipx install poetry
-ENV PATH="/root/.local/bin:$PATH"
+# Install build dependencies
+RUN apk update && apk upgrade && apk add --no-cache \
+    xvfb \
+    chromium
+
+WORKDIR /app
+EXPOSE 8191
+
+
+RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="${HOME}/.local/bin:$PATH"
 COPY pyproject.toml poetry.lock ./
 RUN poetry install
 
-COPY fix_nodriver.py ./
-RUN . /app/.venv/bin/activate && python fix_nodriver.py
 COPY . .
-RUN ./run_vnc.sh && . /app/.venv/bin/activate && poetry run pytest
-CMD ["./entrypoint.sh"]
+CMD [". .venv/bin/activate && python3 main.py"]
