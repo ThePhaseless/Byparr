@@ -23,12 +23,6 @@ env:
 
 jobs:
   test:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,11 +58,6 @@ jobs:
         run: poetry run pytest
 
   build:
-    strategy:
-      matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -131,7 +120,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: GITHUB_BUILD=true
