@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 
-import uvicorn
 import uvicorn.config
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
+from sbase import SB, BaseCase
 
-from src.models.requests import LinkRequest, LinkResponse
+import src
+import src.utils
+import src.utils.consts
+from src.models.requests import LinkRequest, LinkResponse, Solution
 from src.utils import logger
-from src.utils.browser import bypass_cloudflare, new_browser
 from src.utils.consts import LOG_LEVEL
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
@@ -28,50 +30,53 @@ def read_root():
 async def health_check():
     """Health check endpoint."""
     logger.info("Health check")
-    browser = await new_browser()
-    await browser.grant_all_permissions()
-    page = await browser.get("https://google.com")
-    await page.bring_to_front()
-    browser.stop()
+    # browser: Chrome = await new_browser()
+    # browser.get("https://google.com")
+    # browser.stop()
     return {"status": "ok"}
 
 
 @app.post("/v1")
-async def read_item(request: LinkRequest):
+def read_item(request: LinkRequest):
     """Handle POST requests."""
+    start_time = int(time.time() * 1000)
     # request.url = "https://nowsecure.nl"
     logger.info(f"Request: {request}")
-    start_time = int(time.time() * 1000)
-    browser = await new_browser()
-    await browser.grant_all_permissions()
-    await asyncio.sleep(1)
-    page = await browser.get(request.url)
-    await page.bring_to_front()
-    timeout = request.maxTimeout
-    if timeout == 0:
-        timeout = None
-    try:
-        challenged = await asyncio.wait_for(bypass_cloudflare(page), timeout=timeout)
-    except asyncio.TimeoutError as e:
-        logger.info("Timed out bypassing Cloudflare")
-        browser.stop()
-        raise HTTPException(
-            detail="Timed out bypassing Cloudflare", status_code=408
-        ) from e
-    except Exception as e:
-        logger.error(e)
-        browser.stop()
-        raise HTTPException(detail="Couldn't bypass", status_code=500) from e
+    response: LinkResponse
 
-    logger.info(f"Got webpage: {request.url}")
+    # start_time = int(time.time() * 1000)
+    with SB(uc=True, locale_code="en", test=False, xvfb=True, ad_block=True) as sb:
+        sb: BaseCase
+        sb.uc_open_with_reconnect(request.url)
+        sb.uc_gui_click_captcha()
+        logger.info(f"Got webpage: {request.url}")
+        sb.save_screenshot("screenshot.png")
+        logger.info(f"Got webpage: {request.url}")
 
-    response = await LinkResponse.create(
-        page=page,
-        start_timestamp=start_time,
-        challenged=challenged,
-    )
+        source = sb.get_page_source()
+        source_bs = BeautifulSoup(source, "html.parser")
+        title_tag = source_bs.title
+        if title_tag is None:
+            raise HTTPException(status_code=500, detail="Title tag not found")
 
-    browser.stop()
+        if title_tag.string in src.utils.consts.CHALLENGE_TITLES:
+            raise HTTPException(status_code=500, detail="Could not bypass challenge")
+
+        title = title_tag.string
+        logger.info(f"Title: {title}")
+        response = LinkResponse(
+            message="Success",
+            solution=Solution(
+                userAgent=sb.get_user_agent(),
+                url=sb.get_current_url(),
+                status=200,
+                cookies=sb.get_cookies(),
+                headers={},
+                response=source,
+            ),
+            startTimestamp=start_time,
+        )
+
     return response
 
 

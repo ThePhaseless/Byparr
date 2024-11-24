@@ -1,7 +1,4 @@
-import os
-import platform
 from http import HTTPStatus
-from time import sleep
 
 import httpx
 import pytest
@@ -25,16 +22,12 @@ github_restricted = [
     "https://speed.cd/login",
 ]
 
-if os.getenv("GITHUB_ACTIONS") == "true":
-    test_websites.extend(github_restricted)
+# if os.getenv("GITHUB_ACTIONS") != "true":
+test_websites.extend(github_restricted)
 
 
 @pytest.mark.parametrize("website", test_websites)
 def test_bypass(website: str):
-    if (platform.machine() == "arm64") and os.getenv("GITHUB_ACTIONS") == "true":
-        pytest.skip("Skipping on arm64 due to lack of support")
-
-    sleep(3)
     test_request = httpx.get(
         website,
     )
