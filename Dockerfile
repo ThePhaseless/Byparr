@@ -18,10 +18,8 @@ ENV \
 
 WORKDIR /app
 EXPOSE 8191
-ADD https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb ./
 RUN apt update &&\
-    apt install -y xvfb scrot python3-tk curl ./google-chrome-stable_current_amd64.deb &&\
-    rm ./google-chrome-stable_current_amd64.deb
+    apt install -y xvfb scrot python3-tk curl chromium
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="${HOME}/.local/bin:$PATH"
