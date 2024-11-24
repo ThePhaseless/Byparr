@@ -48,10 +48,10 @@ jobs:
       - name: Install dependencies
         run: |
           poetry install
-          apt update
-          apt install -y xvfb scrot python3-tk
+          sudo apt update
+          sudo apt install -y xvfb scrot python3-tk
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          apt install -y ./google-chrome-stable_current_amd64.deb
+          sudo apt install -y ./google-chrome-stable_current_amd64.deb
           rm ./google-chrome-stable_current_amd64.deb
 
       - name: Run tests
