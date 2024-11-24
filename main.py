@@ -4,10 +4,14 @@ import logging
 import time
 
 import uvicorn.config
-from fastapi import FastAPI
+from bs4 import BeautifulSoup
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from sbase import SB, BaseCase
 
+import src
+import src.utils
+import src.utils.consts
 from src.models.requests import LinkRequest, LinkResponse, Solution
 from src.utils import logger
 from src.utils.consts import LOG_LEVEL
@@ -49,6 +53,17 @@ def read_item(request: LinkRequest):
         sb.save_screenshot("screenshot.png")
         logger.info(f"Got webpage: {request.url}")
 
+        source = sb.get_page_source()
+        source_bs = BeautifulSoup(source, "html.parser")
+        title_tag = source_bs.title
+        if title_tag is None:
+            raise HTTPException(status_code=500, detail="Title tag not found")
+
+        if title_tag.string in src.utils.consts.CHALLENGE_TITLES:
+            raise HTTPException(status_code=500, detail="Could not bypass challenge")
+
+        title = title_tag.string
+        logger.info(f"Title: {title}")
         response = LinkResponse(
             message="Success",
             solution=Solution(
@@ -57,7 +72,7 @@ def read_item(request: LinkRequest):
                 status=200,
                 cookies=sb.get_cookies(),
                 headers={},
-                response=sb.get_page_source(),
+                response=source,
             ),
             startTimestamp=start_time,
         )

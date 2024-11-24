@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import re
 import time
+from http import HTTPStatus
 from typing import Any
 
 from pydantic import BaseModel
-from seleniumbase.undetected.cdp_driver.tab import Tab
 
 
 class LinkRequest(BaseModel):
@@ -26,6 +25,17 @@ class Solution(BaseModel):
     headers: dict[str, Any]
     response: str
 
+    @classmethod
+    def empty(cls):
+        return cls(
+            url="",
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            cookies=[],
+            userAgent="",
+            headers={},
+            response="",
+        )
+
 
 class LinkResponse(BaseModel):
     status: str = "ok"
@@ -36,45 +46,15 @@ class LinkResponse(BaseModel):
     version: str = "3.3.21"  # TODO: Implement versioning
 
     @classmethod
-    async def create(
-        cls,
-        page: Tab,
-        start_timestamp: int,
-        *,
-        challenged: bool = False,
-    ):
-        message = "Passed challenge" if challenged else "Challenge not detected"
-
-        user_agent = await cls.get_useragent(page)
-
-        # cookies = await page.browser.cookies.get_all(requests_cookie_format=True)
-        # # Convert cookies to json
-        # cookies = [cookie.to_json() for cookie in cookies]
-
-        cookies = await page.browser.cookies.get_all()
-        solution = Solution(
-            url=page.url,
-            status=200,
-            cookies=cookies if cookies else [],
-            userAgent=user_agent,
-            headers={},
-            response=await page.get_content(),
-        )
-
+    def invalid(cls):
         return cls(
-            message=message,
-            solution=solution,
-            startTimestamp=start_timestamp,
+            status="error",
+            message="Invalid request",
+            solution=Solution.empty(),
+            startTimestamp=int(time.time() * 1000),
+            endTimestamp=int(time.time() * 1000),
+            version="3.3.21",
         )
-
-    @classmethod
-    async def get_useragent(cls, page):
-        user_agent = await page.js_dumps("navigator")
-        if not isinstance(user_agent, dict):
-            raise ProtectionTriggeredError("User agent is not a dictionary")
-        user_agent = user_agent["userAgent"]
-        re.sub(pattern="HEADLESS", repl="", string=user_agent, flags=re.IGNORECASE)
-        return user_agent
 
 
 class NoChromeExtensionError(Exception):
