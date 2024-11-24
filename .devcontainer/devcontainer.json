@@ -30,5 +30,8 @@
   "runArgs": [
     "-p",
     "8181:8191"
-  ]
+  ],
+  "features": {
+    "ghcr.io/devcontainers-extra/features/act:1": {}
+  }
 }

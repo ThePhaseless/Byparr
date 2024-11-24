@@ -4,8 +4,8 @@ import re
 import time
 from typing import Any
 
-from nodriver import Tab
 from pydantic import BaseModel
+from seleniumbase.undetected.cdp_driver.tab import Tab
 
 
 class LinkRequest(BaseModel):

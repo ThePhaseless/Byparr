@@ -22,7 +22,43 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Poetry
+        run: pip install poetry
+
+      - name: Setup a local virtual environment (if no poetry.toml file)
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+
+      - uses: actions/cache@v4
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        run: |
+          poetry install
+          apt update
+          apt install -y xvfb scrot python3-tk
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          apt install -y ./google-chrome-stable_current_amd64.deb
+          rm ./google-chrome-stable_current_amd64.deb
+
+      - name: Run tests
+        run: poetry run pytest
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,7 +73,6 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64
-          - linux/arm64/v8
 
     steps:
       - name: Checkout repository
