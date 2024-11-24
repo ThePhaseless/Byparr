@@ -64,6 +64,11 @@ jobs:
         run: poetry run pytest
 
   build:
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
     needs: test
     runs-on: ubuntu-latest
     permissions:
