@@ -5,9 +5,9 @@ from nodriver.core.element import Element
 
 from src.utils import logger
 from src.utils.consts import CHALLENGE_TITLES, UBLOCK_TITLE
-from src.utils.extentions import download_extentions
+from src.utils.extensions import download_extensions
 
-downloaded_extentions = download_extentions()
+downloaded_extensions = download_extensions()
 
 
 async def new_browser():
@@ -26,7 +26,7 @@ async def new_browser():
     config: webdriver.Config = webdriver.Config(
         browser_executable_path="/usr/bin/chromium", sandbox=True
     )
-    config.add_argument(f"--load-extension={','.join(downloaded_extentions)}")
+    config.add_argument(f"--load-extension={','.join(downloaded_extensions)}")
 
     return await webdriver.start(config=config)
 
@@ -123,7 +123,7 @@ async def bypass_cloudflare(page: webdriver.Tab):
             )
             logger.debug(inner_elem)
         else:
-            logger.warning("Coulnd't find checkbox, trying again...")
+            logger.warning("Couldn't find checkbox, trying again...")
             logger.debug(elem)
 
 
