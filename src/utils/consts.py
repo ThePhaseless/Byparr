@@ -21,11 +21,11 @@ GITHUB_WEBSITES = [
     "www.github.com",
 ]
 
-EXTENTION_REPOSITIORIES = [
+EXTENSION_REPOSITIORIES = [
     "OhMyGuus/I-Still-Dont-Care-About-Cookies",
     "uBlockOrigin/uBOL-home",
 ]
 
 SLEEP_SECONDS = 1
 
-EXTENTIONS_PATH = Path(".extentions")
+EXTENSIONS_PATH = Path(".extentions")

@@ -77,5 +77,5 @@ class LinkResponse(BaseModel):
         return user_agent
 
 
-class NoChromeExtentionError(Exception):
+class NoChromeExtensionError(Exception):
     """No chrome extention found."""

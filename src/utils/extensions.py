@@ -9,9 +9,9 @@ import httpx
 import requests
 
 from src.models.github import GithubResponse
-from src.models.requests import NoChromeExtentionError
+from src.models.requests import NoChromeExtensionError
 from src.utils import logger
-from src.utils.consts import EXTENTION_REPOSITIORIES, EXTENTIONS_PATH, GITHUB_WEBSITES
+from src.utils.consts import EXTENSION_REPOSITIORIES, EXTENSIONS_PATH, GITHUB_WEBSITES
 
 
 def get_latest_github_chrome_release(url: str):
@@ -29,7 +29,7 @@ def get_latest_github_chrome_release(url: str):
     Raises:
     ------
         httpx.NetworkError: If the request to GitHub API returns a 403 Forbidden status code.
-        NoChromeExtentionError: If no release asset with 'chrom' in its name is found.
+        NoChromeExtensionError: If no release asset with 'chrom' in its name is found.
 
     """
     if url.startswith(tuple(GITHUB_WEBSITES)):
@@ -47,10 +47,10 @@ def get_latest_github_chrome_release(url: str):
         if "chrom" in asset.name:
             return asset
 
-    raise NoChromeExtentionError
+    raise NoChromeExtensionError
 
 
-def download_extentions():
+def download_extensions():
     """
     Download extensions from the specified repositories and saves them locally.
 
@@ -63,32 +63,32 @@ def download_extentions():
         httpx.NetworkError: If there is an error downloading an extension.
 
     """
-    downloaded_extentions: list[str] = []
-    for repository in EXTENTION_REPOSITIORIES:
-        extention_name = repository.split("/")[-1]
-        path = Path(f"{EXTENTIONS_PATH}/{extention_name}")
+    downloaded_extensions: list[str] = []
+    for repository in EXTENSION_REPOSITIORIES:
+        extension_name = repository.split("/")[-1]
+        path = Path(f"{EXTENSIONS_PATH}/{extension_name}")
         try:
-            extention = get_latest_github_chrome_release(repository)
+            extension = get_latest_github_chrome_release(repository)
             logger.info(
-                f"Downloading {extention_name} from {extention.browser_download_url}"
+                f"Downloading {extension_name} from {extension.browser_download_url}"
             )
         except httpx.NetworkError:
             if path.is_dir():
-                logger.error(f"Error downloading {extention_name}, using local copy")
-                downloaded_extentions.append(path.as_posix())
+                logger.error(f"Error downloading {extension_name}, using local copy")
+                downloaded_extensions.append(path.as_posix())
                 continue
         try:
-            zip_file = requests.get(extention.browser_download_url, timeout=10)
+            zip_file = requests.get(extension.browser_download_url, timeout=10)
         except UnboundLocalError as e:
-            logger.error(f"Error downloading {extention_name}, skipping")
+            logger.error(f"Error downloading {extension_name}, skipping")
             logger.error(e)
             continue
-        Path(EXTENTIONS_PATH).mkdir(exist_ok=True)
+        Path(EXTENSIONS_PATH).mkdir(exist_ok=True)
         with ZipFile(io.BytesIO(zip_file.content)) as zip_obj:
-            if not path.joinpath(extention_name).exists():
-                zip_obj.extractall(f"{EXTENTIONS_PATH}/{extention_name}")
-                logger.debug(f"Extracted {extention_name} to {path}")
+            if not path.joinpath(extension_name).exists():
+                zip_obj.extractall(f"{EXTENSIONS_PATH}/{extension_name}")
+                logger.debug(f"Extracted {extension_name} to {path}")
 
-        logger.info(f"Successfully downloaded {extention_name} to {path}")
-        downloaded_extentions.append(path.as_posix())
-    return downloaded_extentions
+        logger.info(f"Successfully downloaded {extension_name} to {path}")
+        downloaded_extensions.append(path.as_posix())
+    return downloaded_extensions
