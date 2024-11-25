@@ -27,4 +27,4 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install
 
 COPY . .
-CMD [". .venv/bin/activate && python3 main.py"]
+CMD ["./cmd.sh"]
