@@ -1325,6 +1325,19 @@ files = [
 pytest = "*"
 
 [[package]]
+name = "pytest-progress"
+version = "1.3.0"
+description = "pytest plugin for instant test progress status"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pytest_progress-1.3.0.tar.gz", hash = "sha256:b2a6cd0b0cd8b50b19f56777402835e546dc8404eb7fa77ac2ace9dc719ec50e"},
+]
+
+[package.dependencies]
+pytest = ">=2.7"
+
+[[package]]
 name = "pytest-rerunfailures"
 version = "14.0"
 description = "pytest plugin to re-run tests to eliminate flaky failures"
@@ -2182,4 +2195,4 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "15aa6bc34351d1ba1a293b12f8979d58d1d1b6d2716eec78b3de581dd59f53d4"
+content-hash = "b14c2514cac9868f24705f98bfe5aaae06ed4b21508b9e4622ada2938338b525"

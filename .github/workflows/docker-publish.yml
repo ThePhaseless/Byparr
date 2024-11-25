@@ -30,6 +30,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
 
       - name: Set up Poetry
         run: pip install poetry
@@ -55,7 +56,13 @@ jobs:
           rm ./google-chrome-stable_current_amd64.deb
 
       - name: Run tests
-        run: poetry run pytest --retries 3 --retry-delay 5
+        run: poetry run pytest --retries 2 --show-progress
+
+      - name: Upload screenshots if tests fail
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          path: screenshots
 
   build:
     needs: test

@@ -60,17 +60,17 @@ def read_item(request: LinkRequest):
             source_bs = BeautifulSoup(source, "html.parser")
             title_tag = source_bs.title
             logger.info(f"Got webpage: {request.url}")
-            if title_tag in src.utils.consts.CHALLENGE_TITLES:
+            if title_tag and title_tag.string in src.utils.consts.CHALLENGE_TITLES:
                 logger.info("Challenge detected")
                 sb.uc_gui_click_captcha()
                 logger.info("Clicked captcha")
-            sb.save_screenshot("screenshot.png")
 
             source = sb.get_page_source()
             source_bs = BeautifulSoup(source, "html.parser")
             title_tag = source_bs.title
 
             if title_tag and title_tag.string in src.utils.consts.CHALLENGE_TITLES:
+                sb.save_screenshot(f"./screenshots/{request.url}.png")
                 raise HTTPException(
                     status_code=500, detail="Could not bypass challenge"
                 )
