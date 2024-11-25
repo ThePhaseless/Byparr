@@ -4,13 +4,13 @@ import time
 from http import HTTPStatus
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class LinkRequest(BaseModel):
-    cmd: str
+    cmd: str = "get"
     url: str
-    maxTimeout: int  # noqa: N815 # Ignore to preserve compatibility
+    max_timeout: int = Field(30, alias="maxTimeout")
 
 
 class ProtectionTriggeredError(Exception):

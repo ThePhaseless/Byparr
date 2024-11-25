@@ -39,7 +39,9 @@ def test_bypass(website: str):
 
     response = client.post(
         "/v1",
-        json=LinkRequest(url=website, maxTimeout=30, cmd="request.get").model_dump(),
+        json=LinkRequest.model_construct(
+            url=website, max_timeout=30, cmd="request.get"
+        ).model_dump(),
     )
 
     assert response.status_code == HTTPStatus.OK

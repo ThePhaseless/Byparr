@@ -30,9 +30,16 @@ def read_root():
 async def health_check():
     """Health check endpoint."""
     logger.info("Health check")
-    # browser: Chrome = await new_browser()
-    # browser.get("https://google.com")
-    # browser.stop()
+
+    health_check_request = read_item(
+        LinkRequest.model_construct(url="https://prowlarr.servarr.com/v1/ping")
+    )
+    if health_check_request.solution.status != 200:
+        raise HTTPException(
+            status_code=500,
+            detail="Health check failed",
+        )
+
     return {"status": "ok"}
 
 
@@ -45,37 +52,44 @@ def read_item(request: LinkRequest):
     response: LinkResponse
 
     # start_time = int(time.time() * 1000)
-    with SB(uc=True, locale_code="en", test=False, xvfb=True, ad_block=True) as sb:
-        sb: BaseCase
-        sb.uc_open_with_reconnect(request.url)
-        sb.uc_gui_click_captcha()
-        logger.info(f"Got webpage: {request.url}")
-        sb.save_screenshot("screenshot.png")
-        logger.info(f"Got webpage: {request.url}")
+    try:
+        with SB(uc=True, locale_code="en", test=False, xvfb=True, ad_block=True) as sb:
+            sb: BaseCase
+            sb.uc_open_with_reconnect(request.url)
+            source = sb.get_page_source()
+            source_bs = BeautifulSoup(source, "html.parser")
+            title_tag = source_bs.title
+            logger.info(f"Got webpage: {request.url}")
+            if title_tag in src.utils.consts.CHALLENGE_TITLES:
+                logger.info("Challenge detected")
+                sb.uc_gui_click_captcha()
+                logger.info("Clicked captcha")
+            sb.save_screenshot("screenshot.png")
 
-        source = sb.get_page_source()
-        source_bs = BeautifulSoup(source, "html.parser")
-        title_tag = source_bs.title
-        if title_tag is None:
-            raise HTTPException(status_code=500, detail="Title tag not found")
+            source = sb.get_page_source()
+            source_bs = BeautifulSoup(source, "html.parser")
+            title_tag = source_bs.title
 
-        if title_tag.string in src.utils.consts.CHALLENGE_TITLES:
-            raise HTTPException(status_code=500, detail="Could not bypass challenge")
+            if title_tag and title_tag.string in src.utils.consts.CHALLENGE_TITLES:
+                raise HTTPException(
+                    status_code=500, detail="Could not bypass challenge"
+                )
 
-        title = title_tag.string
-        logger.info(f"Title: {title}")
-        response = LinkResponse(
-            message="Success",
-            solution=Solution(
-                userAgent=sb.get_user_agent(),
-                url=sb.get_current_url(),
-                status=200,
-                cookies=sb.get_cookies(),
-                headers={},
-                response=source,
-            ),
-            startTimestamp=start_time,
-        )
+            response = LinkResponse(
+                message="Success",
+                solution=Solution(
+                    userAgent=sb.get_user_agent(),
+                    url=sb.get_current_url(),
+                    status=200,
+                    cookies=sb.get_cookies(),
+                    headers={},
+                    response=source,
+                ),
+                startTimestamp=start_time,
+            )
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise HTTPException(status_code=500, detail="Unknown error, check logs") from e
 
     return response
 
