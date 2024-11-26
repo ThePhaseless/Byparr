@@ -1,27 +1,19 @@
 {
+    "configurations": [
+        {
+            "console": "integratedTerminal",
+            "env": {
+                "LOG_LEVEL": "DEBUG"
+            },
+            "justMyCode": false,
+            "name": "Python Debugger: Main",
+            "program": "main.py",
+            "request": "launch",
+            "type": "debugpy"
+        },
+    ],
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Python Debugger: Main",
-            "type": "debugpy",
-            "justMyCode": false,
-            "env": {
-                "LOG_LEVEL": "DEBUG",
-            },
-            "request": "launch",
-            "program": "main.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python Debugger: Current File",
-            "justMyCode": false,
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
-        }
-    ]
+    "version": "0.2.0"
 }

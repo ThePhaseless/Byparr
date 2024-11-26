@@ -1,20 +1,23 @@
 {
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.analysis.autoImportCompletions": true,
-    "python.analysis.typeCheckingMode": "basic",
-    "python.terminal.activateEnvironment": true,
     "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.defaultFormatter": "charliermarsh.ruff"
     },
+    "python.analysis.autoImportCompletions": true,
     "python.analysis.packageIndexDepths": [
         {
-            "name": "",
             "depth": 5,
             "includeAllSymbols": true,
+            "name": ""
         }
     ],
+    "python.analysis.typeCheckingMode": "standard",
+    "python.terminal.activateEnvironment": true,
+    "python.testing.pytestArgs": [
+        "-n",
+        "auto",
+        "--retries=2",
+        "--xvfb"
+    ],
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false
 }
