@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+from http import HTTPStatus
 
 import uvicorn.config
 from bs4 import BeautifulSoup
@@ -34,7 +35,7 @@ async def health_check():
     health_check_request = read_item(
         LinkRequest.model_construct(url="https://prowlarr.servarr.com/v1/ping")
     )
-    if health_check_request.solution.status != 200:
+    if health_check_request.solution.status != HTTPStatus.OK:
         raise HTTPException(
             status_code=500,
             detail="Health check failed",
