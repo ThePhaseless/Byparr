@@ -56,7 +56,7 @@ jobs:
           rm ./google-chrome-stable_current_amd64.deb
 
       - name: Run tests
-        run: poetry run pytest --retries 2 --show-progress
+        run: poetry run pytest --retries 2 -n auto --xvfb
 
       - name: Upload screenshots if tests fail
         if: failure()
