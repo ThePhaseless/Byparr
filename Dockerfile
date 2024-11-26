@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim-bullseye
 
 # Inspired by https://github.com/Hudrolax/uc-docker-alpine/
 
@@ -19,7 +19,7 @@ ENV \
 WORKDIR /app
 EXPOSE 8191
 RUN apt update &&\
-    apt install -y xvfb scrot python3-tk curl chromium
+    apt install -y xvfb scrot python3-tk curl chromium chromium-driver
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="${HOME}/.local/bin:$PATH"
@@ -28,4 +28,5 @@ RUN poetry install
 
 COPY . .
 HEALTHCHECK --interval=60s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
+RUN ln /usr/bin/chromedriver ./.venv/lib/python3.12/site-packages/seleniumbase/drivers/uc_driver
 CMD ["./cmd.sh"]
