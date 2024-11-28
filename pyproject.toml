@@ -6,7 +6,6 @@ package-mode = false
 authors = ["ThePhaseless <kukubaorch@gmail.com>"]
 readme = "README.md"
 license = "LICENSE"
-dev-dependencies = { ruff = "^0.8.0", deptry = "^0.21.1" }
 repository = "https://github.com/ThePhaseless/Byparr"
 
 # cspell:disable
@@ -17,6 +16,7 @@ seleniumbase = "^4.33.1"
 beautifulsoup4 = "^4.12.3"
 uvicorn = "^0.32.1"
 pydantic = "^2.10.2"
+pyautogui = "^0.9.54"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"
@@ -33,6 +33,9 @@ pytest-xdist = "^3.6.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.deptry.per_rule_ignores]
+DEP002 = ["pyautogui"]
 
 [tool.ruff.lint]
 ignore = [
