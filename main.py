@@ -4,7 +4,7 @@ import logging
 import time
 from http import HTTPStatus
 
-import uvicorn.config
+import uvicorn
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
@@ -72,9 +72,7 @@ def read_item(request: LinkRequest):
 
             if title_tag and title_tag.string in src.utils.consts.CHALLENGE_TITLES:
                 sb.save_screenshot(f"./screenshots/{request.url}.png")
-                raise HTTPException(
-                    status_code=500, detail="Could not bypass challenge"
-                )
+                raise_captcha_bypass_error()
 
             response = LinkResponse(
                 message="Success",
@@ -93,6 +91,20 @@ def read_item(request: LinkRequest):
         raise HTTPException(status_code=500, detail="Unknown error, check logs") from e
 
     return response
+
+
+def raise_captcha_bypass_error():
+    """
+    Raise a 500 error if the challenge could not be bypassed.
+
+    This function should be called if the challenge is not bypassed after
+    clicking the captcha.
+
+    Returns:
+        None
+
+    """
+    raise HTTPException(status_code=500, detail="Could not bypass challenge")
 
 
 if __name__ == "__main__":

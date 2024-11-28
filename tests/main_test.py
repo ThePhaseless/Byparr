@@ -28,6 +28,11 @@ test_websites.extend(github_restricted)
 
 @pytest.mark.parametrize("website", test_websites)
 def test_bypass(website: str):
+    """
+    Tests if the service can bypass cloudflare/DDOS-GUARD on given websites.
+
+    This test is skipped if the website is not reachable or does not have cloudflare/DDOS-GUARD.
+    """
     test_request = httpx.get(
         website,
     )
@@ -48,5 +53,11 @@ def test_bypass(website: str):
 
 
 def test_health_check():
+    """
+    Tests the health check endpoint.
+
+    This test ensures that the health check
+    endpoint returns HTTPStatus.OK.
+    """
     response = client.get("/health")
     assert response.status_code == HTTPStatus.OK
