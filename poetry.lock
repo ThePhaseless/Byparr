@@ -1668,13 +1668,13 @@ websocket-client = ">=1.8,<2.0"
 
 [[package]]
 name = "seleniumbase"
-version = "4.33.1"
+version = "4.33.2"
 description = "A complete web automation framework for end-to-end testing."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "seleniumbase-4.33.1-py3-none-any.whl", hash = "sha256:06bbe46253ac7e6225f50d223d32656836e616062e803b225d25cfe6b2cada48"},
-    {file = "seleniumbase-4.33.1.tar.gz", hash = "sha256:1ef77c7b13faf12044e7371e0ba737c97d6a4d4b5bb6d5011e620074e548d5ea"},
+    {file = "seleniumbase-4.33.2-py3-none-any.whl", hash = "sha256:9c3a059feb08ba66b8b78f5804e019e31a749b299ebe934aa328669c579a3fcc"},
+    {file = "seleniumbase-4.33.2.tar.gz", hash = "sha256:32b3d425ab0ab998aa987e86ade4861a76f8d4dae55e376d78711c879931c4eb"},
 ]
 
 [package.dependencies]
