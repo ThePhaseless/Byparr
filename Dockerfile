@@ -28,5 +28,5 @@ RUN poetry install
 
 COPY . .
 HEALTHCHECK --interval=60s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
-RUN ln /usr/bin/chromedriver ./.venv/lib/python3.12/site-packages/seleniumbase/drivers/uc_driver
+RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
 CMD ["./cmd.sh"]
