@@ -5,6 +5,9 @@ FROM python:3.12-slim-bullseye
 ARG GITHUB_BUILD=false
 ENV GITHUB_BUILD=${GITHUB_BUILD}
 
+ARG VERSION
+ENV VERSION=${VERSION}
+
 ENV HOME=/root
 ENV \
     DEBIAN_FRONTEND=noninteractive \
