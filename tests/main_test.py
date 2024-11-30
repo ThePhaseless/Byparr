@@ -12,18 +12,11 @@ client = TestClient(app)
 test_websites = [
     "https://btmet.com/",
     "https://ext.to/",
-]
-
-# Not testable on github actions
-github_restricted = [
     "https://www.ygg.re/",
     "https://extratorrent.st/",
     "https://idope.se/",
     "https://speed.cd/login",
 ]
-
-# if os.getenv("GITHUB_ACTIONS") != "true":
-test_websites.extend(github_restricted)
 
 
 @pytest.mark.parametrize("website", test_websites)
