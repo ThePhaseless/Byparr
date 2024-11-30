@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "allowedPostUpgradeCommands": ["^./scripts/post-upgrade.sh"],
   "extends": ["config:recommended"],
   "packageRules": [
     {
