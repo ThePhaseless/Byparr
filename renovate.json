@@ -6,5 +6,12 @@
       "automerge": true,
       "matchUpdateTypes": ["minor", "patch"]
     }
-  ]
+  ],
+  "postUpgradeTasks": {
+    "commands": [
+      "./scripts/post-upgrade.sh {{{depName}}} {{{currentVersion}}} {{{newVersion}}}"
+    ],
+    "executionMode": "update",
+    "fileFilters": []
+  }
 }
