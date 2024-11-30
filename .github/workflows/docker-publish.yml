@@ -57,7 +57,7 @@ jobs:
           rm ./google-chrome-stable_current_amd64.deb
 
       - name: Run Ruff
-        run: poetry run ruff .
+        run: poetry run ruff check .
 
       - name: Run tests
         run: poetry run pytest --retries 2 -n auto --xvfb
