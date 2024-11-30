@@ -1,6 +1,5 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "allowedPostUpgradeCommands": ["^./scripts/post-upgrade.sh"],
   "extends": ["config:recommended"],
   "packageRules": [
     {
@@ -8,12 +7,5 @@
       "matchPackageNames": ["^(?!.*\bpython\b).*"],
       "matchUpdateTypes": ["minor", "patch"]
     }
-  ],
-  "postUpgradeTasks": {
-    "commands": [
-      "./scripts/post-upgrade.sh {{{depName}}} {{{currentVersion}}} {{{newVersion}}}"
-    ],
-    "executionMode": "update",
-    "fileFilters": []
-  }
+  ]
 }
