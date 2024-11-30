@@ -5,6 +5,7 @@
   "packageRules": [
     {
       "automerge": true,
+      "matchPackageNames": ["^(?!.*\bpython\b).*"],
       "matchUpdateTypes": ["minor", "patch"]
     }
   ],
