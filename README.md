@@ -39,7 +39,7 @@ services:
 
 ## Need help with / TODO
 
-- [x] Slimming container (only ~650 mB now!)
+- [x] Slimming container (only ~650 MB now!)
 - [x] Add more anti-bot challenges
 - [x] Add docstrings
 - [x] Implement versioning
