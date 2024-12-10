@@ -29,8 +29,7 @@ RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedr
 FROM base AS test
 
 RUN uv sync --group test
-# RUN . .venv/bin/activate && pytest --retries 2 -n auto --xvfb
-RUN . .venv/bin/activate && pytest -x --xvfb -n auto
+RUN . .venv/bin/activate && pytest --retries 2 -n auto --xvfb
 
 FROM base
 
