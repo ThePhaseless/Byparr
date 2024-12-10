@@ -45,7 +45,7 @@ async def health_check():
 
 
 @app.post("/v1")
-def read_item(request: LinkRequest):
+def read_item(request: LinkRequest) -> LinkResponse:
     """Handle POST requests."""
     start_time = int(time.time() * 1000)
     # request.url = "https://nowsecure.nl"
