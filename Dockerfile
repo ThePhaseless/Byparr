@@ -11,14 +11,15 @@ ENV \
     PYTHONUNBUFFERED=1 \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
+    PATH="${HOME}/.local/bin:$PATH" \
     DISPLAY=:0
 
 WORKDIR /app
 RUN apt update &&\
-    apt install -y xvfb scrot python3-tk curl chromium chromium-driver
-
+    apt upgrade -y &&\
+    apt install -y --no-install-recommends --no-install-suggests xvfb scrot python3-tk curl chromium chromium-driver ca-certificates x11-common
+RUN apt install -y --no-install-recommends --no-install-suggests xauth
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="${HOME}/.local/bin:$PATH"
 COPY pyproject.toml uv.lock ./
 RUN uv sync
 
@@ -28,7 +29,8 @@ RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedr
 FROM base AS test
 
 RUN uv sync --group test
-RUN uv run pytest --retries 2 -n auto --xvfb
+# RUN . .venv/bin/activate && pytest --retries 2 -n auto --xvfb
+RUN . .venv/bin/activate && pytest -x --xvfb -n auto
 
 FROM base
 
