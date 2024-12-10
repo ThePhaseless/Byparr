@@ -23,53 +23,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: "pip"
-
-      - name: Set up Poetry
-        run: pip install poetry
-
-      - name: Setup a local virtual environment (if no poetry.toml file)
-        run: |
-          poetry config virtualenvs.create true --local
-          poetry config virtualenvs.in-project true --local
-
-      - uses: actions/cache@v4
-        name: Define a cache for the virtual environment based on the dependencies lock file
-        with:
-          path: ./.venv
-          key: venv-${{ hashFiles('poetry.lock') }}
-
-      - name: Install dependencies
-        run: |
-          poetry install
-          sudo apt update
-          sudo apt install -y xvfb scrot python3-tk
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt install -y ./google-chrome-stable_current_amd64.deb
-          rm ./google-chrome-stable_current_amd64.deb
-
-      - name: Run Ruff
-        run: poetry run ruff check .
-
-      - name: Run tests
-        run: poetry run pytest --retries 2 -n auto --xvfb
-
-      - name: Upload screenshots if tests fail
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          path: screenshots
-
   build:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -118,6 +72,16 @@ jobs:
             type=semver,pattern={{major}}
             type=raw,enable=${{ github.event_name != 'pull_request' && github.ref_name == 'main' }}, value=latest
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Test
+        id: test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: test
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
