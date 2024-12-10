@@ -53,8 +53,8 @@ def read_item(request: LinkRequest):
     response: LinkResponse
 
     # start_time = int(time.time() * 1000)
-    try:
-        with SB(uc=True, locale_code="en", test=False, xvfb=True, ad_block=True) as sb:
+    with SB(uc=True, locale_code="en", test=False, xvfb=True, ad_block=True) as sb:
+        try:
             sb: BaseCase
             sb.uc_open_with_reconnect(request.url)
             source = sb.get_page_source()
@@ -86,9 +86,13 @@ def read_item(request: LinkRequest):
                 ),
                 startTimestamp=start_time,
             )
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        raise HTTPException(status_code=500, detail="Unknown error, check logs") from e
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            if sb.driver:
+                sb.driver.quit()
+            raise HTTPException(
+                status_code=500, detail="Unknown error, check logs"
+            ) from e
 
     return response
 
