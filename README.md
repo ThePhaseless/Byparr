@@ -14,14 +14,14 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 ## Troubleshooting
 
 1. Clone repo to the host that has the container has issues on.
-2. Using vscode and `SSH extention`, connect to the host and open repo in it.
-3. Download `devcontainers` extention and reopen repo in container (with `CTRL + SHIFT + P` -> `Reopen in devcontainer`)
+2. Using vscode and `SSH extension`, connect to the host and open repo in it.
+3. Download `Dev Containers` extension and reopen repo in container (with `CTRL + SHIFT + P` -> `Reopen in devcontainer`)
 4. Forward port 6080 from devcontainer (port of noVNC server) to the host.
 5. Open `http://localhost:6080` and connect to the virtual desktop.
 6. Check if `chromium` works by running in VNC's terminal command `chromium --no-sandbox`.
 7. If chromium works, run (or debug) tests from VS Code.
-   1. If code works, congrats! (/s) You are on your own.
-   2. If it does not, try another host or network, try again and create issue about the problem.
+   1. If code works, congrats! (not really) You are on your own.
+   2. If it does not, try on another host or network and create an issue if problem persists.
 
 ## Usage
 
@@ -37,11 +37,23 @@ services:
       - "8191:8191" # Optional if needed to make make requests/check docs on host
 ```
 
+### Docker
+
+```bash
+docker run -p 8191:8191 ghcr.io/thephaseless/byparr:latest
+```
+
+### Local
+
+```bash
+uv sync && ./cmd.sh
+```
+
 ## Need help with / TODO
 
 - [x] Slimming container (only ~650 MB now!)
 - [x] Add more anti-bot challenges
-- [x] Add docstrings
+- [x] Add doc strings
 - [x] Implement versioning
 - [ ] Proxy support
 - [x] Add more architectures support

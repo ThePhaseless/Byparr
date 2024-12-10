@@ -20,7 +20,7 @@ RUN apt update &&\
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="${HOME}/.local/bin:$PATH"
 COPY pyproject.toml uv.lock ./
-RUN uv sync --no-group
+RUN uv sync
 
 COPY . .
 RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
