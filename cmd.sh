@@ -1,3 +1,7 @@
 #!/bin/sh
 
-. .venv/bin/activate && python3 main.py
+if [ -f ld_fix.sh ]; then
+    . ./ld_fix.sh
+fi
+
+uv run main.py
