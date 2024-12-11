@@ -24,12 +24,6 @@ env:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-          - arch: arm64
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -81,11 +75,10 @@ jobs:
 
       - name: Test
         id: test
-        if: ${{matrix.arch == 'amd64'}}
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/${{ matrix.arch }}
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: test
@@ -100,7 +93,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/${{ matrix.arch }}
+          platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: GITHUB_BUILD=true,VERSION=${{ github.ref_name }}
