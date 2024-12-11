@@ -27,12 +27,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            arch: amd64
-          - os: ubuntu-24.02-arm
-            arch: arm64
+          - arch: amd64
+          - arch: arm64
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -83,6 +81,7 @@ jobs:
 
       - name: Test
         id: test
+        if: ${{matrix.arch == 'amd64'}}
         uses: docker/build-push-action@v6
         with:
           context: .
