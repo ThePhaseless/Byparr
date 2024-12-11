@@ -80,6 +80,7 @@ jobs:
           context: .
           platforms: linux/amd64
           cache-from: type=gha
+          pull: true
           cache-to: type=gha,mode=max
           target: test
 
@@ -90,6 +91,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          pull: true
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
