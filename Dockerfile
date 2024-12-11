@@ -23,9 +23,6 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 COPY pyproject.toml uv.lock ./
 RUN uv sync
 
-COPY github_actions_fix.sh ./
-RUN ./github_actions_fix.sh
-
 COPY . .
 RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
 
