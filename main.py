@@ -19,6 +19,8 @@ from src.utils.consts import LOG_LEVEL
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
 
+cookies = []
+
 
 @app.get("/")
 def read_root():
@@ -56,6 +58,10 @@ def read_item(request: LinkRequest) -> LinkResponse:
     with SB(uc=True, locale_code="en", test=False, xvfb=True, ad_block=True) as sb:
         try:
             sb: BaseCase
+            global cookies  # noqa: PLW0603
+            if cookies:
+                sb.uc_open_with_reconnect(request.url)
+                sb.add_cookies(cookies)
             sb.uc_open_with_reconnect(request.url)
             source = sb.get_page_source()
             source_bs = BeautifulSoup(source, "html.parser")
@@ -86,6 +92,7 @@ def read_item(request: LinkRequest) -> LinkResponse:
                 ),
                 startTimestamp=start_time,
             )
+            cookies = sb.get_cookies()
         except Exception as e:
             logger.error(f"Error: {e}")
             if sb.driver:
