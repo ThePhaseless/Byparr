@@ -8,25 +8,25 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "beautifulsoup4>=4.12.3",
-    "fastapi[standard]>=0.115.6",
-    "pyautogui>=0.9.54",
-    "pydantic>=2.10.3",
-    "seleniumbase>=4.33.7",
-    "uvicorn>=0.32.1",
+    "beautifulsoup4==4.12.3",
+    "fastapi[standard]==0.115.6",
+    "pyautogui==0.9.54",
+    "pydantic==2.10.3",
+    "seleniumbase==4.33.10",
+    "uvicorn==0.32.1",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 
 [dependency-groups]
 test = [
-    "httpx>=0.28.1",
-    "pytest>=8.3.4",
-    "pytest-asyncio>=0.24.0",
-    "pytest-progress>=1.3.0",
-    "pytest-retry>=1.6.3",
-    "pytest-xdist>=3.6.1",
+    "httpx==0.28.1",
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.0",
+    "pytest-progress==1.3.0",
+    "pytest-retry==1.6.3",
+    "pytest-xdist==3.6.1",
 ]
-dev = ["deptry>=0.21.1", "ruff>=0.8.2"]
+dev = ["deptry==0.21.1", "ruff==0.8.2"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["pyautogui"]
