@@ -88,26 +88,26 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beautifulsoup4", specifier = ">=4.12.3" },
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.115.6" },
-    { name = "pyautogui", specifier = ">=0.9.54" },
-    { name = "pydantic", specifier = ">=2.10.3" },
-    { name = "seleniumbase", specifier = ">=4.33.7" },
-    { name = "uvicorn", specifier = ">=0.32.1" },
+    { name = "beautifulsoup4", specifier = "==4.12.3" },
+    { name = "fastapi", extras = ["standard"], specifier = "==0.115.6" },
+    { name = "pyautogui", specifier = "==0.9.54" },
+    { name = "pydantic", specifier = "==2.10.3" },
+    { name = "seleniumbase", specifier = "==4.33.10" },
+    { name = "uvicorn", specifier = "==0.32.1" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "deptry", specifier = ">=0.21.1" },
-    { name = "ruff", specifier = ">=0.8.2" },
+    { name = "deptry", specifier = "==0.21.1" },
+    { name = "ruff", specifier = "==0.8.2" },
 ]
 test = [
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pytest-asyncio", specifier = ">=0.24.0" },
-    { name = "pytest-progress", specifier = ">=1.3.0" },
-    { name = "pytest-retry", specifier = ">=1.6.3" },
-    { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "httpx", specifier = "==0.28.1" },
+    { name = "pytest", specifier = "==8.3.4" },
+    { name = "pytest-asyncio", specifier = "==0.25.0" },
+    { name = "pytest-progress", specifier = "==1.3.0" },
+    { name = "pytest-retry", specifier = "==1.6.3" },
+    { name = "pytest-xdist", specifier = "==3.6.1" },
 ]
 
 [[package]]
@@ -807,14 +807,14 @@ wheels = [
 
 [[package]]
 name = "pytest-asyncio"
-version = "0.24.0"
+version = "0.25.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/52/6d/c6cf50ce320cf8611df7a1254d86233b3df7cc07f9b5f5cbcb82e08aa534/pytest_asyncio-0.24.0.tar.gz", hash = "sha256:d081d828e576d85f875399194281e92bf8a68d60d72d1a2faf2feddb6c46b276", size = 49855 }
+sdist = { url = "https://files.pythonhosted.org/packages/94/18/82fcb4ee47d66d99f6cd1efc0b11b2a25029f303c599a5afda7c1bca4254/pytest_asyncio-0.25.0.tar.gz", hash = "sha256:8c0610303c9e0442a5db8604505fc0f545456ba1528824842b37b4a626cbf609", size = 53298 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/31/6607dab48616902f76885dfcf62c08d929796fc3b2d2318faf9fd54dbed9/pytest_asyncio-0.24.0-py3-none-any.whl", hash = "sha256:a811296ed596b69bf0b6f3dc40f83bcaf341b155a269052d82efa2b25ac7037b", size = 18024 },
+    { url = "https://files.pythonhosted.org/packages/88/56/2ee0cab25c11d4e38738a2a98c645a8f002e2ecf7b5ed774c70d53b92bb1/pytest_asyncio-0.25.0-py3-none-any.whl", hash = "sha256:db5432d18eac6b7e28b46dcd9b69921b55c3b1086e85febfe04e70b18d9e81b3", size = 19245 },
 ]
 
 [[package]]
@@ -1061,11 +1061,11 @@ wheels = [
 
 [[package]]
 name = "sbvirtualdisplay"
-version = "1.3.0"
+version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/da/a1/dcda355e67fe5f5e6011d79cb294f6ce07b6fd4a41e43931caf154e2b982/sbvirtualdisplay-1.3.0.tar.gz", hash = "sha256:f39df540632bbdad86f72c8b1367a1a757ab801a8b1de0a9143e78f21d4cae7b", size = 12173 }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/b0/03760bb48ce37c3979f9a2bb3974c31a41b8a33e371bad9f7df99a36d488/sbvirtualdisplay-1.3.1.tar.gz", hash = "sha256:13754eb80c0007734089b8d0253a2c78054bc6a4f11767957fc7bfa25f54c72e", size = 12314 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/59/d14343808b953cf3c710acf269e22b4b9e8b99379aaf2779fd4eb0d23c5c/sbvirtualdisplay-1.3.0-py2.py3-none-any.whl", hash = "sha256:d93b41f9a8db6cadc2aa09596a43dcc03c82047277e57a66174c5f0c304a52fe", size = 12414 },
+    { url = "https://files.pythonhosted.org/packages/be/e7/b0749a26ebba4bba2999aa3d23cbfc49171e9701bd4cd4758a60b94c369e/sbvirtualdisplay-1.3.1-py3-none-any.whl", hash = "sha256:9c43baf23c852dde79e9ed03994f9795eedd1f430ebbe79560ce93779ceced0b", size = 12469 },
 ]
 
 [[package]]
@@ -1087,7 +1087,7 @@ wheels = [
 
 [[package]]
 name = "seleniumbase"
-version = "4.33.7"
+version = "4.33.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1148,9 +1148,9 @@ dependencies = [
     { name = "wheel" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/17/98/58b5bfc1a4462cf40f1d713be95a676a3627fc4123ed007ecb4a1c81a906/seleniumbase-4.33.7.tar.gz", hash = "sha256:16b5c993c67a54d6ccd7a8cd71f1c2d7b2cc049460f8ef499466da466872ab6b", size = 720311 }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/df/525e75fb33e40e4945a88cc88e806fb74b5108f77ee23eb99bda4a902d74/seleniumbase-4.33.10.tar.gz", hash = "sha256:4673edd80e373e6ddfc292bba1dda461e18a18766126fe974a314c39f113abea", size = 720825 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5c/e9/52c96eba242d8d26b2f832e14cd3bf8d9269592945cf96a56534faf32a9f/seleniumbase-4.33.7-py3-none-any.whl", hash = "sha256:d6fc16d209eb3de41ee706468382bb11f7b69350cbfeef7f758d54260633fed5", size = 618013 },
+    { url = "https://files.pythonhosted.org/packages/9b/01/1c178895f1806a908981755fc82bdc8d54dbbda2e7a4b90ef1a5aeaad5b4/seleniumbase-4.33.10-py3-none-any.whl", hash = "sha256:89cfce3e655fffa774190c698592595c4bb427626f7e9da16bdf7c23d7b3cbaf", size = 618310 },
 ]
 
 [[package]]
