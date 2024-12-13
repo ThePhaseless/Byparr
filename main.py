@@ -12,11 +12,10 @@ from sbase import SB, BaseCase
 
 import src
 import src.utils
-from src.utils import consts
 import src.utils.consts
 from src.models.requests import LinkRequest, LinkResponse, Solution
-from src.utils import logger
-from src.utils.consts import LOG_LEVEL, kill_chromium_processes
+from src.utils import consts, kill_chromium_processes, logger
+from src.utils.consts import LOG_LEVEL
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
 
@@ -36,7 +35,7 @@ async def health_check():
     health_check_request = read_item(
         LinkRequest.model_construct(url="https://prowlarr.servarr.com/v1/ping")
     )
-    if consts.MAX_CHROME_LIFETIME>0:
+    if consts.MAX_CHROME_LIFETIME > 0:
         kill_chromium_processes()
 
     if health_check_request.solution.status != HTTPStatus.OK:
