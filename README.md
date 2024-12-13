@@ -2,10 +2,13 @@
 
 An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, build with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com).
 
-> [!WARNING]
+> [!CAUTION]
+> From now on, Byparr will clear all chrome processes longer than specified in `MAX_CHROME_LIFETIME` environment variable (default is 300 seconds). To disable this behavior, set `MAX_CHROME_LIFETIME` to `0`.
+
+> [!IMPORTANT]
 > Due to recent challenge changes, this software does not guarantee that the Cloudflare challenge will be bypassed. Cloudflare likely requires valid network traffic originating from the user’s public IP address to mark a connection as legitimate. While this tool may bypass the initial browser check, it does not ensure that requests will consistently pass Cloudflare's validation. More testing and data are required to understand how Cloudflare identifies connections and requests as valid. Invalid requests will result in Byparr's looping and eventually time-outing.
 
-> [!WARNING]
+> [!IMPORTANT]
 > Support for NAS devices (like Synology) is minimal. Please report issues, but do not expect it to be fixed quickly. The only ARM device I have is a free Ampere Oracle VM, so I can only test ARM support on that. See [#22](https://github.com/ThePhaseless/Byparr/issues/22) and [#3](https://github.com/ThePhaseless/Byparr/issues/3)
 
 > [!NOTE]
@@ -27,15 +30,7 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 
 ### Docker Compose
 
-```yaml
-services:
-  byparr:
-    image: ghcr.io/thephaseless/byparr:latest
-    environment:
-      - LOG_LEVEL=INFO # optional
-    ports:
-      - "8191:8191" # Optional if needed to make make requests/check docs on host
-```
+See `docker-compose.yaml`
 
 ### Docker
 
