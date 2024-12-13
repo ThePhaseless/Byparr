@@ -12,10 +12,11 @@ from sbase import SB, BaseCase
 
 import src
 import src.utils
+from src.utils import consts
 import src.utils.consts
 from src.models.requests import LinkRequest, LinkResponse, Solution
 from src.utils import logger
-from src.utils.consts import LOG_LEVEL
+from src.utils.consts import LOG_LEVEL, kill_chromium_processes
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
 
@@ -25,18 +26,19 @@ cookies = []
 @app.get("/")
 def read_root():
     """Redirect to /docs."""
-    logger.info("Redirecting to /docs")
+    logger.debug("Redirecting to /docs")
     return RedirectResponse(url="/docs", status_code=301)
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    logger.info("Health check")
-
     health_check_request = read_item(
         LinkRequest.model_construct(url="https://prowlarr.servarr.com/v1/ping")
     )
+    if consts.MAX_CHROME_LIFETIME>0:
+        kill_chromium_processes()
+
     if health_check_request.solution.status != HTTPStatus.OK:
         raise HTTPException(
             status_code=500,
@@ -66,9 +68,9 @@ def read_item(request: LinkRequest) -> LinkResponse:
             source = sb.get_page_source()
             source_bs = BeautifulSoup(source, "html.parser")
             title_tag = source_bs.title
-            logger.info(f"Got webpage: {request.url}")
+            logger.debug(f"Got webpage: {request.url}")
             if title_tag and title_tag.string in src.utils.consts.CHALLENGE_TITLES:
-                logger.info("Challenge detected")
+                logger.debug("Challenge detected")
                 sb.uc_gui_click_captcha()
                 logger.info("Clicked captcha")
 
