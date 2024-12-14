@@ -95,7 +95,7 @@ requires-dist = [
     { name = "pyautogui", specifier = "==0.9.54" },
     { name = "pydantic", specifier = "==2.10.3" },
     { name = "seleniumbase", specifier = "==4.33.10" },
-    { name = "uvicorn", specifier = "==0.32.1" },
+    { name = "uvicorn", specifier = "==0.33.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1327,15 +1327,15 @@ socks = [
 
 [[package]]
 name = "uvicorn"
-version = "0.32.1"
+version = "0.33.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "h11" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/3c/21dba3e7d76138725ef307e3d7ddd29b763119b3aa459d02cc05fefcff75/uvicorn-0.32.1.tar.gz", hash = "sha256:ee9519c246a72b1c084cea8d3b44ed6026e78a4a309cbedae9c37e4cb9fbb175", size = 77630 }
+sdist = { url = "https://files.pythonhosted.org/packages/cb/81/a083ae41716b00df56d45d4b5f6ca8e90fc233a62e6c04ab3ad3c476b6c4/uvicorn-0.33.0.tar.gz", hash = "sha256:3577119f82b7091cf4d3d4177bfda0bae4723ed92ab1439e8d779de880c9cc59", size = 76590 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/c1/2d27b0a15826c2b71dcf6e2f5402181ef85acf439617bb2f1453125ce1f3/uvicorn-0.32.1-py3-none-any.whl", hash = "sha256:82ad92fd58da0d12af7482ecdb5f2470a04c9c9a53ced65b9bbb4a205377602e", size = 63828 },
+    { url = "https://files.pythonhosted.org/packages/98/79/2e2620337ef1e4ef7a058b351603b765f59ac28e6e3ac7c5e7cdee9ea1ab/uvicorn-0.33.0-py3-none-any.whl", hash = "sha256:2c30de4aeea83661a520abab179b24084a0019c0c1bbe137e5409f741cbde5f8", size = 62297 },
 ]
 
 [package.optional-dependencies]
