@@ -94,7 +94,7 @@ requires-dist = [
     { name = "psutil", specifier = "==6.1.0" },
     { name = "pyautogui", specifier = "==0.9.54" },
     { name = "pydantic", specifier = "==2.10.3" },
-    { name = "seleniumbase", specifier = "==4.33.10" },
+    { name = "seleniumbase", specifier = "==4.33.11" },
     { name = "uvicorn", specifier = "==0.34.0" },
 ]
 
@@ -114,11 +114,11 @@ test = [
 
 [[package]]
 name = "certifi"
-version = "2024.8.30"
+version = "2024.12.14"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b0/ee/9b19140fe824b367c04c5e1b369942dd754c4c5462d5674002f75c4dedc1/certifi-2024.8.30.tar.gz", hash = "sha256:bec941d2aa8195e248a60b31ff9f0558284cf01a52591ceda73ea9afffd69fd9", size = 168507 }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/bd/1d41ee578ce09523c81a15426705dd20969f5abf006d1afe8aeff0dd776a/certifi-2024.12.14.tar.gz", hash = "sha256:b650d30f370c2b724812bee08008be0c4163b163ddaec3f2546c1caf65f191db", size = 166010 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/90/3c9ff0512038035f59d279fddeb79f5f1eccd8859f06d6163c58798b9487/certifi-2024.8.30-py3-none-any.whl", hash = "sha256:922820b53db7a7257ffbda3f597266d435245903d80737e34f8a45ff3e3230d8", size = 167321 },
+    { url = "https://files.pythonhosted.org/packages/a5/32/8f6669fc4798494966bf446c8c4a162e0b5d893dff088afddf76414f70e1/certifi-2024.12.14-py3-none-any.whl", hash = "sha256:1275f7a45be9464efc1173084eaa30f866fe2e47d389406136d332ed4967ec56", size = 164927 },
 ]
 
 [[package]]
@@ -1104,7 +1104,7 @@ wheels = [
 
 [[package]]
 name = "seleniumbase"
-version = "4.33.10"
+version = "4.33.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1165,9 +1165,9 @@ dependencies = [
     { name = "wheel" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/df/525e75fb33e40e4945a88cc88e806fb74b5108f77ee23eb99bda4a902d74/seleniumbase-4.33.10.tar.gz", hash = "sha256:4673edd80e373e6ddfc292bba1dda461e18a18766126fe974a314c39f113abea", size = 720825 }
+sdist = { url = "https://files.pythonhosted.org/packages/54/6d/800c550e7ec93adc52e7c13a90209e8dadb9a51a3ee78d91ed5653b9bcea/seleniumbase-4.33.11.tar.gz", hash = "sha256:0a7a0347e5783931001b65a40674cfee6bdb433530d3b73da3c4f8895ba5ed34", size = 720408 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/01/1c178895f1806a908981755fc82bdc8d54dbbda2e7a4b90ef1a5aeaad5b4/seleniumbase-4.33.10-py3-none-any.whl", hash = "sha256:89cfce3e655fffa774190c698592595c4bb427626f7e9da16bdf7c23d7b3cbaf", size = 618310 },
+    { url = "https://files.pythonhosted.org/packages/e8/32/166ca252eb2fd2e2e5c8b725065ce70591654d641cc6c654c7ff049bea37/seleniumbase-4.33.11-py3-none-any.whl", hash = "sha256:81fae8bcee869c0b241da036db9780235d096d23390e0cff7355b9abea6f6432", size = 618344 },
 ]
 
 [[package]]
