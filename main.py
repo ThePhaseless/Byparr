@@ -56,7 +56,7 @@ def read_item(request: LinkRequest) -> LinkResponse:
     response: LinkResponse
 
     # start_time = int(time.time() * 1000)
-    with SB(uc=True, locale_code="en", test=False, xvfb=True, ad_block=True) as sb:
+    with SB(uc=True, locale_code="en", test=False, ad_block=True) as sb:
         try:
             sb: BaseCase
             global cookies  # noqa: PLW0603

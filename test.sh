@@ -1,3 +1,3 @@
 #!/bin/sh
 
-uv run pytest --retries 2 -n auto --xvfb
+uv run pytest --retries 2 -n auto
