@@ -70,7 +70,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,enable=${{ github.event_name != 'pull_request' && github.ref_name == 'main' }}, value=latest
+            type=raw,enable=${{ github.ref_type == 'tag' }}, value=latest
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Test

@@ -26,6 +26,11 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
    1. If code works, congrats! (not really) You are on your own.
    2. If it does not, try on another host or network and create an issue if problem persists.
 
+## Tags
+
+- `v*.*.*`/`latest` - Releases considered stable
+- `main` - Latest release from main branch (untested)
+
 ## Usage
 
 ### Docker Compose
