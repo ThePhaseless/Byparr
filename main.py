@@ -14,7 +14,7 @@ import src
 import src.utils
 import src.utils.consts
 from src.models.requests import LinkRequest, LinkResponse, Solution
-from src.utils import consts, kill_chromium_processes, logger
+from src.utils import consts, logger
 from src.utils.consts import LOG_LEVEL
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
@@ -35,8 +35,6 @@ async def health_check():
     health_check_request = read_item(
         LinkRequest.model_construct(url="https://prowlarr.servarr.com/v1/ping")
     )
-    if consts.MAX_CHROME_LIFETIME > 0:
-        kill_chromium_processes()
 
     if health_check_request.solution.status != HTTPStatus.OK:
         raise HTTPException(
@@ -56,7 +54,9 @@ def read_item(request: LinkRequest) -> LinkResponse:
     response: LinkResponse
 
     # start_time = int(time.time() * 1000)
-    with SB(uc=True, locale_code="en", test=False, ad_block=True) as sb:
+    with SB(
+        uc=True, locale_code="en", test=False, ad_block=True, xvfb=consts.USE_XVFB
+    ) as sb:
         try:
             sb: BaseCase
             global cookies  # noqa: PLW0603

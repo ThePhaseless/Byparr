@@ -27,7 +27,7 @@ LOG_LEVEL = logging.getLevelNamesMapping()[LOG_LEVEL.upper()]
 
 VERSION = get_version_from_env() or "unknown"
 
-MAX_CHROME_LIFETIME = int(os.getenv("MAX_CHROME_LIFETIME", "300"))
+USE_XVFB = os.getenv("USE_XVFB") in ["true", "1"]
 
 CHALLENGE_TITLES = [
     # Cloudflare

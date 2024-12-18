@@ -2,9 +2,6 @@
 
 An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, build with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com).
 
-> [!CAUTION]
-> From now on, Byparr will clear all chrome processes longer than specified in `MAX_CHROME_LIFETIME` environment variable (default is 300 seconds). To disable this behavior, set `MAX_CHROME_LIFETIME` to `0`.
-
 > [!IMPORTANT]
 > Due to recent challenge changes, this software does not guarantee that the Cloudflare challenge will be bypassed. Cloudflare likely requires valid network traffic originating from the user’s public IP address to mark a connection as legitimate. While this tool may bypass the initial browser check, it does not ensure that requests will consistently pass Cloudflare's validation. More testing and data are required to understand how Cloudflare identifies connections and requests as valid. Invalid requests will result in Byparr's looping and eventually time-outing.
 
@@ -14,7 +11,7 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 > [!NOTE]
 > Thanks to FastAPI implementation, now you can also see the API documentation at `/docs` or `/` (redirect to `/docs`) endpoints.
 
-## Troubleshooting
+## Troubleshooting (Docker required)
 
 1. Clone repo to the host that has the container has issues on.
 2. Using vscode and `SSH extension`, connect to the host and open repo in it.
@@ -26,6 +23,12 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
    1. If code works, congrats! (not really) You are on your own.
    2. If it does not, try on another host or network and create an issue if problem persists.
 
+## Options
+
+| Env        | Default | Description                                                                                                                |
+| ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `USE_XVFB` | `false` | Use Xvfb instead of headless chromium. (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14)) |
+
 ## Tags
 
 - `v*.*.*`/`latest` - Releases considered stable
@@ -35,7 +38,7 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 
 ### Docker Compose
 
-See `docker-compose.yaml`
+See `compose.yaml`
 
 ### Docker
 
