@@ -12,7 +12,7 @@ dependencies = [
     "fastapi[standard]==0.115.6",
     "psutil==6.1.0",
     "pyautogui==0.9.54",
-    "pydantic==2.10.3",
+    "pydantic==2.10.4",
     "seleniumbase==4.33.11",
     "uvicorn==0.34.0",
 ]
