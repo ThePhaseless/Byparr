@@ -100,7 +100,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "deptry", specifier = "==0.21.1" },
+    { name = "deptry", specifier = "==0.21.2" },
     { name = "ruff", specifier = "==0.8.4" },
 ]
 test = [
@@ -189,7 +189,7 @@ name = "click"
 version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/96/d3/f04c7bfcf5c1862a2a5b845c6b2b360488cf47af55dfa79c98f6a6bf98b5/click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de", size = 336121 }
 wheels = [
@@ -216,7 +216,7 @@ wheels = [
 
 [[package]]
 name = "deptry"
-version = "0.21.1"
+version = "0.21.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -224,14 +224,16 @@ dependencies = [
     { name = "packaging" },
     { name = "requirements-parser" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/c2/392a8ca053ff59d1f9c700cab00d8720cea809aa2634189ccfe17c52f3f0/deptry-0.21.1.tar.gz", hash = "sha256:60332b8d58d6584b340511a4e1b694048499f273d69eaea413631b2e8bc186ff", size = 156671 }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/71/b7bd84b50aa898f50e0af5e30f50e621ff21d1d83951d2303516a3217fce/deptry-0.21.2.tar.gz", hash = "sha256:4e870553c7a1fafcd99a83ba4137259525679eecabeff61bc669741efa201541", size = 160990 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/0b/8f5a5f78fd01387f090284114b32653eebf08a1ca0a90fd8f7246ef03a81/deptry-0.21.1-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:c31e1a66502e28870e1e0a679598462a6119f4bcb656786e63cb545328170a3f", size = 1739018 },
-    { url = "https://files.pythonhosted.org/packages/09/e1/b0bccf884a6e6e3bfc1a049b7eb43a08e5f53d5460711358beece0ced321/deptry-0.21.1-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:4b53089c22d18076935a3e9e6325566fa712cd9b89fe602978a8e85f0f4209bf", size = 1641488 },
-    { url = "https://files.pythonhosted.org/packages/2b/e7/aa86b1a20e334408f43bec0fdffdd0abf23fc14f203ad14c63ccc2710864/deptry-0.21.1-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b5eae7afbcb9b7f6baa855b323e0da016a23f2a98d4b181dcfd2c71766512387", size = 1744129 },
-    { url = "https://files.pythonhosted.org/packages/43/5a/a597af2b3b6fbd1996c221ad776a891e54529fd0ba4a8c23879187e6e188/deptry-0.21.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4afef1c5eb0b48ebc31de2437b460df0363cb99722252b7faf7fa6f43e10cbcd", size = 1819837 },
-    { url = "https://files.pythonhosted.org/packages/31/6c/f26fd12717fbe4a56f208e236e03963d9c2e697288fe3163ac377a62ad45/deptry-0.21.1-cp39-abi3-win_amd64.whl", hash = "sha256:981a28e1feeaad82f07a6e3c8d7842c5f6eae3807dc13b24d453a20cd0a42a72", size = 1594523 },
-    { url = "https://files.pythonhosted.org/packages/a5/4f/c3e63c43c996c945ea79b3daa869b091b031f0e9f99e69c86bd9b85ba466/deptry-0.21.1-cp39-abi3-win_arm64.whl", hash = "sha256:98075550540c6b45f57abdfc453900bd2a179dc495d986ccc0757a813ee55103", size = 1517699 },
+    { url = "https://files.pythonhosted.org/packages/25/b2/66c6d5709edc8cd04c0f1987e868b75e6681f525b5e9c703074bad14b521/deptry-0.21.2-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:e3b9e0c5ee437240b65e61107b5777a12064f78f604bf9f181a96c9b56eb896d", size = 1741649 },
+    { url = "https://files.pythonhosted.org/packages/b5/d4/a391784f9e323a50c461878f193848e187f24573085e56aa4e2557eafd25/deptry-0.21.2-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:d76bbf48bd62ecc44ca3d414769bd4b7956598d23d9ccb42fd359b831a31cab2", size = 1642885 },
+    { url = "https://files.pythonhosted.org/packages/6c/4c/c6edfa6860174ca0d929059874c903503084c9eff12776eb17571da4ff71/deptry-0.21.2-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3080bb88c16ebd35f59cba7688416115b7aaf4630dc5a051dff2649cbf129a1b", size = 1746733 },
+    { url = "https://files.pythonhosted.org/packages/a8/4e/36f5ee2adc14a5ee8e46fe749f409f4fc423354de641fd9b0ddf0c912bab/deptry-0.21.2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:adb12d6678fb5dbd320a0a2e37881059d0a45bec6329df4250c977d803fe7f96", size = 1823962 },
+    { url = "https://files.pythonhosted.org/packages/be/cb/a45aa163be1386dade6ca6f61664578662c638254c89bbef81d4e1e80126/deptry-0.21.2-cp39-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:7479d3079be69c3bbf5913d8e21090749c1139ee91f81520ffce90b5322476b0", size = 1927315 },
+    { url = "https://files.pythonhosted.org/packages/a4/fa/84a396a5605fa3dd98c66ba9aa0d25665dd24bab1e42458bdd9ffbd3232f/deptry-0.21.2-cp39-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:019167b35301edd2bdd4719c8b8f44769be4507cb8a1cd46fff4393cdbe8d31b", size = 1992695 },
+    { url = "https://files.pythonhosted.org/packages/30/87/858bc92296313fe15761ad4c37e64ebda6dee2670c63da6da45fa235e8c1/deptry-0.21.2-cp39-abi3-win_amd64.whl", hash = "sha256:d8add495f0dd19a38aa6d1e09b14b1441bca47c9d945bc7b322efb084313eea3", size = 1601293 },
+    { url = "https://files.pythonhosted.org/packages/2c/42/58383595b0062da10f9ed3628748b93d3e6af5a131aead530c86186a3bb4/deptry-0.21.2-cp39-abi3-win_arm64.whl", hash = "sha256:06d48e9fa460aad02f9e1b079d9f5a69d622d291b3a0525b722fc91c88032042", size = 1518159 },
 ]
 
 [[package]]
@@ -489,8 +491,8 @@ version = "0.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyperclip" },
-    { name = "python3-xlib", marker = "platform_system == 'Linux'" },
-    { name = "rubicon-objc", marker = "platform_system == 'Darwin'" },
+    { name = "python3-xlib", marker = "sys_platform == 'linux'" },
+    { name = "rubicon-objc", marker = "sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/28/fa/b2ba8229b9381e8f6381c1dcae6f4159a7f72349e414ed19cfbbd1817173/MouseInfo-0.1.3.tar.gz", hash = "sha256:2c62fb8885062b8e520a3cce0a297c657adcc08c60952eb05bc8256ef6f7f6e7", size = 10850 }
 
@@ -560,7 +562,7 @@ name = "pdbp"
 version = "1.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "pygments" },
     { name = "tabcompleter" },
 ]
@@ -619,10 +621,10 @@ dependencies = [
     { name = "mouseinfo" },
     { name = "pygetwindow" },
     { name = "pymsgbox" },
-    { name = "pyobjc-core", marker = "platform_system == 'Darwin'" },
-    { name = "pyobjc-framework-quartz", marker = "platform_system == 'Darwin'" },
+    { name = "pyobjc-core", marker = "sys_platform == 'darwin'" },
+    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'" },
     { name = "pyscreeze" },
-    { name = "python3-xlib", marker = "platform_system == 'Linux'" },
+    { name = "python3-xlib", marker = "sys_platform == 'linux'" },
     { name = "pytweening" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/65/ff/cdae0a8c2118a0de74b6cf4cbcdcaf8fd25857e6c3f205ce4b1794b27814/PyAutoGUI-0.9.54.tar.gz", hash = "sha256:dd1d29e8fd118941cb193f74df57e5c6ff8e9253b99c7b04f39cfc69f3ae04b2", size = 61236 }
@@ -1137,14 +1139,14 @@ dependencies = [
     { name = "pygments" },
     { name = "pynose" },
     { name = "pyotp" },
-    { name = "pyreadline3", marker = "platform_system == 'Windows'" },
+    { name = "pyreadline3", marker = "sys_platform == 'win32'" },
     { name = "pytest" },
     { name = "pytest-html" },
     { name = "pytest-metadata" },
     { name = "pytest-ordering" },
     { name = "pytest-rerunfailures" },
     { name = "pytest-xdist" },
-    { name = "python-xlib", marker = "platform_system == 'Linux'" },
+    { name = "python-xlib", marker = "sys_platform == 'linux'" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "rich" },
@@ -1241,7 +1243,7 @@ name = "tabcompleter"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyreadline3", marker = "platform_system == 'Windows'" },
+    { name = "pyreadline3", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/73/1a/ed3544579628c5709bae6fae2255e94c6982a9ff77d42d8ba59fd2f3b21a/tabcompleter-1.4.0.tar.gz", hash = "sha256:7562a9938e62f8e7c3be612c3ac4e14c5ec4307b58ba9031c148260e866e8814", size = 10431 }
 wheels = [
