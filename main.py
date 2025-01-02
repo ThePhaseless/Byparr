@@ -14,8 +14,8 @@ import src
 import src.utils
 import src.utils.consts
 from src.models.requests import LinkRequest, LinkResponse, Solution
-from src.utils import consts, logger
-from src.utils.consts import LOG_LEVEL
+from src.utils import logger
+from src.utils.consts import LOG_LEVEL, USE_HEADLESS, USE_XVFB
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
 
@@ -60,7 +60,12 @@ def read_item(request: LinkRequest) -> LinkResponse:
 
     # start_time = int(time.time() * 1000)
     with SB(
-        uc=True, locale_code="en", test=False, ad_block=True, xvfb=consts.USE_XVFB, headless=True
+        uc=True,
+        locale_code="en",
+        test=False,
+        ad_block=True,
+        xvfb=USE_XVFB,
+        headless=USE_HEADLESS,
     ) as sb:
         try:
             sb: BaseCase

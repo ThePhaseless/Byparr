@@ -27,7 +27,8 @@ LOG_LEVEL = logging.getLevelNamesMapping()[LOG_LEVEL.upper()]
 
 VERSION = get_version_from_env() or "unknown"
 
-USE_XVFB = os.getenv("USE_XVFB") in ["true", "1"]
+USE_XVFB = os.getenv("USE_XVFB", "false") in ["true", "1"]
+USE_HEADLESS = os.getenv("USE_HEADLESS", "true").lower() in ["true", "1"]
 
 CHALLENGE_TITLES = [
     # Cloudflare
