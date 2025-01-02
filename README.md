@@ -25,10 +25,10 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 
 ## Options
 
-| Env            | Default                | Description                                                                                                                                          |
-| -------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `USE_XVFB`     | `false`                | Use virtual desktop with Xvfb. Requires Xvfb supported platform. (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14)) |
-| `USE_HEADLESS` | `true/false on docker` | Use headless chromium.                                                                                                                               |
+| Env            | Default                | Description                                                                                                                     |
+| -------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `USE_XVFB`     | `false`                | Use virtual desktop with Xvfb. (Linux only) (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14)) |
+| `USE_HEADLESS` | `true/false on docker` | Use headless  chromium.                                                                                                         |
 
 ## Tags
 
