@@ -51,11 +51,16 @@ def read_item(request: LinkRequest) -> LinkResponse:
     start_time = int(time.time() * 1000)
     # request.url = "https://nowsecure.nl"
     logger.info(f"Request: {request}")
+
+    # Check is string is url
+    if not (request.url.startswith("http://") or request.url.startswith("https://")):
+        return LinkResponse.invalid(request.url)
+
     response: LinkResponse
 
     # start_time = int(time.time() * 1000)
     with SB(
-        uc=True, locale_code="en", test=False, ad_block=True, xvfb=consts.USE_XVFB
+        uc=True, locale_code="en", test=False, ad_block=True, xvfb=consts.USE_XVFB, headless=True
     ) as sb:
         try:
             sb: BaseCase
