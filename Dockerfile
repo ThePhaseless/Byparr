@@ -25,6 +25,8 @@ RUN uv sync
 COPY . .
 RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
 
+ENV USE_HEADLESS=false
+
 FROM base AS test
 
 RUN uv sync --group test
