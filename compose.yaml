@@ -6,6 +6,5 @@ services:
       dockerfile: Dockerfile
     environment:
       - LOG_LEVEL=INFO
-      - MAX_CHROME_LIFETIME=300
     ports:
       - "8191:8191"
