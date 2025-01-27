@@ -17,7 +17,7 @@ ENV \
 WORKDIR /app
 RUN apt update &&\
     apt upgrade -y &&\
-    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot python3-tk curl chromium chromium-driver ca-certificates x11-common
+    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates x11-common
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 COPY pyproject.toml uv.lock ./
 RUN uv sync
