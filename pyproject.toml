@@ -9,7 +9,7 @@ description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
     "beautifulsoup4==4.12.3",
-    "fastapi[standard]==0.115.7",
+    "fastapi[standard]==0.115.8",
     "psutil==6.1.1",
     "pyautogui==0.9.54",
     "pydantic==2.10.6",
