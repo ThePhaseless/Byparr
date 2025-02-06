@@ -7,9 +7,9 @@ body:
     attributes:
       label: "I've completed the following steps:"
       options:
-        - label: Read Loop Warning on Readme [1]
-        - label: Done the troubleshooting from Readme [2]
-        - label: Checked if such issue already exists [3]
+        - label: Read Loop Warning on Readme
+        - label: Done the troubleshooting from Readme
+        - label: Checked if such issue already exists
 
   - type: input
     id: docker-host
