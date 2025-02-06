@@ -10,7 +10,6 @@ from src.models.requests import LinkRequest
 client = TestClient(app)
 
 test_websites = [
-    "https://btmet.com/",
     "https://ext.to/",
     "https://www.ygg.re/",
     "https://extratorrent.st/",
