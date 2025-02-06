@@ -1,0 +1,47 @@
+name: Bug report
+description: Create a bug report
+assignees: ThePhaseless
+
+body:
+  - type: checkboxes
+    attributes:
+      label: "I've completed the following steps:"
+      options:
+        - label: Read Loop Warning on Readme [1]
+        - label: Done the troubleshooting from Readme [2]
+        - label: Checked if such issue already exists [3]
+
+  - type: input
+    id: docker-host
+    attributes:
+      label: OS
+      placeholder: e.g. Ubuntu Linux
+
+  - type: input
+    id: platform-model
+    attributes:
+      label: Platform and model
+      placeholder: e.g. Synology, PC, Laptop, RPi 3
+
+  - type: input
+    id: architecture
+    attributes:
+      label: Architecture
+      placeholder: e.g. ARM64
+
+  - type: input
+    id: website
+    attributes:
+      label: Website
+      placeholder: e.g. https://nowsecure.nl
+
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: "Example: The application crashes when trying to load a new file"
+
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here.
