@@ -1,9 +1,9 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Create a bug report
 title: ''
 labels: ''
-assignees: ''
+assignees: 'ThePhaseless'
 
 ---
 
