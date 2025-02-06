@@ -15,7 +15,7 @@ body:
     id: docker-host
     attributes:
       label: OS
-      placeholder: e.g. Ubuntu Linux
+      placeholder: e.g. Docker, Ubuntu Linux
 
   - type: input
     id: platform-model
