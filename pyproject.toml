@@ -8,12 +8,11 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "beautifulsoup4==4.12.3",
     "fastapi[standard]==0.115.8",
     "psutil==6.1.1",
     "pyautogui==0.9.54",
     "pydantic==2.10.6",
-    "seleniumbase==4.34.6",
+    "seleniumbase==4.34.8",
     "uvicorn==0.34.0",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
