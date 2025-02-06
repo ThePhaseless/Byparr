@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "beautifulsoup4==4.12.3",
+    "beautifulsoup4==4.13.3",
     "fastapi[standard]==0.115.8",
     "psutil==6.1.1",
     "pyautogui==0.9.54",
