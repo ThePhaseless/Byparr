@@ -26,7 +26,7 @@ test = [
     "pytest-retry==1.7.0",
     "pytest-xdist==3.6.1",
 ]
-dev = ["deptry==0.23.0", "ruff==0.9.4"]
+dev = ["deptry==0.23.0", "ruff==0.9.5"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["pyautogui"]
