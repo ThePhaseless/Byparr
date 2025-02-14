@@ -9,7 +9,7 @@ description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
     "fastapi[standard]==0.115.8",
-    "psutil==6.1.1",
+    "psutil==7.0.0",
     "pyautogui==0.9.54",
     "pydantic==2.10.6",
     "seleniumbase==4.34.14",
