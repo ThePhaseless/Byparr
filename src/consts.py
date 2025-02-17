@@ -27,8 +27,13 @@ LOG_LEVEL = logging.getLevelNamesMapping()[LOG_LEVEL.upper()]
 
 VERSION = get_version_from_env() or "unknown"
 
-USE_XVFB = os.getenv("USE_XVFB", "false") in ["true", "1"]
-USE_HEADLESS = os.getenv("USE_HEADLESS", "true").lower() in ["true", "1"]
+USE_XVFB = os.getenv("USE_XVFB") in ["true", "1"] if os.getenv("USE_XVFB") else None
+
+USE_HEADLESS = (
+    os.getenv("USE_HEADLESS") in ["true", "1"] if os.getenv("USE_HEADLESS") else None
+)
+
+PROXY = os.getenv("PROXY")
 
 CHALLENGE_TITLES = [
     # Cloudflare

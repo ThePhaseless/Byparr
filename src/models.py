@@ -2,21 +2,24 @@ from __future__ import annotations
 
 import time
 from http import HTTPStatus
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field
+from fastapi import Body
+from pydantic import BaseModel
 
-from src.utils import consts
+from src import consts
 
 
 class LinkRequest(BaseModel):
-    cmd: str = "get"
-    url: str
-    max_timeout: int = Field(30, alias="maxTimeout")
-
-
-class ProtectionTriggeredError(Exception):
-    pass
+    cmd: Annotated[
+        str,
+        Body(
+            default="request.get",
+            description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
+        ),
+    ]
+    url: Annotated[str, Body(pattern=r"^https?://", default="https://")]
+    max_timeout: Annotated[int, Body(default=60)]
 
 
 class Solution(BaseModel):
@@ -48,8 +51,10 @@ class LinkResponse(BaseModel):
     status: str = "ok"
     message: str
     solution: Solution
-    startTimestamp: int  # noqa: N815 # Ignore to preserve compatibility
-    endTimestamp: int = int(time.time() * 1000)  # noqa: N815 # Ignore to preserve compatibility
+    start_timestamp: Annotated[int, Body(alias="startTimestamp")] = int(
+        time.time() * 1000
+    )
+    end_timestamp: Annotated[int, Body(alias="endTimestamp")] = int(time.time() * 1000)
     version: str = consts.VERSION
 
     @classmethod
@@ -63,10 +68,6 @@ class LinkResponse(BaseModel):
             status="error",
             message="Invalid request",
             solution=Solution.invalid(url),
-            startTimestamp=int(time.time() * 1000),
-            endTimestamp=int(time.time() * 1000),
+            start_timestamp=int(time.time() * 1000),
+            end_timestamp=int(time.time() * 1000),
         )
-
-
-class NoChromeExtensionError(Exception):
-    """No chrome extension found."""

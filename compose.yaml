@@ -6,5 +6,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - LOG_LEVEL=INFO
+    volumes:
+      - ./screenshots:/app/screenshots # For screenshots when exception occurs
     ports:
       - "8191:8191"
