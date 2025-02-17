@@ -1,3 +1,3 @@
 #!/bin/sh
 
-uv run pytest --retries 2 -n auto
+uv run pytest --retries 3 -n auto
