@@ -27,8 +27,9 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 
 | Env            | Default                | Description                                                                                                                     |
 | -------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `USE_XVFB`     | `false`                | Use virtual desktop with Xvfb. (Linux only) (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14)) |
-| `USE_HEADLESS` | `true/false on docker` | Use headless  chromium.                                                                                                         |
+| `USE_XVFB`     | `SeleniumBase default` | Use virtual desktop with Xvfb. (Linux only) (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14)) |
+| `USE_HEADLESS` | `SeleniumBase default` | Use headless  chromium.                                                                                                         |
+| `PROXY`        | ``                     | Proxy to use. (format: `username:password@host:port`)                                                                           |
 
 ## Tags
 

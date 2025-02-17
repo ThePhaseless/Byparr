@@ -165,7 +165,7 @@ cython_debug/
 core
 
 # Screenshots
-*.png
+screenshots/
 
 # Downloaded files
 downloaded_files/

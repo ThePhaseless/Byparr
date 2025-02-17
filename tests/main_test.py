@@ -5,7 +5,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from main import app
-from src.models.requests import LinkRequest
+from src.models import LinkRequest
 
 client = TestClient(app)
 
@@ -29,16 +29,19 @@ def test_bypass(website: str):
         website,
     )
     if (
-        test_request.status_code != HTTPStatus.OK
+        test_request.status_code == HTTPStatus.OK
         and "Just a moment..." not in test_request.text
     ):
         pytest.skip(f"Skipping {website} due to {test_request.status_code}")
 
     response = client.post(
         "/v1",
-        json=LinkRequest.model_construct(
-            url=website, max_timeout=30, cmd="request.get"
-        ).model_dump(),
+        json={
+            **LinkRequest.model_construct(
+                url=website, max_timeout=30, cmd="request.get"
+            ).model_dump(),
+            "proxy": "203.174.15.83:8080",
+        },
     )
 
     assert response.status_code == HTTPStatus.OK
