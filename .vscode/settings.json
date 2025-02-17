@@ -13,10 +13,10 @@
     "python.analysis.typeCheckingMode": "standard",
     "python.terminal.activateEnvironment": true,
     "python.testing.pytestArgs": [
+        "tests",
         "-n",
         "auto",
-        "--retries=2",
-        "--xvfb"
+        "--retries=3",
     ],
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false
