@@ -79,9 +79,9 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          cache-from: type=gha
+          cache-from: type=gha,scope=buildkit-x64
           pull: true
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,scope=buildkit-x64
           target: test
 
       - name: Build and push Docker image for arm64
