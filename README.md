@@ -37,7 +37,7 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 | -------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `USE_XVFB`     | `SeleniumBase default` | Use virtual desktop with Xvfb. (Linux only) (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14)) |
 | `USE_HEADLESS` | `SeleniumBase default` | Use headless  chromium.                                                                                                         |
-| `PROXY`        | ``                     | Proxy to use. (format: `username:password@host:port`)                                                                           |
+| `PROXY`        | None                   | Proxy to use. (format: `username:password@host:port`)                                                                           |
 
 ## Tags
 
@@ -68,5 +68,5 @@ uv sync && ./cmd.sh
 - [x] Add more anti-bot challenges
 - [x] Add doc strings
 - [x] Implement versioning
-- [ ] Proxy support
+- [x] Proxy support
 - [x] Add more architectures support
