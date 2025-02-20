@@ -29,7 +29,7 @@ def test_bypass(website: str):
         website,
     )
     if (
-        test_request.status_code == HTTPStatus.OK
+        test_request.status_code != HTTPStatus.OK
         and "Just a moment..." not in test_request.text
     ):
         pytest.skip(f"Skipping {website} due to {test_request.status_code}")
