@@ -1,6 +1,6 @@
 # Byparr
 
-An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, build with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com).
+An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, built with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com).
 
 > [!IMPORTANT]
 > Due to recent challenge changes, this software does not guarantee that the Cloudflare challenge will be bypassed. Cloudflare likely requires valid network traffic originating from the user’s public IP address to mark a connection as legitimate. While this tool may bypass the initial browser check, it does not ensure that requests will consistently pass Cloudflare's validation. More testing and data are required to understand how Cloudflare identifies connections and requests as valid. Invalid requests will result in Byparr's looping and eventually time-outing.
@@ -11,17 +11,25 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 > [!NOTE]
 > Thanks to FastAPI implementation, now you can also see the API documentation at `/docs` or `/` (redirect to `/docs`) endpoints.
 
-## Troubleshooting (Docker required)
+## Troubleshooting
 
-1. Clone repo to the host that has the container has issues on.
-2. Using vscode and `SSH extension`, connect to the host and open repo in it.
-3. Download `Dev Containers` extension and reopen repo in container (with `CTRL + SHIFT + P` -> `Reopen in devcontainer`)
-4. Forward port 6080 from devcontainer (port of noVNC server) to the host.
-5. Open `http://localhost:6080` and connect to the virtual desktop.
-6. Check if `chromium` works by running in VNC's terminal command `chromium --no-sandbox`.
-7. If chromium works, run (or debug) tests from VS Code.
-   1. If code works, congrats! (not really) You are on your own.
-   2. If it does not, try on another host or network and create an issue if problem persists.
+### Docker
+
+1. Clone repo to the host that has issues with Byparr.
+2. Run `docker build --target test .`
+3. Depending of the build success:
+   1. If run successfully, try updating container or if already on newest stable release create an issue for creating new release with new dependencies
+   2. If build fails, try troubleshooting on another host/using other method
+
+### Local
+
+1. Download [uv](https://docs.astral.sh/uv/getting-started/installation/)
+2. Download dependencies using `uv sync --group test`
+3. Run tests with `uv run pytest --retries 3` (You can add `-n auto` for parallelization)
+4. If you see any `F` character in terminal, that means test failed even after retries.
+5. Depending of the test success:
+   1. If run successfully, try updating container or if already on newest stable release create an issue for creating new release with new dependencies
+   2. If test fails, try troubleshooting on another host/using other method
 
 ## Options
 
