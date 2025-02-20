@@ -81,7 +81,6 @@ jobs:
           platforms: linux/amd64
           cache-from: type=gha
           pull: true
-          push: ${{ github.event_name != 'pull_request' }}
           cache-to: type=gha,mode=max
           target: test
 
