@@ -15,9 +15,15 @@ ENV \
     DISPLAY=:0
 
 WORKDIR /app
+
+RUN rm /var/lib/dpkg/info/libc-bin.*
+RUN apt-get clean
+RUN apt-get update
+RUN apt-get install libc-bin
+
 RUN apt update &&\
     apt upgrade -y &&\
-    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot libc-bin curl chromium chromium-driver ca-certificates
+    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 COPY pyproject.toml uv.lock ./
 RUN uv sync
