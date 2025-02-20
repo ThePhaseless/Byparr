@@ -17,10 +17,13 @@ ENV \
 WORKDIR /app
 RUN apt update &&\
     apt upgrade -y &&\
-    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium ca-certificates
+    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot libc-bin curl chromium chromium-driver ca-certificates
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 COPY pyproject.toml uv.lock ./
 RUN uv sync
+
+# SeleniumBase does not come with an arm64 chromedriver binary
+RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
 
 COPY . .
 
