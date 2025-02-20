@@ -35,5 +35,5 @@ RUN ./test.sh
 FROM base
 
 EXPOSE 8191
-HEALTHCHECK --interval=60s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
+HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
 CMD ["./cmd.sh"]
