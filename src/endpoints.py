@@ -31,7 +31,7 @@ def read_root():
 def health_check(sb: SeleniumDep):
     """Health check endpoint."""
     health_check_request = read_item(
-        LinkRequest.model_construct(url="https://prowlarr.servarr.com/v1/ping"),
+        LinkRequest.model_construct(url="https://google.com"),
         sb,
     )
 
