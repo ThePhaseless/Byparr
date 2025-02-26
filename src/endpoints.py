@@ -57,10 +57,7 @@ def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
         sb.uc_gui_click_captcha()
         logger.info("Clicked captcha")
 
-    source_bs = sb.get_beautiful_soup()
-    title_tag = source_bs.title
-
-    if title_tag and title_tag.string in CHALLENGE_TITLES:
+    if sb.get_title() in CHALLENGE_TITLES:
         save_screenshot(sb)
         raise HTTPException(status_code=500, detail="Could not bypass challenge")
 
@@ -72,7 +69,7 @@ def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
             status=200,
             cookies=sb.get_cookies(),
             headers={},
-            response=str(source_bs),
+            response=str(sb.get_beautiful_soup()),
         ),
         start_timestamp=start_time,
     )
