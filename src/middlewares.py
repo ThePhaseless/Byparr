@@ -1,4 +1,5 @@
 import time
+from http import HTTPStatus
 
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -20,5 +21,9 @@ class LogRequest(BaseHTTPMiddleware):
         response = await call_next(request)
         process_time = time.perf_counter() - start_time
 
-        logger.info(f"Done {request_body.url} in {process_time:.2f}s")
+        if response.status_code == HTTPStatus.OK:
+            logger.info(f"Done {request_body.url} in {process_time:.2f}s")
+        else:
+            logger.info(f"Failed {request_body.url} in {process_time:.2f}s")
+
         return response
