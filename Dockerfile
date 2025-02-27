@@ -18,7 +18,8 @@ WORKDIR /app
 RUN apt update &&\
     apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot wget chromium chromium-driver
 
-RUN wget -qO- https://astral.sh/uv/install.sh | sh
+ADD https://astral.sh/uv/install.sh install.sh
+RUN sh install.sh
 COPY pyproject.toml uv.lock ./
 RUN uv sync
 
