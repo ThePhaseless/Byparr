@@ -6,9 +6,12 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
-from src.consts import LOG_LEVEL
+from src.consts import LOG_LEVEL, VERSION
 from src.endpoints import router
 from src.middlewares import LogRequest
+from src.utils import logger
+
+logger.info("Using version %s", VERSION)
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
 app.add_middleware(GZipMiddleware)
