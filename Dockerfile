@@ -2,8 +2,13 @@ FROM debian:bullseye-slim AS base
 
 # Inspired by https://github.com/Hudrolax/uc-docker-alpine/
 
-ARG GITHUB_BUILD=false
-ENV GITHUB_BUILD=${GITHUB_BUILD}
+
+ARG \
+    GITHUB_BUILD=false \
+    VERSION
+ENV \
+    GITHUB_BUILD=${GITHUB_BUILD}\
+    VERSION=${VERSION}
 
 ENV HOME=/root
 ENV \
