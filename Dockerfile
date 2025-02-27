@@ -21,12 +21,9 @@ ENV \
 
 WORKDIR /app
 
-RUN apt clean
-RUN apt update
-RUN apt --reinstall install libc-bin
-
-RUN apt upgrade -y &&\
+RUN apt update &&\
     apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
+
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 COPY pyproject.toml uv.lock ./
 RUN uv sync
