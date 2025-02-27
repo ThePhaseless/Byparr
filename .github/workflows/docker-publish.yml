@@ -43,9 +43,9 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          cache-from: type=gha,scope=buildkit-x64
+          cache-from: type=gha,scope=x64
           pull: true
-          cache-to: type=gha,mode=max,scope=buildkit-x64
+          cache-to: type=gha,mode=max,scope=x64
           target: test
 
   build:
@@ -90,20 +90,8 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,enable=${{ github.ref_type == 'tag' }}, value=latest
+            type=semver,pattern={{version}}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-      # Get platform specific variables
-      - name: Set platform-specific variables
-        id: platform-vars
-        run: |
-          PLATFORM="${{ matrix.platform }}"
-          PLATFORM_SUFFIX="${PLATFORM//\//-}"
-          echo "platform_suffix=${PLATFORM_SUFFIX}" >> $GITHUB_OUTPUT
-          echo "cache_scope=buildkit-${PLATFORM_SUFFIX}" >> $GITHUB_OUTPUT
 
       # Build and push Docker image with platform-specific tag
       - name: Build and push Docker image
@@ -113,18 +101,18 @@ jobs:
           context: .
           pull: true
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}-${{ steps.platform-vars.outputs.platform_suffix }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ matrix.platform }}
-          cache-from: type=gha,scope=${{ steps.platform-vars.outputs.cache_scope }}
-          cache-to: type=gha,mode=max,scope=${{ steps.platform-vars.outputs.cache_scope }}
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
           build-args: GITHUB_BUILD=true,VERSION=${{ github.ref_name }}
 
       # Sign the platform specific image
       - name: Sign the published Docker image
         if: ${{ github.event_name != 'pull_request' }}
         env:
-          TAGS: ${{ steps.meta.outputs.tags }}-${{ steps.platform-vars.outputs.platform_suffix }}
+          TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
@@ -173,8 +161,8 @@ jobs:
           for TAG in $TAGS; do
             # Create manifest list and push it
             docker buildx imagetools create -t $TAG \
-              $TAG-linux-amd64 \
-              $TAG-linux-arm64
+              $TAG-amd64 \
+              $TAG-arm64
           done
 
       - name: Install cosign
