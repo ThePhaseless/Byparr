@@ -90,7 +90,10 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,enable=${{ github.ref_type == 'tag' }}, value=latest
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       # Build and push Docker image with platform-specific tag
@@ -101,12 +104,12 @@ jobs:
           context: .
           pull: true
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ matrix.platform }}
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
-          build-args: GITHUB_BUILD=true,VERSION=${{ github.ref_name }}
+          build-args: GITHUB_BUILD=true,VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
 
       # Sign the platform specific image
       - name: Sign the published Docker image
