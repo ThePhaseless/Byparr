@@ -1,30 +1,24 @@
 FROM debian:bullseye-slim AS base
 
-# Inspired by https://github.com/Hudrolax/uc-docker-alpine/
-
-
-ARG \
-    GITHUB_BUILD=false \
+ARG GITHUB_BUILD=false \
     VERSION
-ENV \
-    GITHUB_BUILD=${GITHUB_BUILD}\
-    VERSION=${VERSION}
 
-ENV HOME=/root
-ENV \
+ENV HOME=/root \
+    GITHUB_BUILD=${GITHUB_BUILD}\
+    VERSION=${VERSION}\
     DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH="${HOME}/.local/bin:$PATH" \
     DISPLAY=:0
+ENV PATH="${HOME}/.local/bin:$PATH"
 
 WORKDIR /app
 
 RUN apt update &&\
-    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
+    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot wget chromium chromium-driver
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN wget -qO- https://astral.sh/uv/install.sh | sh
 COPY pyproject.toml uv.lock ./
 RUN uv sync
 
