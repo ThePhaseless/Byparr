@@ -21,13 +21,11 @@ ENV \
 
 WORKDIR /app
 
-RUN rm /var/lib/dpkg/info/libc-bin.*
-RUN apt-get clean
-RUN apt-get update
-RUN apt-get install libc-bin
+RUN apt clean
+RUN apt update
+RUN apt install libc-bin
 
-RUN apt update &&\
-    apt upgrade -y &&\
+RUN apt upgrade -y &&\
     apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 COPY pyproject.toml uv.lock ./
