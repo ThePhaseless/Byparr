@@ -11,7 +11,7 @@ dependencies = [
     "fastapi[standard]==0.115.8",
     "pyautogui==0.9.54",
     "pydantic==2.10.6",
-    "seleniumbase==4.35.1",
+    "seleniumbase==4.35.2",
     "uvicorn==0.34.0",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }

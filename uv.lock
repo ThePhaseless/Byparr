@@ -92,7 +92,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = "==0.115.8" },
     { name = "pyautogui", specifier = "==0.9.54" },
     { name = "pydantic", specifier = "==2.10.6" },
-    { name = "seleniumbase", specifier = "==4.35.1" },
+    { name = "seleniumbase", specifier = "==4.35.2" },
     { name = "uvicorn", specifier = "==0.34.0" },
 ]
 
@@ -1085,7 +1085,7 @@ wheels = [
 
 [[package]]
 name = "seleniumbase"
-version = "4.35.1"
+version = "4.35.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1148,18 +1148,18 @@ dependencies = [
     { name = "wheel" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/76/d555b876b6e8717dcf4c32ed97e04606e73739b0ceb36e6f84285bb4fc5c/seleniumbase-4.35.1.tar.gz", hash = "sha256:bcc22f4519274f4c27ae7c32ac377f56858bba2d54d0309d0010374bfaadb3ef", size = 616180 }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/3c/ac6e2a805806f272027c3c45a4fd9c9aa7aeec95ae13b7a488f7e2d6f98c/seleniumbase-4.35.2.tar.gz", hash = "sha256:7e46a25588839b19348c5c617cdc52f5eef36dfb2d32081664c7e1014c7f6ce8", size = 616467 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/66/e65dc54958d71faef9a9d8b6aa8b72b88e02f50579f61acb429f0ea89111/seleniumbase-4.35.1-py3-none-any.whl", hash = "sha256:4965380b2a0efbdef48aab0cb2702ef9d28c828074ce30e96b13d7db59a87e09", size = 624067 },
+    { url = "https://files.pythonhosted.org/packages/86/4b/b79a8b4034f14f9817c0d2c62943445acf7ace49101d49065ab02669972c/seleniumbase-4.35.2-py3-none-any.whl", hash = "sha256:229d7d5886f8ea258209e2e4ceab17eb96f6bfade0092e862425cdecadd80aea", size = 624408 },
 ]
 
 [[package]]
 name = "setuptools"
-version = "75.8.0"
+version = "75.8.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/92/ec/089608b791d210aec4e7f97488e67ab0d33add3efccb83a056cbafe3a2a6/setuptools-75.8.0.tar.gz", hash = "sha256:c5afc8f407c626b8313a86e10311dd3f661c6cd9c09d4bf8c15c0e11f9f2b0e6", size = 1343222 }
+sdist = { url = "https://files.pythonhosted.org/packages/d1/53/43d99d7687e8cdef5ab5f9ec5eaf2c0423c2b35133a2b7e7bc276fc32b21/setuptools-75.8.2.tar.gz", hash = "sha256:4880473a969e5f23f2a2be3646b2dfd84af9028716d398e46192f84bc36900d2", size = 1344083 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/69/8a/b9dc7678803429e4a3bc9ba462fa3dd9066824d3c607490235c6a796be5a/setuptools-75.8.0-py3-none-any.whl", hash = "sha256:e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3", size = 1228782 },
+    { url = "https://files.pythonhosted.org/packages/a9/38/7d7362e031bd6dc121e5081d8cb6aa6f6fedf2b67bf889962134c6da4705/setuptools-75.8.2-py3-none-any.whl", hash = "sha256:558e47c15f1811c1fa7adbd0096669bf76c1d3f433f58324df69f3f5ecac4e8f", size = 1229385 },
 ]
 
 [[package]]
@@ -1250,16 +1250,16 @@ wheels = [
 
 [[package]]
 name = "trio-websocket"
-version = "0.12.1"
+version = "0.12.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "outcome" },
     { name = "trio" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8d/ba/ab932f5f520565caf948ccadade04f82daa33272b9629b7bc71fd1bb1a63/trio_websocket-0.12.1.tar.gz", hash = "sha256:d55ccd4d3eae27c494f3fdae14823317839bdcb8214d1173eacc4d42c69fc91b", size = 33547 }
+sdist = { url = "https://files.pythonhosted.org/packages/d1/3c/8b4358e81f2f2cfe71b66a267f023a91db20a817b9425dd964873796980a/trio_websocket-0.12.2.tar.gz", hash = "sha256:22c72c436f3d1e264d0910a3951934798dcc5b00ae56fc4ee079d46c7cf20fae", size = 33549 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/b9/b07ec357ba125ad26e1c07781b9d7f0414af85ad76e0d73617ddb5ce041c/trio_websocket-0.12.1-py3-none-any.whl", hash = "sha256:608ec746bb287e5d5a66baf483e41194193c5cf05ffaad6240e7d1fcd80d1e6f", size = 21216 },
+    { url = "https://files.pythonhosted.org/packages/c7/19/eb640a397bba49ba49ef9dbe2e7e5c04202ba045b6ce2ec36e9cadc51e04/trio_websocket-0.12.2-py3-none-any.whl", hash = "sha256:df605665f1db533f4a386c94525870851096a223adcb97f72a07e8b4beba45b6", size = 21221 },
 ]
 
 [[package]]
