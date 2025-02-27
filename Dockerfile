@@ -23,7 +23,7 @@ WORKDIR /app
 
 RUN apt clean
 RUN apt update
-RUN apt install libc-bin
+RUN apt --reinstall install libc-bin
 
 RUN apt upgrade -y &&\
     apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
