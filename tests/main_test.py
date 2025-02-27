@@ -40,7 +40,7 @@ def test_bypass(website: str):
             **LinkRequest.model_construct(
                 url=website, max_timeout=30, cmd="request.get"
             ).model_dump(),
-            "proxy": "203.174.15.83:8080",
+            # "proxy": "203.174.15.83:8080",
         },
     )
 
