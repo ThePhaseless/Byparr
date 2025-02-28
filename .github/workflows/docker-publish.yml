@@ -204,23 +204,23 @@ jobs:
       - name: Create and push manifest lists
         run: |
           TAGS="${{ steps.meta.outputs.tags }}"
-          for TAG in $TAGS; do
-            # Tag the local images with their registry counterparts
-            docker tag local-${{ github.sha }}-amd64 local-amd64
-            docker tag local-${{ github.sha }}-arm64 local-arm64
+          args=""
 
-            # Push individual images
-            docker buildx imagetools create -t $TAG \
-              local-amd64 \
-              local-arm64
+          docker tag local-${{ github.sha }}-amd64 local-amd64
+          docker tag local-${{ github.sha }}-arm64 local-arm64
+
+          for TAG in $TAGS; do
+            # Create tag arguments
+            for tag in $tags; do
+              args="$args -t $tag"
           done
 
           if [ "${{ github.ref_type }}" == "tag" ]; then
-            docker buildx imagetools create -t latest \
-              ${{ steps.meta.outputs.tags }},
-              local-amd64 \
-              local-arm64
+            args="$args -t latest"
           fi
+          docker buildx imagetools create $args \
+            local-amd64 \
+            local-arm64
 
       # Sign the manifest
       - name: Sign the manifests
