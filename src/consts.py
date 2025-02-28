@@ -16,7 +16,7 @@ def get_version_from_env():
 
     """
     version_env = os.getenv("VERSION")
-    if not version_env or not version_env.startswith("v"):
+    if not version_env:
         return None
 
     return version_env.removeprefix("v")
