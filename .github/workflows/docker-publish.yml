@@ -206,8 +206,11 @@ jobs:
           TAGS="${{ steps.meta.outputs.tags }}"
           args=""
 
-          docker tag local-${{ github.sha }}-amd64 local-amd64
-          docker tag local-${{ github.sha }}-arm64 local-arm64
+          docker tag local-${{ github.sha }}-amd64 ${{github.ref_name}}-amd64
+          docker push ${{github.ref_name}}-amd64
+
+          docker tag local-${{ github.sha }}-arm64 ${{github.ref_name}}-arm64
+          docker push ${{github.ref_name}}-arm64
 
           # Create tag arguments
           for tag in $TAGS; do
@@ -220,9 +223,9 @@ jobs:
 
           echo $args
 
-          docker buildx imagetools create $args \
-            local-amd64 \
-            local-arm64
+          docker buildx imagetools create --pull=false $args \
+            ${{github.ref_name}}-amd64 \
+            ${{github.ref_name}}-arm64
 
       # Sign the manifest
       - name: Sign the manifests
