@@ -15,13 +15,15 @@ ENV PATH="${HOME}/.local/bin:$PATH"
 
 WORKDIR /app
 
-RUN apt update &&\
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt update && \
     apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot wget chromium chromium-driver ca-certificates
 
 ADD https://astral.sh/uv/install.sh install.sh
 RUN sh install.sh
 COPY pyproject.toml uv.lock ./
-RUN uv sync
+RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync
 
 # SeleniumBase does not come with an arm64 chromedriver binary
 RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
@@ -30,7 +32,7 @@ COPY . .
 
 FROM base AS test
 
-RUN uv sync --group test
+RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync --group test
 RUN ./test.sh
 
 FROM base
