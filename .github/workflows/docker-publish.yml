@@ -101,7 +101,7 @@ jobs:
             var-cache-apt
             var-lib-apt
             /root/.cache/uv
-          key: cache-${{ hashFiles('Dockerfile') }}
+          key: cache-${{ hashFiles('Dockerfile') }}-${{ steps.vars.outputs.SURFIX }}
 
       - name: Inject cache into docker
         uses: reproducible-containers/buildkit-cache-dance@v3.1.0
