@@ -64,28 +64,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Install the cosign tool except on PR
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@v3
-
-      # Add support for more platforms with QEMU (optional)
-      # https://github.com/docker/setup-qemu-action
-      - name:
-        uses: docker/setup-qemu-action@v3
+      - name: Prepare variables
+        id: vars
+        run: |
+          SURFIX=$(echo ${{ matrix.platform }} | cut -d'/' -f2)
+          echo "SURFIX=$SURFIX" >> $GITHUB_OUTPUT
+          # Generate a unique local tag for the image
+          echo "LOCAL_TAG=local-${{ github.sha }}-$SURFIX" >> $GITHUB_OUTPUT
 
       # Set up BuildKit Docker container builder
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      # Login against a Docker registry except on PR
-      - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       # Extract metadata (tags, labels) for Docker
       - name: Extract Docker metadata
@@ -101,30 +90,32 @@ jobs:
             type=raw,enable=${{ github.ref_type == 'tag' }}, value=latest
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      # Build and push Docker image with platform-specific tag
-      - name: Build and push Docker image
-        id: build-and-push
+      # Build and export Docker image for each platform (without pushing)
+      - name: Build Docker image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           pull: true
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          push: false
+          load: true # Export to local Docker instead of pushing
+          tags: ${{ steps.vars.outputs.LOCAL_TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ matrix.platform }}
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
           build-args: GITHUB_BUILD=true,VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+          outputs: type=docker,dest=/tmp/image-${{ steps.vars.outputs.SURFIX }}.tar
 
-      # Sign the platform specific image
-      - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
-        env:
-          TAGS: ${{ steps.meta.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+      # Upload the tarball as an artifact
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ steps.vars.outputs.SURFIX }}
+          path: /tmp/image-${{ steps.vars.outputs.SURFIX }}.tar
+          retention-days: 1
 
-  merge:
+  merge-and-push:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
@@ -137,6 +128,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Install the cosign tool
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Log into registry
       - name: Log into registry ${{ env.REGISTRY }}
         uses: docker/login-action@v3
         with:
@@ -144,6 +144,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Extract Docker metadata for tagging
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -157,26 +158,46 @@ jobs:
             type=raw,enable=${{ github.ref_type == 'tag' }}, value=latest
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+      # Download all image artifacts
+      - name: Download AMD64 image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-amd64
+          path: /tmp
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Download ARM64 image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-arm64
+          path: /tmp
 
-      - name: Create and push manifest
+      # Load images into Docker
+      - name: Load images
+        run: |
+          docker load --input /tmp/image-amd64.tar
+          docker load --input /tmp/image-arm64.tar
+
+      # Create manifest lists and push
+      - name: Create and push manifest lists
         run: |
           TAGS="${{ steps.meta.outputs.tags }}"
           for TAG in $TAGS; do
+            # Tag the local images with their registry counterparts
+            docker tag local-${{ github.sha }}-amd64 $TAG-amd64
+            docker tag local-${{ github.sha }}-arm64 $TAG-arm64
+
+            # Push individual platform images
+            # docker push $TAG-amd64
+            # docker push $TAG-arm64
+
             # Create manifest list and push it
             docker buildx imagetools create -t $TAG \
               $TAG-amd64 \
               $TAG-arm64
           done
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v3
-
-      - name: Sign the manifest
+      # Sign the manifest
+      - name: Sign the manifests
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
