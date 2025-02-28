@@ -72,6 +72,9 @@ jobs:
           # Generate a unique local tag for the image
           echo "LOCAL_TAG=local-${{ github.sha }}-$SURFIX" >> $GITHUB_OUTPUT
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       # Set up BuildKit Docker container builder
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
