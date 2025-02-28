@@ -16,7 +16,7 @@ ENV PATH="${HOME}/.local/bin:$PATH"
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot wget chromium chromium-driver ca-certificates
+    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
 
 ADD https://astral.sh/uv/install.sh install.sh
 RUN sh install.sh
