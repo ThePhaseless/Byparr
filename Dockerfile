@@ -15,12 +15,8 @@ ENV PATH="${HOME}/.local/bin:$PATH"
 
 WORKDIR /app
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    rm -f /etc/apt/apt.conf.d/docker-clean && \
-    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' >/etc/apt/apt.conf.d/keep-cache && \
-    apt update && \
-    apt install -y --no-install-recommends --no-install-suggests xauth xvfb scrot wget chromium chromium-driver ca-certificates
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot wget chromium chromium-driver ca-certificates
 
 ADD https://astral.sh/uv/install.sh install.sh
 RUN sh install.sh
