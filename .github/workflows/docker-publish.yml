@@ -93,6 +93,27 @@ jobs:
             type=raw,enable=${{ github.ref_type == 'tag' }}, value=latest
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
+      - name: Set up apt cache
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: |
+            var-cache-apt
+            var-lib-apt
+            /root/.cache/uv
+          key: cache-${{ hashFiles('Dockerfile') }}
+
+      - name: Inject cache into docker
+        uses: reproducible-containers/buildkit-cache-dance@v3.1.0
+        with:
+          cache-map: |
+            {
+              "var-cache-apt": "/var/cache/apt",
+              "var-lib-apt": "/var/lib/apt",
+              "root-cache-uv": "/root/.cache/uv"
+            }
+          skip-extraction: ${{ steps.cache.outputs.cache-hit }}
+
       # Build and export Docker image for each platform (without pushing)
       - name: Build Docker image
         id: build
