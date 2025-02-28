@@ -179,7 +179,6 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,enable=${{ github.ref_type == 'tag' }}, value=latest
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       # Download all image artifacts
@@ -207,18 +206,21 @@ jobs:
           TAGS="${{ steps.meta.outputs.tags }}"
           for TAG in $TAGS; do
             # Tag the local images with their registry counterparts
-            docker tag local-${{ github.sha }}-amd64 $TAG-amd64
-            docker tag local-${{ github.sha }}-arm64 $TAG-arm64
+            docker tag local-${{ github.sha }}-amd64 local-amd64
+            docker tag local-${{ github.sha }}-arm64 local-arm64
 
-            # Push individual platform images
-            # docker push $TAG-amd64
-            # docker push $TAG-arm64
-
-            # Create manifest list and push it
+            # Push individual images
             docker buildx imagetools create -t $TAG \
-              $TAG-amd64 \
-              $TAG-arm64
+              local-amd64 \
+              local-arm64
           done
+
+          if [ "${{ github.ref_type }}" == "tag" ]; then
+            docker buildx imagetools create -t latest \
+              ${{ steps.meta.outputs.tags }},
+              local-amd64 \
+              local-arm64
+          fi
 
       # Sign the manifest
       - name: Sign the manifests
