@@ -218,6 +218,9 @@ jobs:
           if [ "${{ github.ref_type }}" == "tag" ]; then
             args="$args -t latest"
           fi
+
+          echo $args
+
           docker buildx imagetools create $args \
             local-amd64 \
             local-arm64
