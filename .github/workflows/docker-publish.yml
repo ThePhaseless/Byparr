@@ -70,7 +70,7 @@ jobs:
           SURFIX=$(echo ${{ matrix.platform }} | cut -d'/' -f2)
           echo "SURFIX=$SURFIX" >> $GITHUB_OUTPUT
           # Generate a unique local tag for the image
-          echo "LOCAL_TAG=local-${{ github.sha }}-$SURFIX" >> $GITHUB_OUTPUT
+          echo "LOCAL_TAG=${{ github.sha }}-$SURFIX" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -84,13 +84,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,enable=${{ github.ref_type == 'tag' }}, value=latest
+          tags: type=raw,value=${{ steps.vars.outputs.LOCAL_TAG }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Set up apt cache
@@ -121,15 +115,13 @@ jobs:
         with:
           context: .
           pull: true
-          push: false
-          load: true # Export to local Docker instead of pushing
-          tags: ${{ steps.vars.outputs.LOCAL_TAG }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ matrix.platform }}
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
           build-args: GITHUB_BUILD=true,VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
-          outputs: type=docker,dest=/tmp/image-${{ steps.vars.outputs.SURFIX }}.tar
 
       # Upload the tarball as an artifact
       - name: Upload image artifact
@@ -181,36 +173,11 @@ jobs:
             type=semver,pattern={{major}}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      # Download all image artifacts
-      - name: Download AMD64 image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image-amd64
-          path: /tmp
-
-      - name: Download ARM64 image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image-arm64
-          path: /tmp
-
-      # Load images into Docker
-      - name: Load images
-        run: |
-          docker load --input /tmp/image-amd64.tar
-          docker load --input /tmp/image-arm64.tar
-
       # Create manifest lists and push
       - name: Create and push manifest lists
         run: |
           TAGS="${{ steps.meta.outputs.tags }}"
           args=""
-
-          docker tag local-${{ github.sha }}-amd64 ${{github.ref_name}}-amd64
-          docker push ${{github.ref_name}}-amd64
-
-          docker tag local-${{ github.sha }}-arm64 ${{github.ref_name}}-arm64
-          docker push ${{github.ref_name}}-arm64
 
           # Create tag arguments
           for tag in $TAGS; do
@@ -224,8 +191,8 @@ jobs:
           echo $args
 
           docker buildx imagetools create --pull=false $args \
-            ${{github.ref_name}}-amd64 \
-            ${{github.ref_name}}-arm64
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{github.sha}}-amd64 \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{github.sha}}-arm64
 
       # Sign the manifest
       - name: Sign the manifests
