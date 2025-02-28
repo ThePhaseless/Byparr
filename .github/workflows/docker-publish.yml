@@ -198,7 +198,7 @@ jobs:
 
           echo $args
 
-          docker buildx imagetools create --pull=false $args \
+          docker buildx imagetools create $args \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{github.sha}}-amd64 \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{github.sha}}-arm64
 
