@@ -2,24 +2,21 @@ from __future__ import annotations
 
 import time
 from http import HTTPStatus
-from typing import Annotated, Any
+from typing import Any
 
 from fastapi import Body
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src import consts
 
 
 class LinkRequest(BaseModel):
-    cmd: Annotated[
-        str,
-        Body(
-            default="request.get",
-            description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
-        ),
-    ]
-    url: Annotated[str, Body(pattern=r"^https?://", default="https://")]
-    max_timeout: Annotated[int, Body(default=60)]
+    cmd: str = Field(
+        default_factory=lambda: "request.get",
+        description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
+    )
+    url: str = Field(pattern=r"^https?://", default="https://")
+    max_timeout: int = Field(default=60)
 
 
 class Solution(BaseModel):
@@ -51,10 +48,8 @@ class LinkResponse(BaseModel):
     status: str = "ok"
     message: str
     solution: Solution
-    start_timestamp: Annotated[int, Body(alias="startTimestamp")] = int(
-        time.time() * 1000
-    )
-    end_timestamp: Annotated[int, Body(alias="endTimestamp")] = int(time.time() * 1000)
+    start_timestamp: int = Field(alias="startTimestamp", default_factory=lambda: int(time.time() * 1000))
+    end_timestamp: int = Field(alias="endTimestamp", default_factory=lambda: int(time.time() * 1000))
     version: str = consts.VERSION
 
     @classmethod
