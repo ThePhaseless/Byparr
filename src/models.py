@@ -12,7 +12,7 @@ from src import consts
 
 class LinkRequest(BaseModel):
     cmd: str = Field(
-        default_factory=lambda: "request.get",
+        default="request.get",
         description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
     )
     url: str = Field(pattern=r"^https?://", default="https://")
