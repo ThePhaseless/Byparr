@@ -80,7 +80,6 @@ dev = [
 ]
 test = [
     { name = "httpx" },
-    { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-progress" },
     { name = "pytest-retry" },
@@ -103,7 +102,6 @@ dev = [
 ]
 test = [
     { name = "httpx", specifier = "==0.28.1" },
-    { name = "pytest", specifier = "==8.3.4" },
     { name = "pytest-asyncio", specifier = "==0.25.3" },
     { name = "pytest-progress", specifier = "==1.3.0" },
     { name = "pytest-retry", specifier = "==1.7.0" },
