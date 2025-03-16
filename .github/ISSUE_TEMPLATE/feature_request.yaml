@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest a new feature or improvement
+assignees:
+  - ThePhaseless
+labels: enhancement
+
+body:
+  - type: checkboxes
+    attributes:
+      label: "Before submitting, I've done the following:"
+      options:
+        - label: Checked the existing feature requests to avoid duplicates
+
+  - type: textarea
+    attributes:
+      label: Describe the problem this feature would solve
+      description: Clearly explain the issue or need that this feature addresses.
+      placeholder: "Example: It's difficult to manage multiple configurations because..."
+
+  - type: textarea
+    attributes:
+      label: Alternatives considered
+      description: Have you considered any alternative solutions or workarounds? If so, please describe them.
+      placeholder: "Example: As a workaround, I've been manually editing the config files, but this is error-prone."
+
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Add any other context or information that might be helpful in understanding your request. This could include use cases, mockups, or links to relevant discussions.
