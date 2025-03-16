@@ -1,6 +1,7 @@
 name: Bug report
 description: Create a bug report
 assignees: ThePhaseless
+labels: bug
 
 body:
   - type: checkboxes
