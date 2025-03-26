@@ -91,7 +91,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = "==0.115.12" },
     { name = "pyautogui", specifier = "==0.9.54" },
     { name = "pydantic", specifier = "==2.10.6" },
-    { name = "seleniumbase", specifier = "==4.36.1" },
+    { name = "seleniumbase", specifier = "==4.36.2" },
     { name = "uvicorn", specifier = "==0.34.0" },
 ]
 
@@ -551,16 +551,16 @@ wheels = [
 
 [[package]]
 name = "pdbp"
-version = "1.6.1"
+version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "pygments" },
     { name = "tabcompleter" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/69/13/80da03638f62facbee76312ca9ee5941c017b080f2e4c6919fd4e87e16e3/pdbp-1.6.1.tar.gz", hash = "sha256:f4041642952a05df89664e166d5bd379607a0866ddd753c06874f65552bdf40b", size = 25322 }
+sdist = { url = "https://files.pythonhosted.org/packages/a5/7e/c2e6e6a27417ac9d23c1a8534c72f451463c71776cc182272cadaec78f6d/pdbp-1.7.0.tar.gz", hash = "sha256:d0a5b275720c451f5574427e35523aeb61c244f3faf622a80fe03019ef82d380", size = 25481 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/29/93/d56fb9ba5569dc29d8263c72e46d21a2fd38741339ebf03f54cf7561828c/pdbp-1.6.1-py3-none-any.whl", hash = "sha256:f10bad2ee044c0e5c168cb0825abfdbdc01c50013e9755df5261b060bdd35c22", size = 21495 },
+    { url = "https://files.pythonhosted.org/packages/86/2f/1f0144b14553ad32a8d0afa38b832c4b117694484c32aef2d939dc96f20a/pdbp-1.7.0-py3-none-any.whl", hash = "sha256:6ad99cb4e9f2fc1a5b4ef4f2e0acdb28b18b271bf71f6c9f997b652d935caa19", size = 21614 },
 ]
 
 [[package]]
@@ -1083,7 +1083,7 @@ wheels = [
 
 [[package]]
 name = "seleniumbase"
-version = "4.36.1"
+version = "4.36.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1146,18 +1146,18 @@ dependencies = [
     { name = "wheel" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/21/7b/912eda05b8fed5197cb7a5b45d784e7b80d437b78ab245a349bfba2863a4/seleniumbase-4.36.1.tar.gz", hash = "sha256:9f734f4c0fa419423507c5318c8f49b5aaab364d7a3467fb9bfd20ce0647bb89", size = 618526 }
+sdist = { url = "https://files.pythonhosted.org/packages/56/b5/baf40b1523194b2eb1bcccc53c30586a605e3e58ba2d9216c6e6861504a1/seleniumbase-4.36.2.tar.gz", hash = "sha256:c872ca64e45d661be2721be121cbcb928f5f60d56e0d301f06953818908f4a06", size = 618746 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/78/2a386062fddc3f1d2f45b7516b5b9eb8baa29743be63a5ed3e3f4ea609bc/seleniumbase-4.36.1-py3-none-any.whl", hash = "sha256:7ba04adc0ae7c8a98a8865915fb53d4d5736fcb335d6b84a3210956548376d55", size = 626008 },
+    { url = "https://files.pythonhosted.org/packages/12/38/1f6b6f927d150d40d0060cc44355aa5cf3a7768b1633d544da94cb809e28/seleniumbase-4.36.2-py3-none-any.whl", hash = "sha256:5c9089664214e35c1462fb2533f7dced12a58575660fcf47e1507d92b1c81380", size = 626244 },
 ]
 
 [[package]]
 name = "setuptools"
-version = "77.0.3"
+version = "78.1.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/81/ed/7101d53811fd359333583330ff976e5177c5e871ca8b909d1d6c30553aa3/setuptools-77.0.3.tar.gz", hash = "sha256:583b361c8da8de57403743e756609670de6fb2345920e36dc5c2d914c319c945", size = 1367236 }
+sdist = { url = "https://files.pythonhosted.org/packages/a9/5a/0db4da3bc908df06e5efae42b44e75c81dd52716e10192ff36d0c1c8e379/setuptools-78.1.0.tar.gz", hash = "sha256:18fd474d4a82a5f83dac888df697af65afa82dec7323d09c3e37d1f14288da54", size = 1367827 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/07/99f2cefae815c66eb23148f15d79ec055429c38fa8986edcc712ab5f3223/setuptools-77.0.3-py3-none-any.whl", hash = "sha256:67122e78221da5cf550ddd04cf8742c8fe12094483749a792d56cd669d6cf58c", size = 1255678 },
+    { url = "https://files.pythonhosted.org/packages/54/21/f43f0a1fa8b06b32812e0975981f4677d28e0f3271601dc88ac5a5b83220/setuptools-78.1.0-py3-none-any.whl", hash = "sha256:3e386e96793c8702ae83d17b853fb93d3e09ef82ec62722e61da5cd22376dcd8", size = 1256108 },
 ]
 
 [[package]]
