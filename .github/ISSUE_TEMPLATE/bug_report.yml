@@ -39,10 +39,7 @@ body:
     id: config
     attributes:
       label: Docker Compose config
-      placeholder: |
-        ```yaml
-        services:
-        ...```
+      placeholder: Remember to use ```yaml before and ``` after the code
 
   - type: textarea
     attributes:
