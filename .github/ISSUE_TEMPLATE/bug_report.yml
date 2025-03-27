@@ -35,11 +35,16 @@ body:
     attributes:
       label: Website
       placeholder: e.g. https://nowsecure.nl
-  - type: input
+  
+  - type: textarea
     id: config
     attributes:
       label: Docker Compose config
-      placeholder: Remember to use ```yaml before and ``` after the code
+      placeholder: |
+        ```yaml
+        services:
+          ...
+        ```
 
   - type: textarea
     attributes:
