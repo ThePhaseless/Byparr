@@ -16,7 +16,7 @@ body:
     id: docker-host
     attributes:
       label: OS
-      placeholder: e.g. Docker, Ubuntu Linux
+      placeholder: e.g. Docker, Ubuntu, WSL2 
 
   - type: input
     id: platform-model
@@ -35,6 +35,14 @@ body:
     attributes:
       label: Website
       placeholder: e.g. https://nowsecure.nl
+  - type: input
+    id: config
+    attributes:
+      label: Docker Compose config
+      placeholder: |
+      ```yaml
+      services:
+      ...```
 
   - type: textarea
     attributes:
@@ -45,4 +53,4 @@ body:
   - type: textarea
     attributes:
       label: Additional context
-      description: Add any other context about the problem here.
+      description: Add any other context about the problem here, e.g. similar issues.
