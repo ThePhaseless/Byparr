@@ -61,13 +61,18 @@ def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
         save_screenshot(sb)
         raise HTTPException(status_code=500, detail="Could not bypass challenge")
 
+    cookies = sb.get_cookies()
+    for cookie in cookies:
+        if 'expiry' in cookie:
+            cookie['expires'] = cookie['expiry']
+
     return LinkResponse(
         message="Success",
         solution=Solution(
             userAgent=sb.get_user_agent(),
             url=sb.get_current_url(),
             status=200,
-            cookies=sb.get_cookies(),
+            cookies=cookies,
             headers={},
             response=str(sb.get_beautiful_soup()),
         ),
