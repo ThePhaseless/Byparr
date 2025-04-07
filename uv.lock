@@ -91,7 +91,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = "==0.115.12" },
     { name = "pyautogui", specifier = "==0.9.54" },
     { name = "pydantic", specifier = "==2.11.2" },
-    { name = "seleniumbase", specifier = "==4.37.0" },
+    { name = "seleniumbase", specifier = "==4.37.1" },
     { name = "uvicorn", specifier = "==0.34.0" },
 ]
 
@@ -1087,7 +1087,7 @@ wheels = [
 
 [[package]]
 name = "seleniumbase"
-version = "4.37.0"
+version = "4.37.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1150,9 +1150,9 @@ dependencies = [
     { name = "wheel" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/76/33/771299b618777363c37071b6d09caeefb197c978e37df94c6e0b23b18d50/seleniumbase-4.37.0.tar.gz", hash = "sha256:75056cc3b649c91fab89973b66a07e4d6b4ec5503adb7384cfe26b0d6175ef6a", size = 618990 }
+sdist = { url = "https://files.pythonhosted.org/packages/70/a0/2163b2e55ade8ef176ac2769f17be6b4d9bb1b5ef46691c5b76dc37971e2/seleniumbase-4.37.1.tar.gz", hash = "sha256:8430e2a1b5e896448a6e9ccc149e5eab4d1b7d69f15320d624cce346e79f8913", size = 619190 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f3/53/0d7a7c3ea9754419833df2db9ad87205109e496f26e9b7e1ab28239898d6/seleniumbase-4.37.0-py3-none-any.whl", hash = "sha256:d43af682289cab8fa7ae79c90a8e32872979eec5b74985f104b09d1776dd345e", size = 626444 },
+    { url = "https://files.pythonhosted.org/packages/ba/3b/3962c13a8dca8e6657301c6979258e7a6c772c6f818b9c90004f3f6d3f05/seleniumbase-4.37.1-py3-none-any.whl", hash = "sha256:f03eba0817360d49e1a7fe9f6901d6094b829af3824c83cb89bb89f2395bf2be", size = 626662 },
 ]
 
 [[package]]
