@@ -11,12 +11,13 @@ body:
         - label: Read Loop Warning on Readme
         - label: Done the troubleshooting from Readme
         - label: Checked if such issue already exists
+        - label: Checked other websites with Cloudflare Turnstile 
 
   - type: input
     id: docker-host
     attributes:
       label: OS
-      placeholder: e.g. Docker, Ubuntu, WSL2 
+      placeholder: e.g. Docker, WSL2, Ubuntu, Windows 
 
   - type: input
     id: platform-model
@@ -35,6 +36,12 @@ body:
     attributes:
       label: Website
       placeholder: e.g. https://nowsecure.nl
+
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: "Example: The application crashes when trying to load a new file"
   
   - type: textarea
     id: config
@@ -45,14 +52,20 @@ body:
         services:
           ...
         ```
+  - type: textarea
+    id: prowlarr-logs
+    attributes:
+      label: Prowlarr Logs
+      placeholder: |
+        ```
+        put logs between 3x `
+        ```
 
   - type: textarea
+    id: byparr-logs
     attributes:
-      label: Describe the bug
-      description: A clear and concise description of what the bug is.
-      placeholder: "Example: The application crashes when trying to load a new file"
-
-  - type: textarea
-    attributes:
-      label: Additional context
-      description: Add any other context about the problem here, e.g. similar issues.
+      label: Byparr Logs
+      placeholder: |
+        ```
+        put logs between 3x `
+        ```
