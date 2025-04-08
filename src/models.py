@@ -4,8 +4,8 @@ import time
 from http import HTTPStatus
 from typing import Any
 
-from fastapi import Body
 from pydantic import BaseModel, Field
+from pydantic.alias_generators import to_camel
 
 from src import consts
 
@@ -45,11 +45,12 @@ class Solution(BaseModel):
 
 
 class LinkResponse(BaseModel):
+    model_config = {"alias_generator": to_camel, "populate_by_name": True}
     status: str = "ok"
     message: str
     solution: Solution
-    start_timestamp: int = Field(alias="startTimestamp", default_factory=lambda: int(time.time() * 1000))
-    end_timestamp: int = Field(alias="endTimestamp", default_factory=lambda: int(time.time() * 1000))
+    start_timestamp: int
+    end_timestamp: int = Field(default_factory=lambda: int(time.time() * 1000))
     version: str = consts.VERSION
 
     @classmethod
@@ -64,5 +65,4 @@ class LinkResponse(BaseModel):
             message="Invalid request",
             solution=Solution.invalid(url),
             start_timestamp=int(time.time() * 1000),
-            end_timestamp=int(time.time() * 1000),
         )
