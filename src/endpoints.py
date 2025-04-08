@@ -63,8 +63,13 @@ def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
 
     cookies = sb.get_cookies()
     for cookie in cookies:
-        if 'expiry' in cookie:
-            cookie['expires'] = cookie['expiry']
+        name = cookie["name"]
+        value = cookie["value"]
+        cookie["size"] = len(f"{name}={value}".encode())
+
+        cookie["session"] = False
+        if "expiry" in cookie:
+            cookie["expires"] = cookie["expiry"]
 
     return LinkResponse(
         message="Success",
