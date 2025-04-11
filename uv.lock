@@ -91,7 +91,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = "==0.115.12" },
     { name = "pyautogui", specifier = "==0.9.54" },
     { name = "pydantic", specifier = "==2.11.3" },
-    { name = "seleniumbase", specifier = "==4.37.1" },
+    { name = "seleniumbase", specifier = "==4.37.2" },
     { name = "uvicorn", specifier = "==0.34.0" },
 ]
 
@@ -1087,7 +1087,7 @@ wheels = [
 
 [[package]]
 name = "seleniumbase"
-version = "4.37.1"
+version = "4.37.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1150,9 +1150,9 @@ dependencies = [
     { name = "wheel" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/70/a0/2163b2e55ade8ef176ac2769f17be6b4d9bb1b5ef46691c5b76dc37971e2/seleniumbase-4.37.1.tar.gz", hash = "sha256:8430e2a1b5e896448a6e9ccc149e5eab4d1b7d69f15320d624cce346e79f8913", size = 619190 }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/50/80c8b27425789f8013833c28580626d70ce23d9a39b5ef761e18d009905b/seleniumbase-4.37.2.tar.gz", hash = "sha256:75dc0146e907ec80ba9e3177abd14a5ea47959b847dfd70e6e924ea88d9d3308", size = 619293 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/3b/3962c13a8dca8e6657301c6979258e7a6c772c6f818b9c90004f3f6d3f05/seleniumbase-4.37.1-py3-none-any.whl", hash = "sha256:f03eba0817360d49e1a7fe9f6901d6094b829af3824c83cb89bb89f2395bf2be", size = 626662 },
+    { url = "https://files.pythonhosted.org/packages/5b/04/9f791bb4aed1336432b990efa067563f83669238e8880a0ff9d263f960b4/seleniumbase-4.37.2-py3-none-any.whl", hash = "sha256:976d5a53cb887d0a81bf876cf344619b256e472bc624018458f9b55f241af71b", size = 626758 },
 ]
 
 [[package]]
@@ -1290,11 +1290,11 @@ wheels = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.13.1"
+version = "4.13.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/76/ad/cd3e3465232ec2416ae9b983f27b9e94dc8171d56ac99b345319a9475967/typing_extensions-4.13.1.tar.gz", hash = "sha256:98795af00fb9640edec5b8e31fc647597b4691f099ad75f469a2616be1a76dff", size = 106633 }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/37/23083fcd6e35492953e8d2aaaa68b860eb422b34627b13f2ce3eb6106061/typing_extensions-4.13.2.tar.gz", hash = "sha256:e6c81219bd689f51865d9e372991c540bda33a0379d5573cddb9a3a23f7caaef", size = 106967 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/c5/e7a0b0f5ed69f94c8ab7379c599e6036886bffcde609969a5325f47f1332/typing_extensions-4.13.1-py3-none-any.whl", hash = "sha256:4b6cf02909eb5495cfbc3f6e8fd49217e6cc7944e145cdda8caa3734777f9e69", size = 45739 },
+    { url = "https://files.pythonhosted.org/packages/8b/54/b1ae86c0973cc6f0210b53d508ca3641fb6d0c56823f288d108bc7ab3cc8/typing_extensions-4.13.2-py3-none-any.whl", hash = "sha256:a439e7c04b49fec3e5d3e2beaa21755cadbbdc391694e28ccdd36ca4a1408f8c", size = 45806 },
 ]
 
 [[package]]
