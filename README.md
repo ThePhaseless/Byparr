@@ -3,7 +3,7 @@
 An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, built with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com).
 
 > [!IMPORTANT]
-> Due to recent challenge changes, this software does not guarantee that the Cloudflare challenge will be bypassed. Cloudflare likely requires valid network traffic originating from the user’s public IP address to mark a connection as legitimate. While this tool may bypass the initial browser check, it does not ensure that requests will consistently pass Cloudflare's validation. More testing and data are required to understand how Cloudflare identifies connections and requests as valid. Invalid requests will result in Byparr's looping and eventually time-outing.
+> This software does **not** guarantee that any challenge will be bypassed. While this tool passes the initial browser check, Cloudflare and other captcha providers likely require valid network traffic originating from the user’s public IP address to mark a connection as legitimate. If any website does not pass the challenge, please run troubleshooting steps and check if other websites work before you create an GitHub issue.
 
 > [!IMPORTANT]
 > Support for NAS devices (like Synology) is minimal. Please report issues, but do not expect it to be fixed quickly. The only ARM device I have is a free Ampere Oracle VM, so I can only test ARM support on that. See [#22](https://github.com/ThePhaseless/Byparr/issues/22) and [#3](https://github.com/ThePhaseless/Byparr/issues/3)
@@ -33,11 +33,11 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 
 ## Options
 
-| Env            | Default                | Description                                                                                                                     |
-| -------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `USE_XVFB`     | `SeleniumBase default` | Use virtual desktop with Xvfb. (Linux only) (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14)) |
-| `USE_HEADLESS` | `SeleniumBase default` | Use headless  chromium.                                                                                                         |
-| `PROXY`        | None                   | Proxy to use. (format: `username:password@host:port`)                                                                           |
+| Environment Variable | Default                | Description                                                                                                                                                                                                                                                                                    |
+| -------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `USE_XVFB`           | `SeleniumBase default` | Use virtual desktop with Xvfb. (Linux only) (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14))                                                                                                                                                                |
+| `USE_HEADLESS`       | `SeleniumBase default` | Use headless  chromium.                                                                                                                                                                                                                                                                        |
+| `PROXY`              | None                   | Proxy to use in format: `protocol://username:password@host:port`. [SOCKS5 with authentication is not supported by Chrome](https://stackoverflow.com/questions/75602916/connection-to-private-proxy-socks5-with-chrome-webrequest-onauthrequired-and), see `compose.yaml` file for a workaround |
 
 ## Tags
 

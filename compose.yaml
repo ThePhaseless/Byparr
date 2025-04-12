@@ -1,12 +1,23 @@
 services:
   byparr:
     image: ghcr.io/thephaseless/byparr
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      - LOG_LEVEL=INFO
+    # environment: # Uncomment if using pproxy
+    #   - proxy=http://pproxy:8080
     volumes:
       - ./screenshots:/app/screenshots # For screenshots when exception occurs
     ports:
       - "8191:8191"
+  # # Uncomment the following lines to enable pproxy
+  # pproxy:
+  #   tty: true # Required for pproxy to work
+  #   container_name: pproxy
+  #   restart: unless-stopped
+  #   image: mosajjal/pproxy:latest
+  #   command:
+  #     - -vv
+  #     - -l http://:8080
+  #     - -r socks5://host:port#username:password
