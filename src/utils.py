@@ -15,7 +15,7 @@ if len(logger.handlers) == 0:
 def get_sb(
     proxy: str | None = Header(
         default=None,
-        examples=["username:password@host:port"],
+        examples=["protocol://username:password@host:port"],
         description="Override default proxy from env",
     ),
 ):
