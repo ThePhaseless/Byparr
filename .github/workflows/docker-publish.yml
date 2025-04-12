@@ -108,7 +108,9 @@ jobs:
           platforms: ${{ matrix.platform }}
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
-          build-args: GITHUB_BUILD=true,VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+          build-args: |
+            GITHUB_BUILD=true
+            VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
 
   merge-and-push:
     needs: build
