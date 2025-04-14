@@ -5,13 +5,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # environment: # Uncomment if using pproxy
-    #   - proxy=http://pproxy:8080
+    # environment:
+    #   - PROXY=http://pproxy:8080 # Uncomment this line to use pproxy
     volumes:
       - ./screenshots:/app/screenshots # For screenshots when exception occurs
     ports:
       - "8191:8191"
-  # # Uncomment the following lines to enable pproxy
+  # # Uncomment the following lines to enable pproxy for socks5 proxy
   # pproxy:
   #   tty: true # Required for pproxy to work
   #   container_name: pproxy
@@ -20,4 +20,4 @@ services:
   #   command:
   #     - -vv
   #     - -l http://:8080
-  #     - -r socks5://host:port#username:password
+  #     - -r socks5://host:port#username:password # Fill in your proxy credentials and address
