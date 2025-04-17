@@ -8,6 +8,7 @@ from sbase import BaseCase
 
 from src.consts import CHALLENGE_TITLES
 from src.models import (
+    HealthcheckResponse,
     LinkRequest,
     LinkResponse,
     Solution,
@@ -41,7 +42,7 @@ def health_check(sb: SeleniumDep):
             detail="Health check failed",
         )
 
-    return {"status": "ok"}
+    return HealthcheckResponse(user_agent=sb.get_user_agent())
 
 
 @router.post("/v1")
