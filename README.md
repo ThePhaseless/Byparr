@@ -63,7 +63,7 @@ docker run -p 8191:8191 ghcr.io/thephaseless/byparr:latest
 ### Local
 
 ```bash
-uv sync && ./cmd.sh
+uv sync && uv run main.py
 ```
 
 ## Need help with / TODO
