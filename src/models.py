@@ -19,6 +19,13 @@ class LinkRequest(BaseModel):
     max_timeout: int = Field(default=60)
 
 
+class HealthcheckResponse(BaseModel):
+    model_config = {"alias_generator": to_camel, "populate_by_name": True}
+    msg: str = "Byparr is ready!"
+    version: str = consts.VERSION
+    user_agent: str
+
+
 class Solution(BaseModel):
     url: str
     status: int
