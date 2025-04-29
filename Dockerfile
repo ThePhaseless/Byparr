@@ -16,7 +16,7 @@ ENV PATH="${HOME}/.local/bin:$PATH"
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
+    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl ca-certificates
 
 ADD https://astral.sh/uv/install.sh install.sh
 RUN sh install.sh
@@ -36,5 +36,5 @@ RUN ./test.sh
 FROM base
 
 EXPOSE 8191
-HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
+HEALTHCHECK --interval=10s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
 ENTRYPOINT ["uv", "run", "main.py"]
