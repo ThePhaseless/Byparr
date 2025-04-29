@@ -3,11 +3,16 @@
         {
             "console": "integratedTerminal",
             "env": {
-                "LOG_LEVEL": "DEBUG"
+                "LOG_LEVEL": "DEBUG",
+                "USE_XVFB": "True"
             },
             "justMyCode": false,
             "name": "Python Debugger: Main",
             "program": "main.py",
+            "purpose": [
+                "debug-in-terminal",
+                "debug-test"
+            ],
             "request": "launch",
             "type": "debugpy"
         },
