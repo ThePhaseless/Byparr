@@ -31,6 +31,7 @@
       commonPackages = pkgs: [
         pkgs.python3 # Python 3 interpreter
         pkgs.chromedriver # WebDriver for Chrome
+        pkgs.chromium # Chromium browser
         pkgs.uv # The uv Python package manager
         # Add any other system-level dependencies here that should be part of the final environment
       ];
