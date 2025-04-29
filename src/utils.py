@@ -5,10 +5,10 @@ from fastapi import Header, HTTPException
 from httpx import codes
 from sbase import SB, BaseCase
 
-from src.consts import LOG_LEVEL, PROXY, USE_HEADLESS
+from src.consts import LOG_LEVEL, PROXY
 
 logger = logging.getLogger("uvicorn.error")
-logger.setLevel(LOG_LEVEL)
+logger.setLevel(logging.getLevelNamesMapping()[LOG_LEVEL.upper()])
 if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
 
@@ -16,7 +16,7 @@ if len(logger.handlers) == 0:
 def get_sb(
     proxy: str | None = Header(
         default=PROXY,
-        examples=["protocol://username:password@host:port"],
+        example="protocol://username:password@host:port",
         description="Override default proxy address",
     ),
 ):
@@ -29,7 +29,6 @@ def get_sb(
 
     with SB(
         uc=True,
-        headless=USE_HEADLESS,
         locale_code="en",
         ad_block=True,
         proxy=proxy,
