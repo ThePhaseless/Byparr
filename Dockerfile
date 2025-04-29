@@ -1,40 +1,28 @@
-FROM debian:bullseye-slim AS base
+# Nix builder
+FROM nixos/nix:latest AS builder
 
-ARG GITHUB_BUILD=false \
-    VERSION
+# Copy our source and setup our working dir.
+COPY . /tmp/build
+WORKDIR /tmp/build
 
-ENV HOME=/root \
-    GITHUB_BUILD=${GITHUB_BUILD}\
-    VERSION=${VERSION}\
-    DEBIAN_FRONTEND=noninteractive \
-    PYTHONUNBUFFERED=1 \
-    # prevents python creating .pyc files
-    PYTHONDONTWRITEBYTECODE=1 \
-    DISPLAY=:0
-ENV PATH="${HOME}/.local/bin:$PATH"
+# Build our Nix environment
+RUN nix \
+    --extra-experimental-features "nix-command flakes" \
+    --option filter-syscalls false \
+    build
+
+# Copy the Nix store closure into a directory. The Nix store closure is the
+# entire set of Nix store values that we need for our build.
+RUN mkdir /tmp/nix-store-closure
+RUN cp -R $(nix-store -qR result/) /tmp/nix-store-closure
+
+# Final image is based on scratch. We copy a bunch of Nix dependencies
+# but they're fully self-contained so we don't need Nix anymore.
+FROM scratch
 
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl ca-certificates
-
-ADD https://astral.sh/uv/install.sh install.sh
-RUN sh install.sh
-COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync
-
-# SeleniumBase does not come with an arm64 chromedriver binary
-RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
-
-COPY . .
-
-FROM base AS test
-
-RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync --group test
-RUN ./test.sh
-
-FROM base
-
-EXPOSE 8191
-HEALTHCHECK --interval=10s --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
-ENTRYPOINT ["uv", "run", "main.py"]
+# Copy /nix/store
+COPY --from=builder /tmp/nix-store-closure /nix/store
+COPY --from=builder /tmp/build/result /app
+CMD ["/app/bin/app"]

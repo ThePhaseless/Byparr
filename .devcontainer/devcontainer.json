@@ -10,7 +10,8 @@
       "extensions": [
         "charliermarsh.ruff",
         "-ms-python.autopep8",
-        "-ms-python.vscode-pylance"
+        "-ms-python.vscode-pylance",
+        "jnoortheen.nix-ide"
       ],
       "settings": {
         "python.venvPath": "./venv"
@@ -32,7 +33,22 @@
     "8181:8191"
   ],
   "features": {
-    "ghcr.io/devcontainers-extra/features/act:1": {},
-    "ghcr.io/devcontainers/features/desktop-lite:1": {}
+    "ghcr.io/devcontainers-extra/features/act:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/desktop-lite:1": {
+      "version": "latest",
+      "noVncVersion": "1.2.0",
+      "password": "vscode",
+      "webPort": "6080",
+      "vncPort": "5901"
+    },
+    "ghcr.io/devcontainers/features/nix:1": {
+      "multiUser": true,
+      "version": "latest",
+      "packages": [
+        "nixfmt"
+      ]
+    }
   }
 }
