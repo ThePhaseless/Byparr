@@ -22,4 +22,5 @@ RUN nix-shell --run "uv sync"
 # Set the default command to run the Python script using nix-shell.
 # This ensures the script runs within the environment where python3, chromedriver,
 # and uv (and potentially installed Python packages) are available.
+COPY . .
 CMD ["nix-shell", "--run", "uv run main.py"]
