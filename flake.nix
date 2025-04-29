@@ -33,6 +33,7 @@
         pkgs.chromedriver # WebDriver for Chrome
         pkgs.chromium # Chromium browser
         pkgs.uv # The uv Python package manager
+        pkgs.xorg.xvfb
         # Add any other system-level dependencies here that should be part of the final environment
       ];
 
