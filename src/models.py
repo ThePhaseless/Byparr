@@ -22,7 +22,7 @@ class LinkRequest(BaseModel):
 class HealthcheckResponse(BaseModel):
     model_config = {"alias_generator": to_camel, "populate_by_name": True}
     msg: str = "Byparr is ready!"
-    version: str = consts.VERSION
+    version: str = str(consts.VERSION)
     user_agent: str
 
 
@@ -58,7 +58,7 @@ class LinkResponse(BaseModel):
     solution: Solution
     start_timestamp: int
     end_timestamp: int = Field(default_factory=lambda: int(time.time() * 1000))
-    version: str = consts.VERSION
+    version: str = str(consts.VERSION)
 
     @classmethod
     def invalid(cls, url: str):
