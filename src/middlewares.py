@@ -10,7 +10,7 @@ from src.utils import logger
 class LogRequest(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         """Log requests."""
-        if request.url.path != "/v1":
+        if request.url.path != "/v1" or request.method != "POST":
             return await call_next(request)
 
         start_time = time.perf_counter()
