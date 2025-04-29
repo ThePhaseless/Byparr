@@ -5,7 +5,7 @@
 pkgs.mkShell {
   # List of packages to make available in the environment.
   buildInputs = [
-    pkgs.python3 # Python 3 interpreter
+    pkgs.python3Full # Python 3 interpreter
     pkgs.chromedriver # WebDriver for Chrome
     pkgs.uv # The uv Python package manager
     pkgs.chromium # Chromium browser
