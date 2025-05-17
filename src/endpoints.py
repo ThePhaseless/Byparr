@@ -13,8 +13,7 @@ from src.models import (
     LinkResponse,
     Solution,
 )
-
-from .utils import get_sb, logger, save_screenshot
+from src.utils import get_sb, logger, save_screenshot
 
 router = APIRouter()
 
@@ -49,6 +48,7 @@ def health_check(sb: SeleniumDep):
 def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
     """Handle POST requests."""
     start_time = int(time.time() * 1000)
+    request.url = request.url.replace('"', "").strip()
     sb.uc_open_with_reconnect(request.url)
     logger.debug(f"Got webpage: {request.url}")
     source_bs = sb.get_beautiful_soup()
@@ -75,7 +75,7 @@ def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
     return LinkResponse(
         message="Success",
         solution=Solution(
-            userAgent=sb.get_user_agent(),
+            user_agent=sb.get_user_agent(),
             url=sb.get_current_url(),
             status=200,
             cookies=cookies,
