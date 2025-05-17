@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from http import HTTPStatus
+from http.client import INTERNAL_SERVER_ERROR
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -27,28 +27,13 @@ class HealthcheckResponse(BaseModel):
 
 
 class Solution(BaseModel):
+    model_config = {"alias_generator": to_camel, "populate_by_name": True}
     url: str
     status: int
-    cookies: list
-    userAgent: str  # noqa: N815 # Ignore to preserve compatibility
-    headers: dict[str, Any]
-    response: str
-
-    @classmethod
-    def invalid(cls, url: str):
-        """
-        Return an empty Solution with default values.
-
-        Useful for returning an error response.
-        """
-        return cls(
-            url=url,
-            status=HTTPStatus.INTERNAL_SERVER_ERROR,
-            cookies=[],
-            userAgent="",
-            headers={},
-            response="",
-        )
+    cookies: list = []
+    user_agent: str = ""
+    headers: dict[str, Any] = {}
+    response: str = ""
 
 
 class LinkResponse(BaseModel):
@@ -70,6 +55,6 @@ class LinkResponse(BaseModel):
         return cls(
             status="error",
             message="Invalid request",
-            solution=Solution.invalid(url),
+            solution=Solution(url=url, status=INTERNAL_SERVER_ERROR),
             start_timestamp=int(time.time() * 1000),
         )
