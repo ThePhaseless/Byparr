@@ -3,15 +3,14 @@ FROM debian:bullseye-slim AS base
 ARG GITHUB_BUILD=false \
     VERSION
 
-ENV HOME=/root \
-    GITHUB_BUILD=${GITHUB_BUILD}\
+ENV GITHUB_BUILD=${GITHUB_BUILD}\
     VERSION=${VERSION}\
     DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
-    DISPLAY=:0
-ENV PATH="${HOME}/.local/bin:$PATH"
+    DISPLAY=:0\
+    PATH="~/.local/bin:$PATH"
 
 WORKDIR /app
 
@@ -21,20 +20,27 @@ RUN apt-get update && \
 ADD https://astral.sh/uv/install.sh install.sh
 RUN sh install.sh
 COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync
+RUN --mount=type=cache,target="~/.cache/uv" uv sync
 
 # SeleniumBase does not come with an arm64 chromedriver binary
 RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
 
+
+FROM base AS devcontainer
+RUN apt-get install -y git && apt upgrade -y
+ENV UV_LINK_MODE=copy
+ENTRYPOINT [ "sleep", "infinity" ]
+
+
+FROM base AS app
 COPY . .
 
-FROM base AS test
 
-RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync --group test
+FROM app AS test
+RUN --mount=type=cache,target=~/.cache/uv uv sync --group test
 RUN ./test.sh
 
-FROM base
-
+FROM app
 EXPOSE 8191
 HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
 ENTRYPOINT ["uv", "run", "main.py"]
