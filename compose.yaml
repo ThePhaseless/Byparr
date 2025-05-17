@@ -2,6 +2,7 @@ services:
   byparr:
     image: ghcr.io/thephaseless/byparr
     restart: unless-stopped
+    shm_size: 2gb
     build:
       context: .
       dockerfile: Dockerfile
