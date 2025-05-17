@@ -3,7 +3,8 @@
 {
   // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "../Dockerfile",
+    "target": "devcontainer"
   },
   "customizations": {
     "vscode": {
@@ -16,7 +17,7 @@
         "python.venvPath": "./venv"
       }
     }
-  },
+  }
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
@@ -26,13 +27,4 @@
   // "customizations": {},
   // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
   // "remoteUser": "root"
-  "name": "Byparr Dev Container",
-  "runArgs": [
-    "-p",
-    "8181:8191"
-  ],
-  "features": {
-    "ghcr.io/devcontainers-extra/features/act:1": {},
-    "ghcr.io/devcontainers/features/desktop-lite:1": {}
-  }
 }
