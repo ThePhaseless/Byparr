@@ -1,4 +1,5 @@
 FROM debian:bullseye-slim AS base
+ENV HOME=/root
 
 ARG GITHUB_BUILD=false \
     VERSION
@@ -10,7 +11,7 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
     DISPLAY=:0\
-    PATH="~/.local/bin:$PATH"
+    PATH="${HOME}/.local/bin:$PATH"
 
 WORKDIR /app
 
@@ -18,26 +19,26 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
 
 ADD https://astral.sh/uv/install.sh install.sh
-RUN sh install.sh
-COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target="~/.cache/uv" uv sync
-
-# SeleniumBase does not come with an arm64 chromedriver binary
-RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && ln -s /usr/bin/chromedriver uc_driver
+RUN sh install.sh && uv --version
 
 
 FROM base AS devcontainer
-RUN apt-get install -y git && apt upgrade -y
+RUN apt install -y git && apt upgrade -y
 ENV UV_LINK_MODE=copy
 ENTRYPOINT [ "sleep", "infinity" ]
 
 
 FROM base AS app
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync
+
+# SeleniumBase does not come with an arm64 chromedriver binary
+RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && rm -f uc_driver && ln -s /usr/bin/chromedriver uc_driver
 COPY . .
 
 
 FROM app AS test
-RUN --mount=type=cache,target=~/.cache/uv uv sync --group test
+RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync --group test
 RUN ./test.sh
 
 FROM app
