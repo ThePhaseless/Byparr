@@ -8,11 +8,7 @@
   },
   "customizations": {
     "vscode": {
-      "extensions": [
-        "charliermarsh.ruff",
-        "-ms-python.autopep8",
-        "-ms-python.vscode-pylance"
-      ],
+      "extensions": ["charliermarsh.ruff", "ms-python.python"],
       "settings": {
         "python.venvPath": "./venv"
       }
