@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim AS base
+FROM debian:bookworm-slim AS base
 ENV HOME=/root
 
 ARG GITHUB_BUILD=false \
