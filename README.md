@@ -35,7 +35,6 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 
 | Environment Variable | Default                | Description                                                                                                                                                                                                                                                                                    |
 | -------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `USE_XVFB`           | `SeleniumBase default` | Use virtual desktop with Xvfb. (Linux only) (Can cause performance hog [#14](https://github.com/ThePhaseless/Byparr/issues/14))                                                                                                                                                                |
 | `USE_HEADLESS`       | `SeleniumBase default` | Use headless  chromium.                                                                                                                                                                                                                                                                        |
 | `PROXY`              | None                   | Proxy to use in format: `protocol://username:password@host:port`. [SOCKS5 with authentication is not supported by Chrome](https://stackoverflow.com/questions/75602916/connection-to-private-proxy-socks5-with-chrome-webrequest-onauthrequired-and), see `compose.yaml` file for a workaround |
 
@@ -57,7 +56,7 @@ See `compose.yaml`
 ### Docker
 
 ```bash
-docker run -p 8191:8191 ghcr.io/thephaseless/byparr:latest
+docker run --shm-size=2gb -p 8191:8191 ghcr.io/thephaseless/byparr:latest
 ```
 
 ### Local
@@ -68,7 +67,7 @@ uv sync && uv run main.py
 
 ## Need help with / TODO
 
-- [x] Slimming container (only ~650 MB now!)
+- [x] Slimming container (only ~1.11 GB now!)
 - [x] Add more anti-bot challenges
 - [x] Add doc strings
 - [x] Implement versioning
