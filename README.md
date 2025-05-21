@@ -40,7 +40,8 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 
 ## Proxy Recommendation
 
-Recently I've partnered with a *new in town* proxy service - ProxyBase - to offer affordable proxy services that seems to work seamlessly with Byparr! Using my affiliate code `byparr` (case sensitive!) when signing up will not only get you access to their cost-effective (**$0.69/GB with occasional promotions**) proxy network but will also help support the continued development of this project. ProxyBase's proxies can significantly improve your success rate when bypassing anti-bot challenges. [Check out ProxyBase](https://discord.gg/perwbTBxGf) and enhance your Byparr experience! Just remember that it uses `socks5` protocol, so check [Options](#options) section for more details.
+Recently I've partnered with a *new in town* proxy service - ProxyBase - to offer affordable proxy services that seems to work seamlessly with Byparr! Using my affiliate code `byparr` (case sensitive!) when signing up will not only get you access to their cost-effective (**$0.69/GB with occasional promotions**) proxy network but will also help support the continued development of this project. ProxyBase's proxies can significantly improve your success rate when bypassing anti-bot challenges. [Check out ProxyBase](https://client.proxybase.org/signup?ref=byparr
+) and enhance your Byparr experience!
 
 ## Tags
 
