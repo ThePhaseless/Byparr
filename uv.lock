@@ -91,7 +91,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = "==0.115.12" },
     { name = "pyautogui", specifier = "==0.9.54" },
     { name = "pydantic", specifier = "==2.11.5" },
-    { name = "seleniumbase", specifier = "==4.38.2" },
+    { name = "seleniumbase", specifier = "==4.38.3" },
     { name = "uvicorn", specifier = "==0.34.2" },
 ]
 
@@ -586,11 +586,11 @@ wheels = [
 
 [[package]]
 name = "pluggy"
-version = "1.5.0"
+version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/96/2d/02d4312c973c6050a18b314a5ad0b3210edb65a906f868e31c111dede4a6/pluggy-1.5.0.tar.gz", hash = "sha256:2cffa88e94fdc978c4c574f15f9e59b7f4201d439195c3715ca9e2486f1d0cf1", size = 67955, upload-time = "2024-04-20T21:34:42.531Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/5f/e351af9a41f866ac3f1fac4ca0613908d9a41741cfcf2228f4ad853b697d/pluggy-1.5.0-py3-none-any.whl", hash = "sha256:44e1ad92c8ca002de6377e165f3e0f1be63266ab4d554740532335b9d75ea669", size = 20556, upload-time = "2024-04-20T21:34:40.434Z" },
+    { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
 ]
 
 [[package]]
@@ -1090,7 +1090,7 @@ wheels = [
 
 [[package]]
 name = "seleniumbase"
-version = "4.38.2"
+version = "4.38.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1153,18 +1153,18 @@ dependencies = [
     { name = "wheel" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b2/56/9df773d54f811e209e4b7a943705efc6d3ee0f3b440b461ee020b4cfc8fc/seleniumbase-4.38.2.tar.gz", hash = "sha256:c1b304d14fc042b325d05014833f7e2571f732906233aaa351c9240ba8e9cdee", size = 621656, upload-time = "2025-05-13T02:39:20.293Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/83/85/f18cac149c8b3f2cf6a2ab34c7902b765f565a2007b2fa5372bcc7b8c162/seleniumbase-4.38.3.tar.gz", hash = "sha256:066c0d39060bf6218cb36ead78db830d492caa3ae12021e598075804746d9465", size = 621840, upload-time = "2025-05-22T23:54:12.375Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/07/7fe669a94cd52b2adeb28a733728b9f115cb3b6e075e703c412cfb2710a2/seleniumbase-4.38.2-py3-none-any.whl", hash = "sha256:22a06fb25d34544a2d16e5b7aafd61b2f1168db6ef87e249cf9a6e8a27b7bbdb", size = 628917, upload-time = "2025-05-13T02:39:17.934Z" },
+    { url = "https://files.pythonhosted.org/packages/23/31/24d30f0af29839e7b30d02de81b0ac01ae5cf133ac1aeed4d9bdc0c8050d/seleniumbase-4.38.3-py3-none-any.whl", hash = "sha256:5bfa931983c78cf20e5973b3d36ee7f4602bc9ee3f16b38feb0a8f25932def9f", size = 629037, upload-time = "2025-05-22T23:54:08.726Z" },
 ]
 
 [[package]]
 name = "setuptools"
-version = "80.4.0"
+version = "80.8.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/95/32/0cc40fe41fd2adb80a2f388987f4f8db3c866c69e33e0b4c8b093fdf700e/setuptools-80.4.0.tar.gz", hash = "sha256:5a78f61820bc088c8e4add52932ae6b8cf423da2aff268c23f813cfbb13b4006", size = 1315008, upload-time = "2025-05-09T20:42:27.972Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/d2/ec1acaaff45caed5c2dedb33b67055ba9d4e96b091094df90762e60135fe/setuptools-80.8.0.tar.gz", hash = "sha256:49f7af965996f26d43c8ae34539c8d99c5042fbff34302ea151eaa9c207cd257", size = 1319720, upload-time = "2025-05-20T14:02:53.503Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/93/dba5ed08c2e31ec7cdc2ce75705a484ef0be1a2fecac8a58272489349de8/setuptools-80.4.0-py3-none-any.whl", hash = "sha256:6cdc8cb9a7d590b237dbe4493614a9b75d0559b888047c1f67d49ba50fc3edb2", size = 1200812, upload-time = "2025-05-09T20:42:25.325Z" },
+    { url = "https://files.pythonhosted.org/packages/58/29/93c53c098d301132196c3238c312825324740851d77a8500a2462c0fd888/setuptools-80.8.0-py3-none-any.whl", hash = "sha256:95a60484590d24103af13b686121328cc2736bee85de8936383111e421b9edc0", size = 1201470, upload-time = "2025-05-20T14:02:51.348Z" },
 ]
 
 [[package]]
