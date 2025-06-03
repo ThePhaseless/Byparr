@@ -27,14 +27,19 @@ def get_sb(
             detail="SOCKS5 proxy with authentication is not supported. Check README for more info.",
         )
 
-    with SB(
+    sb_ctx = SB(
         uc=True,
         headless=USE_HEADLESS,
         locale_code="en",
         ad_block=True,
         proxy=proxy,
-    ) as sb:
+    )
+    sb = sb_ctx.__enter__()
+    try:
         yield sb
+    finally:
+        sb_ctx.__exit__(None, None, None)
+
 
 
 def save_screenshot(sb: BaseCase):

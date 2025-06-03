@@ -16,7 +16,7 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates
+    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates tini
 
 ADD https://astral.sh/uv/install.sh install.sh
 RUN sh install.sh && uv --version
@@ -44,4 +44,4 @@ RUN ./test.sh
 FROM app
 EXPOSE 8191
 HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
-ENTRYPOINT ["uv", "run", "main.py"]
+ENTRYPOINT ["/usr/bin/tini", "--", "uv", "run", "main.py"]
