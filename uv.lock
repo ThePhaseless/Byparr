@@ -83,7 +83,6 @@ test = [
     { name = "pytest-asyncio" },
     { name = "pytest-progress" },
     { name = "pytest-retry" },
-    { name = "pytest-xdist" },
 ]
 
 [package.metadata]
@@ -105,7 +104,6 @@ test = [
     { name = "pytest-asyncio", specifier = "==0.26.0" },
     { name = "pytest-progress", specifier = "==1.3.0" },
     { name = "pytest-retry", specifier = "==1.7.0" },
-    { name = "pytest-xdist", specifier = "==3.6.1" },
 ]
 
 [[package]]
