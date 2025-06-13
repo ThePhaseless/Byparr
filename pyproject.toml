@@ -10,7 +10,7 @@ readme = "README.md"
 dependencies = [
     "fastapi[standard]==0.115.12",
     "pyautogui==0.9.54",
-    "pydantic==2.11.5",
+    "pydantic==2.11.6",
     "seleniumbase==4.39.4",
     "uvicorn==0.34.3",
 ]
