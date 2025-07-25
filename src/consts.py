@@ -30,7 +30,7 @@ VERSION = get_version_from_env() or "unknown"
 USE_XVFB = os.getenv("USE_XVFB") in ["true", "1"] if os.getenv("USE_XVFB") else None
 
 USE_HEADLESS = (
-    os.getenv("USE_HEADLESS") in ["true", "1"] if os.getenv("USE_HEADLESS") else None
+    os.getenv("USE_HEADLESS") in ["true", "1"] if os.getenv("USE_HEADLESS") else False
 )
 
 PROXY = os.getenv("PROXY")
@@ -38,6 +38,7 @@ PROXY = os.getenv("PROXY")
 CHALLENGE_TITLES = [
     # Cloudflare
     "Just a moment...",
+    "Verifying you are human",
     # DDoS-GUARD
     "DDoS-Guard",
 ]

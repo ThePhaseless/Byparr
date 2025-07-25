@@ -87,10 +87,10 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", extras = ["standard"], specifier = "==0.115.14" },
-    { name = "pyautogui", specifier = "==0.9.54" },
-    { name = "pydantic", specifier = "==2.11.7" },
-    { name = "seleniumbase", specifier = "==4.40.0" },
+    { name = "fastapi", extras = ["standard"], specifier = "==0.115.*" },
+    { name = "pyautogui", specifier = "==0.9.*" },
+    { name = "pydantic", specifier = "==2.11.*" },
+    { name = "seleniumbase", specifier = "==4.*" },
     { name = "uvicorn", specifier = "==0.35.0" },
 ]
 

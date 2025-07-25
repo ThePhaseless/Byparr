@@ -5,7 +5,7 @@ from fastapi import Header, HTTPException
 from httpx import codes
 from sbase import SB, BaseCase
 
-from src.consts import LOG_LEVEL, PROXY, USE_HEADLESS
+from src.consts import LOG_LEVEL, PROXY, USE_HEADLESS, USE_XVFB
 
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(LOG_LEVEL)
@@ -27,12 +27,19 @@ def get_sb(
             detail="SOCKS5 proxy with authentication is not supported. Check README for more info.",
         )
 
+    kwargs = {
+        "uc": True,
+        "headless": USE_HEADLESS,
+        "xvfb": USE_XVFB,
+        "locale_code": "en",
+        "ad_block": True,
+        "proxy": proxy,
+    }
+
+    logger.info("Creating SeleniumBase instance with parameters: %s", kwargs)
+
     with SB(
-        uc=True,
-        headless=USE_HEADLESS,
-        locale_code="en",
-        ad_block=True,
-        proxy=proxy,
+        **kwargs,
     ) as sb:
         yield sb
 
