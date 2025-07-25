@@ -48,39 +48,48 @@ def health_check(sb: SeleniumDep):
 def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
     """Handle POST requests."""
     start_time = int(time.time() * 1000)
-    request.url = request.url.replace('"', "").strip()
-    sb.uc_open_with_reconnect(request.url)
-    logger.debug(f"Got webpage: {request.url}")
-    source_bs = sb.get_beautiful_soup()
-    title_tag = source_bs.title
-    if title_tag and title_tag.string in CHALLENGE_TITLES:
-        logger.debug("Challenge detected")
-        sb.uc_gui_click_captcha()
-        logger.info("Clicked captcha")
 
-    if sb.get_title() in CHALLENGE_TITLES:
-        save_screenshot(sb)
-        raise HTTPException(status_code=500, detail="Could not bypass challenge")
+    try:
+        request.url = request.url.replace('"', "").strip()
+        sb.uc_open_with_reconnect(request.url)
 
-    cookies = sb.get_cookies()
-    for cookie in cookies:
-        name = cookie["name"]
-        value = cookie["value"]
-        cookie["size"] = len(f"{name}={value}".encode())
+        logger.debug(f"Got webpage: {request.url}")
 
-        cookie["session"] = False
-        if "expiry" in cookie:
-            cookie["expires"] = cookie["expiry"]
+        source_bs = sb.get_beautiful_soup()
+        title_tag = source_bs.title
 
-    return LinkResponse(
-        message="Success",
-        solution=Solution(
-            user_agent=sb.get_user_agent(),
-            url=sb.get_current_url(),
-            status=200,
-            cookies=cookies,
-            headers={},
-            response=str(sb.get_beautiful_soup()),
-        ),
-        start_timestamp=start_time,
-    )
+        if title_tag and title_tag.string in CHALLENGE_TITLES:
+            logger.debug("Challenge detected")
+            sb.uc_gui_click_captcha()
+            logger.info("Clicked captcha")
+
+        if sb.get_title() in CHALLENGE_TITLES:
+            save_screenshot(sb)
+
+            raise HTTPException(status_code=500, detail="Could not bypass challenge")
+
+        cookies = sb.get_cookies()
+        for cookie in cookies:
+            name = cookie["name"]
+            value = cookie["value"]
+            cookie["size"] = len(f"{name}={value}".encode())
+
+            cookie["session"] = False
+            if "expiry" in cookie:
+                cookie["expires"] = cookie["expiry"]
+
+        return LinkResponse(
+            message="Success",
+            solution=Solution(
+                user_agent=sb.get_user_agent(),
+                url=sb.get_current_url(),
+                status=200,
+                cookies=cookies,
+                headers={},
+                response=str(sb.get_beautiful_soup()),
+            ),
+            start_timestamp=start_time,
+        )
+    except Exception as e:
+        logger.error(f"Error processing request: {e}", exc_info=True)
+        raise
