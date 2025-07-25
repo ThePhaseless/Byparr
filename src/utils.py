@@ -46,4 +46,4 @@ def get_sb(
 
 def save_screenshot(sb: BaseCase):
     """Save screenshot on HTTPException."""
-    sb.save_screenshot(f"screenshots/{strftime('%Y-%m-%d %H:%M:%S', gmtime())}.png")
+    sb.save_screenshot(f"screenshots_{strftime('%Y-%m-%d %H:%M:%S', gmtime())}.png")
