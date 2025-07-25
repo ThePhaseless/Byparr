@@ -1,6 +1,7 @@
 import logging
 from time import gmtime, strftime
 
+from anyio.streams import file
 from fastapi import Header, HTTPException
 from httpx import codes
 from sbase import SB, BaseCase
@@ -29,6 +30,7 @@ def get_sb(
 
     kwargs = {
         "uc": True,
+        "test": True,
         "headless": USE_HEADLESS,
         "xvfb": USE_XVFB,
         "locale_code": "en",
@@ -46,4 +48,7 @@ def get_sb(
 
 def save_screenshot(sb: BaseCase):
     """Save screenshot on HTTPException."""
-    sb.save_screenshot(f"screenshots_{strftime('%Y-%m-%d %H:%M:%S', gmtime())}.png")
+    file_name = f"screenshots_{strftime('%Y-%m-%d_%H:%M:%S', gmtime())}.png"
+
+    logger.info(f"Saving screenshot to {file_name}")
+    sb.save_screenshot(file_name)
