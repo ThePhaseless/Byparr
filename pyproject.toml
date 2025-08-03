@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "fastapi[standard]==0.115.14",
+    "fastapi[standard]==0.116.1",
     "pyautogui==0.9.54",
     "pydantic==2.11.7",
     "seleniumbase==4.40.7",
