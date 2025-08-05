@@ -4,7 +4,8 @@
   "packageRules": [
     {
       "automerge": true,
-      "matchUpdateTypes": ["minor", "patch"]
+      "matchUpdateTypes": ["minor", "patch"],
+      "forkProcessing": "enabled"
     }
   ]
 }
