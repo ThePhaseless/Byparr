@@ -11,12 +11,19 @@ body:
         - label: Read Loop Warning on Readme
         - label: Done the troubleshooting from Readme
         - label: Checked if such issue already exists
-        - label: Checked other websites with Cloudflare Turnstile 
+        - label: Checked other websites with Cloudflare Turnstile
+        - label: I am able to access the webpage from my browser
+  - type: checkboxes
+    attributes:
+      label: "If checked other websites with Cloudflare Turnstile:"
+      options:
+        - label: Other websites do work.
+        - label: Other websites do not work.
 
   - type: input
     id: docker-host
     attributes:
-      label: OS
+      label: OS/Docker Host
       placeholder: e.g. Docker, WSL2, Ubuntu, Windows 
 
   - type: input
