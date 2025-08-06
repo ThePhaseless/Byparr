@@ -1,6 +1,6 @@
 # Byparr
 
-An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, built with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com).
+Built with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com), this project aims to mimic [FlareSolverr's](https://github.com/FlareSolverr/FlareSolverr) API and functionality of providing you with http cookies and headers for websites protected with anti-bot protections.
 
 > [!IMPORTANT]
 > This software does not **guarantee** (only greatly increases the chance) that any challenge will be bypassed. While this tool passes the initial browser check, Cloudflare and other captcha providers likely require valid network traffic originating from the user’s public IP address to mark a connection as legitimate. If any website does not pass the challenge, please run troubleshooting steps and check if other websites work before you create an GitHub issue.
