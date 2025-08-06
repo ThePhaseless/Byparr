@@ -41,7 +41,7 @@ body:
   - type: input
     id: website
     attributes:
-      label: Website
+      label: Example website/URL that does not work
       placeholder: e.g. https://nowsecure.nl
 
   - type: textarea
