@@ -1,6 +1,6 @@
 # Byparr
 
-An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) as a drop-in replacement, built with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com).
+Built with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com), this project aims to mimic [FlareSolverr's](https://github.com/FlareSolverr/FlareSolverr) API and functionality of providing you with http cookies and headers for websites protected with anti-bot protections.
 
 > [!IMPORTANT]
 > This software does not **guarantee** (only greatly increases the chance) that any challenge will be bypassed. While this tool passes the initial browser check, Cloudflare and other captcha providers likely require valid network traffic originating from the user’s public IP address to mark a connection as legitimate. If any website does not pass the challenge, please run troubleshooting steps and check if other websites work before you create an GitHub issue.
@@ -34,10 +34,12 @@ An alternative to [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) a
 ## Options
 
 | Environment Variable | Default                | Description                                                                                                                                                                                                                                                                                    |
-| -------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|----------------------|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `HOST`               | `0.0.0.0`              | Host address to bind the server to. Use `0.0.0.0` to bind to all IPv4 interfaces, `::` for all IPv6 interfaces, or `127.0.0.1`/`localhost` for local access only.                                                                                                                              |
+| `PROXY`              | None                   | Proxy to use in format: `protocol://username:password@host:port`. [SOCKS5 with authentication is not supported by Chrome](https://stackoverflow.com/questions/75602916/connection-to-private-proxy-socks5-with-chrome-webrequest-onauthrequired-and), see `compose.yaml` file for a workaround |
 | `USE_HEADLESS`       | `False`                | Use headless  chromium.                                                                                                                                                                                                                                                                        |
 | `USE_XVFB`           | `SeleniumBase default` | Use activate the special virtual display.                                                                                                                                                                                                                                                      |
-| `PROXY`              | None                   | Proxy to use in format: `protocol://username:password@host:port`. [SOCKS5 with authentication is not supported by Chrome](https://stackoverflow.com/questions/75602916/connection-to-private-proxy-socks5-with-chrome-webrequest-onauthrequired-and), see `compose.yaml` file for a workaround |
+| `USE_HEADLESS`       | `SeleniumBase default` | Use headless  chromium.                                                                                                                                                                                                                                                                        |
 
 ## Proxy Recommendation
 
