@@ -14,5 +14,5 @@
       }
     }
   },
-  "postCreateCommand": "uv sync --group test && cd .venv/lib/*/site-packages/seleniumbase/drivers && rm -f uc_driver && ln -s /usr/bin/chromedriver uc_driver"
+  "postCreateCommand": "uv sync --group test"
 }

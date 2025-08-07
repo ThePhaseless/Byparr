@@ -10,16 +10,16 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     PYTHONUNBUFFERED=1 \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
-    DISPLAY=:0\
     PATH="${HOME}/.local/bin:$PATH"
 
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends --no-install-suggests xauth xvfb scrot curl chromium chromium-driver ca-certificates tini
+    apt-get install -y libgtk-3-0 libasound2 libx11-xcb1 wget
 
 ADD https://astral.sh/uv/install.sh install.sh
 RUN sh install.sh && uv --version
+RUN uvx playwright install-deps && uvx camoufox fetch
 
 
 FROM base AS devcontainer
@@ -31,11 +31,9 @@ ENTRYPOINT [ "sleep", "infinity" ]
 FROM base AS app
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync
+RUN uv run playwright install-deps && uv run camoufox fetch
 
-# SeleniumBase does not come with an arm64 chromedriver binary
-RUN cd .venv/lib/*/site-packages/seleniumbase/drivers && rm -f uc_driver && ln -s /usr/bin/chromedriver uc_driver
 COPY . .
-
 
 FROM app AS test
 RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync --group test

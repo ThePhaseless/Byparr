@@ -4,20 +4,19 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from sbase import BaseCase
+from playwright.async_api import BrowserContext
 
-from src.consts import CHALLENGE_TITLES
 from src.models import (
     HealthcheckResponse,
     LinkRequest,
     LinkResponse,
     Solution,
 )
-from src.utils import get_sb, logger, save_screenshot
+from src.utils import get_camoufox, logger, solve_turnstile
 
 router = APIRouter()
 
-SeleniumDep = Annotated[BaseCase, Depends(get_sb)]
+CamoufoxDep = Annotated[BrowserContext, Depends(get_camoufox)]
 
 
 @router.get("/", include_in_schema=False)
@@ -28,9 +27,9 @@ def read_root():
 
 
 @router.get("/health")
-def health_check(sb: SeleniumDep):
+async def health_check(sb: CamoufoxDep):
     """Health check endpoint."""
-    health_check_request = read_item(
+    health_check_request = await read_item(
         LinkRequest.model_construct(url="https://google.com"),
         sb,
     )
@@ -41,46 +40,30 @@ def health_check(sb: SeleniumDep):
             detail="Health check failed",
         )
 
-    return HealthcheckResponse(user_agent=sb.get_user_agent())
+    return HealthcheckResponse(user_agent=health_check_request.solution.user_agent)
 
 
 @router.post("/v1")
-def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
+async def read_item(request: LinkRequest, sb: CamoufoxDep) -> LinkResponse:
     """Handle POST requests."""
     start_time = int(time.time() * 1000)
     request.url = request.url.replace('"', "").strip()
-    sb.uc_open_with_reconnect(request.url)
+    page = await sb.new_page()
+    page_request = await page.goto(request.url, timeout=request.max_timeout * 1000)
     logger.debug(f"Got webpage: {request.url}")
-    source_bs = sb.get_beautiful_soup()
-    title_tag = source_bs.title
-    if title_tag and title_tag.string in CHALLENGE_TITLES:
-        logger.debug("Challenge detected")
-        sb.uc_gui_click_captcha()
-        logger.info("Clicked captcha")
+    await solve_turnstile(page)
 
-    if sb.get_title() in CHALLENGE_TITLES:
-        save_screenshot(sb)
-        raise HTTPException(status_code=500, detail="Could not bypass challenge")
-
-    cookies = sb.get_cookies()
-    for cookie in cookies:
-        name = cookie["name"]
-        value = cookie["value"]
-        cookie["size"] = len(f"{name}={value}".encode())
-
-        cookie["session"] = False
-        if "expiry" in cookie:
-            cookie["expires"] = cookie["expiry"]
+    cookies = await sb.cookies()
 
     return LinkResponse(
         message="Success",
         solution=Solution(
-            user_agent=sb.get_user_agent(),
-            url=sb.get_current_url(),
+            user_agent=await page.evaluate("navigator.userAgent"),
+            url=page.url,
             status=200,
             cookies=cookies,
-            headers={},
-            response=str(sb.get_beautiful_soup()),
+            headers=page_request.headers if page_request else {},
+            response=await page.content(),
         ),
         start_timestamp=start_time,
     )

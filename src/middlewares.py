@@ -1,14 +1,15 @@
 import time
 from http import HTTPStatus
 
-from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from src.models import LinkRequest
 from src.utils import logger
 
 
 class LogRequest(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         """Log requests."""
         if request.url.path != "/v1" or request.method != "POST":
             return await call_next(request)

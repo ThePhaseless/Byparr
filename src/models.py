@@ -4,6 +4,7 @@ import time
 from http.client import INTERNAL_SERVER_ERROR
 from typing import Any
 
+from playwright.sync_api import Cookie
 from pydantic import BaseModel, Field
 from pydantic.alias_generators import to_camel
 
@@ -30,7 +31,7 @@ class Solution(BaseModel):
     model_config = {"alias_generator": to_camel, "populate_by_name": True}
     url: str
     status: int
-    cookies: list = []
+    cookies: list[Cookie] = []
     user_agent: str = ""
     headers: dict[str, Any] = {}
     response: str = ""
