@@ -1,11 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "forkProcessing": "enabled",
   "packageRules": [
     {
       "automerge": true,
-      "matchUpdateTypes": ["minor", "patch"],
-      "forkProcessing": "enabled"
+      "matchUpdateTypes": ["minor", "patch"]
     }
   ]
 }
