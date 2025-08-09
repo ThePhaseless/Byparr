@@ -1,11 +1,12 @@
 import logging
 from time import gmtime, strftime
 
+from anyio.streams import file
 from fastapi import Header, HTTPException
 from httpx import codes
 from sbase import SB, BaseCase
 
-from src.consts import LOG_LEVEL, PROXY, USE_HEADLESS
+from src.consts import LOG_LEVEL, PROXY, USE_HEADLESS, USE_XVFB
 
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(LOG_LEVEL)
@@ -27,16 +28,27 @@ def get_sb(
             detail="SOCKS5 proxy with authentication is not supported. Check README for more info.",
         )
 
+    kwargs = {
+        "uc": True,
+        "test": True,
+        "headless": USE_HEADLESS,
+        "xvfb": USE_XVFB,
+        "locale_code": "en",
+        "ad_block": True,
+        "proxy": proxy,
+    }
+
+    logger.info("Creating SeleniumBase instance with parameters: %s", kwargs)
+
     with SB(
-        uc=True,
-        headless=USE_HEADLESS,
-        locale_code="en",
-        ad_block=True,
-        proxy=proxy,
+        **kwargs,
     ) as sb:
         yield sb
 
 
 def save_screenshot(sb: BaseCase):
     """Save screenshot on HTTPException."""
-    sb.save_screenshot(f"screenshots/{strftime('%Y-%m-%d %H:%M:%S', gmtime())}.png")
+    file_name = f"screenshots_{strftime('%Y-%m-%d_%H:%M:%S', gmtime())}.png"
+
+    logger.info(f"Saving screenshot to {file_name}")
+    sb.save_screenshot(file_name)
