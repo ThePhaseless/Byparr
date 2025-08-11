@@ -30,7 +30,7 @@ VERSION = get_version_from_env() or "unknown"
 USE_XVFB = os.getenv("USE_XVFB") in ["true", "1"] if os.getenv("USE_XVFB") else None
 
 USE_HEADLESS = (
-    os.getenv("USE_HEADLESS") in ["true", "1"] if os.getenv("USE_HEADLESS") else False
+    os.getenv("USE_HEADLESS") in ["true", "1"] if os.getenv("USE_HEADLESS") else None
 )
 
 CAPTCHA_RETRIES = int(os.getenv("CAPTCHA_RETRIES", "5"))

@@ -28,20 +28,14 @@ def get_sb(
             detail="SOCKS5 proxy with authentication is not supported. Check README for more info.",
         )
 
-    kwargs = {
-        "uc": True,
-        "test": True,
-        "headless": USE_HEADLESS,
-        "xvfb": USE_XVFB,
-        "locale_code": "en",
-        "ad_block": True,
-        "proxy": proxy,
-    }
-
-    logger.info("Creating SeleniumBase instance with parameters: %s", kwargs)
-
     with SB(
-        **kwargs,
+        uc=True,
+        test=True,
+        headless=USE_HEADLESS,
+        xvfb=USE_XVFB,
+        locale_code="en",
+        ad_block=True,
+        proxy=proxy,
     ) as sb:
         yield sb
 
