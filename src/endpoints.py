@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sbase import BaseCase
 
-from src.consts import CHALLENGE_TITLES, CAPTCHA_RETRIES
+from src.consts import CAPTCHA_RETRIES, CHALLENGE_TITLES
 from src.models import (
     HealthcheckResponse,
     LinkRequest,
@@ -49,61 +49,50 @@ def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
     """Handle POST requests."""
     start_time = int(time.time() * 1000)
 
-    try:
-        request.url = request.url.replace('"', "").strip()
-        sb.activate_cdp_mode(request.url)
-        sb.sleep(1)
+    request.url = request.url.replace('"', "").strip()
+    sb.activate_cdp_mode(request.url)
+    sb.sleep(1)
 
-        logger.debug(f"Got webpage: {request.url}")
+    source_bs = sb.get_beautiful_soup()
+    title_tag = source_bs.title
 
-        source_bs = sb.get_beautiful_soup()
-        title_tag = source_bs.title
+    if title_tag and title_tag.string in CHALLENGE_TITLES:
+        for attempt in range(CAPTCHA_RETRIES):
+            try:
+                sb.uc_gui_click_captcha()
+                sb.sleep(2)
 
-        if title_tag and title_tag.string in CHALLENGE_TITLES:
-            logger.debug("Challenge detected")
-            for attempt in range(CAPTCHA_RETRIES):
-                try:
-                    sb.uc_gui_click_captcha()
-                    sb.sleep(2)
+                if sb.get_title() not in CHALLENGE_TITLES:
+                    break
+            except Exception as e:  # noqa
+                logger.warning(f"Captcha click attempt {attempt + 1} failed: {e}")
 
-                    logger.info(f"Clicked captcha (attempt {attempt + 1})")
+            time.sleep(5)
 
-                    if sb.get_title() not in CHALLENGE_TITLES:
-                        break
-                except Exception as e:
-                    logger.warning(f"Captcha click attempt {attempt + 1} failed: {e}")
+        if sb.get_title() in CHALLENGE_TITLES:
+            save_screenshot(sb)
 
-                time.sleep(5)
+            raise HTTPException(status_code=500, detail="Could not bypass challenge")
 
-            if sb.get_title() in CHALLENGE_TITLES:
-                save_screenshot(sb)
+    cookies = sb.get_cookies()
+    for cookie in cookies:
+        name = cookie["name"]
+        value = cookie["value"]
+        cookie["size"] = len(f"{name}={value}".encode())
 
-                raise HTTPException(
-                    status_code=500, detail="Could not bypass challenge"
-                )
+        cookie["session"] = False
+        if "expiry" in cookie:
+            cookie["expires"] = cookie["expiry"]
 
-        cookies = sb.get_cookies()
-        for cookie in cookies:
-            name = cookie["name"]
-            value = cookie["value"]
-            cookie["size"] = len(f"{name}={value}".encode())
-
-            cookie["session"] = False
-            if "expiry" in cookie:
-                cookie["expires"] = cookie["expiry"]
-
-        return LinkResponse(
-            message="Success",
-            solution=Solution(
-                user_agent=sb.get_user_agent(),
-                url=sb.get_current_url(),
-                status=200,
-                cookies=cookies,
-                headers={},
-                response=str(sb.get_beautiful_soup()),
-            ),
-            start_timestamp=start_time,
-        )
-    except Exception as e:
-        logger.error(f"Error processing request: {e}", exc_info=True)
-        raise
+    return LinkResponse(
+        message="Success",
+        solution=Solution(
+            user_agent=sb.get_user_agent(),
+            url=sb.get_current_url(),
+            status=200,
+            cookies=cookies,
+            headers={},
+            response=str(sb.get_beautiful_soup()),
+        ),
+        start_timestamp=start_time,
+    )

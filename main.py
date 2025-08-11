@@ -23,4 +23,4 @@ app.include_router(router=router)
 
 if __name__ == "__main__":
     host = os.getenv("HOST", "0.0.0.0")
-    uvicorn.run("main:app", host=host, port=8191, log_level=LOG_LEVEL, reload=True)  # noqa: S104
+    uvicorn.run(app, host=host, port=8191, log_level=LOG_LEVEL)  # noqa: S104
