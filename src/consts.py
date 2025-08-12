@@ -33,7 +33,7 @@ USE_HEADLESS = (
     os.getenv("USE_HEADLESS") in ["true", "1"] if os.getenv("USE_HEADLESS") else None
 )
 
-CAPTCHA_RETRIES = int(os.getenv("CAPTCHA_RETRIES", "5"))
+CAPTCHA_RETRIES = int(os.getenv("CAPTCHA_RETRIES", "3"))
 
 PROXY = os.getenv("PROXY")
 
