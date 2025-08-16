@@ -1,4 +1,5 @@
 import time
+import warnings
 from http import HTTPStatus
 from typing import Annotated
 
@@ -14,6 +15,9 @@ from src.models import (
     Solution,
 )
 from src.utils import get_sb, logger, save_screenshot
+
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+
 
 router = APIRouter()
 
