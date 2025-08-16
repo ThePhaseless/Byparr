@@ -70,7 +70,6 @@ dependencies = [
     { name = "pyautogui" },
     { name = "pydantic" },
     { name = "seleniumbase" },
-    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -87,11 +86,10 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", extras = ["standard"], specifier = "==0.116.1" },
-    { name = "pyautogui", specifier = "==0.9.54" },
-    { name = "pydantic", specifier = "==2.11.7" },
+    { name = "fastapi", extras = ["standard"], specifier = "==0.116.*" },
+    { name = "pyautogui", specifier = "==0.9.*" },
+    { name = "pydantic", specifier = "==2.11.*" },
     { name = "seleniumbase", specifier = "==4.41.0" },
-    { name = "uvicorn", specifier = "==0.35.0" },
 ]
 
 [package.metadata.requires-dev]

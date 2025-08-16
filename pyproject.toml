@@ -8,11 +8,10 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "fastapi[standard]==0.116.1",
-    "pyautogui==0.9.54",
-    "pydantic==2.11.7",
+    "fastapi[standard]==0.116.*",
+    "pyautogui==0.9.*",
+    "pydantic==2.11.*",
     "seleniumbase==4.41.0",
-    "uvicorn==0.35.0",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 
@@ -56,9 +55,3 @@ ignore = [
 ]
 select = ["ALL"]
 extend-safe-fixes = ["D415"]
-
-[tool.pytest]
-log_cli = "True"
-
-[tool.pytest.ini_options]
-asyncio_default_fixture_loop_scope = "function"
