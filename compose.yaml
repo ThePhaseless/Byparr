@@ -6,21 +6,24 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # # Uncomment below to use pproxy
-    # environment:
-    #   - PROXY=http://pproxy:8080
-    volumes:
-      - ./screenshots:/app/screenshots # (optional) For screenshots when exception occurs
-    # # Uncomment below to use byparr outside of internal network
+    ## Save screenshots when exception occurs
+    # volumes:
+    #   - ./screenshots:/app/screenshots
+    ## Enable traffic outside of compose internal network
     # ports:
     #   - "8191:8191"
-  # # Uncomment the following lines to enable pproxy for socks5 proxy
+  ## Uncomment below to use proxy with unsupported protocol
+  #   environment:
+  #     - PROXY=http://pproxy.service:8080
   # pproxy:
   #   tty: true # Required for pproxy to work
   #   container_name: pproxy
+  #   hostname: pproxy.service # Selenium required a dot in hostname
   #   restart: unless-stopped
   #   image: mosajjal/pproxy:latest
   #   command:
-  #     - -vv
-  #     - -l http://:8080
-  #     - -r socks5://host:port#username:password # Fill in your proxy credentials and address
+  #     - "-vv"
+  #     - "-l"
+  #     - "http://:8080"
+  #     - "-r"
+  #     - "prot://host:port#username:password"
