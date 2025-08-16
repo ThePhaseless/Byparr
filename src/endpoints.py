@@ -64,7 +64,7 @@ def read_item(request: LinkRequest, sb: SeleniumDep) -> LinkResponse:
 
                 if sb.get_title() not in CHALLENGE_TITLES:
                     break
-            except Exception as e:  # noqa
+            except Exception as e:  # noqa: BLE001
                 logger.warning(f"Captcha click attempt {attempt + 1} failed: {e}")
 
             time.sleep(5)
