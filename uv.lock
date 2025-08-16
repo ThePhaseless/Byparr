@@ -94,8 +94,8 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "deptry", specifier = "==0.23.1" },
-    { name = "ruff", specifier = "==0.12.9" },
+    { name = "deptry", specifier = "==0.23.*" },
+    { name = "ruff", specifier = "==0.12.*" },
 ]
 test = [
     { name = "httpx", specifier = "==0.28.1" },

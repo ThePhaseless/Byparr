@@ -22,7 +22,7 @@ test = [
     "pytest-progress==1.3.0",
     "pytest-retry==1.7.0",
 ]
-dev = ["deptry==0.23.1", "ruff==0.12.9"]
+dev = ["deptry==0.23.*", "ruff==0.12.*"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["pyautogui"]
