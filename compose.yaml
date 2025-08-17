@@ -2,19 +2,15 @@ services:
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     restart: unless-stopped
-    shm_size: 2gb
     build:
       context: .
       dockerfile: Dockerfile
-    # # Uncomment below to use pproxy
-    # environment:
-    #   - PROXY=http://pproxy:8080
-    volumes:
-      - ./screenshots:/app/screenshots # (optional) For screenshots when exception occurs
-    # # Uncomment below to use byparr outside of internal network
-    # ports:
-    #   - "8191:8191"
-  # # Uncomment the following lines to enable pproxy for socks5 proxy
+    ## Uncomment below to use byparr outside of internal network
+    ports:
+      - "8191:8191"
+  ## Uncomment the following lines to use custom proxy protocol
+  #   environment:
+  #     - PROXY=http://pproxy:8080
   # pproxy:
   #   tty: true # Required for pproxy to work
   #   container_name: pproxy
