@@ -10,7 +10,6 @@
       "name": ""
     }
   ],
-  "python.analysis.typeCheckingMode": "strict",
   "python.terminal.activateEnvironment": true,
   "python.testing.pytestArgs": ["tests", "-n", "auto", "--retries=3"],
   "python.testing.pytestEnabled": true,

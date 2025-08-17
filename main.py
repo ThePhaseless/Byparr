@@ -38,5 +38,5 @@ if __name__ == "__main__":
         loop.run_until_complete(init())
         logger.info("Initialization complete.")
     else:
-        host = os.getenv("HOST", "0.0.0.0")
-        uvicorn.run(app, host=host, port=8191, log_level=LOG_LEVEL)
+        host = os.getenv("HOST", "0.0.0.0")  # noqa: S104
+        uvicorn.run(app, host=host, port=8191)

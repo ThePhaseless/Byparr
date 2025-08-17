@@ -1,13 +1,12 @@
 import logging
 from collections.abc import AsyncGenerator
-from typing import cast
+from typing import NamedTuple, cast
 
 from camoufox import AsyncCamoufox
 from fastapi import Header, HTTPException
 from httpx import codes
 from playwright.async_api import Browser, BrowserContext, Page
 from playwright_captcha import (
-    CaptchaType,
     ClickSolver,
     FrameworkType,
 )
@@ -15,6 +14,7 @@ from playwright_captcha import (
 from src.consts import (
     ADDON_PATH,
     LOG_LEVEL,
+    MAX_ATTEMPTS,
     PROXY,
 )
 
@@ -28,23 +28,10 @@ if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
 
 
-async def solve_turnstile(page: Page, max_attempts: int):
-    """Solve Turnstile challenge."""
-    async with ClickSolver(
-        framework=FrameworkType.CAMOUFOX,
-        page=page,
-        max_attempts=max_attempts,
-        attempt_delay=1,
-    ) as solver:
-        await page.wait_for_load_state(state="domcontentloaded")
-        await page.wait_for_load_state("networkidle")
-
-        # Solve the captcha
-        await solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType]
-            captcha_container=page,
-            captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-        )
-        logger.debug("Challenge solved successfully.")
+class CamoufoxDepType(NamedTuple):
+    page: Page
+    solver: ClickSolver
+    context: BrowserContext
 
 
 async def get_camoufox(
@@ -53,7 +40,7 @@ async def get_camoufox(
         examples=["protocol://username:password@host:port"],
         description="Override default proxy address",
     ),
-) -> AsyncGenerator[BrowserContext, None]:
+) -> AsyncGenerator[CamoufoxDepType, None]:
     """Get Camoufox instance."""
     if proxy and proxy.startswith("socks5://") and "@" in proxy:
         raise HTTPException(
@@ -75,4 +62,11 @@ async def get_camoufox(
         # Cast to Browser since AsyncCamoufox always returns a Browser, not BrowserContext
         browser = cast("Browser", browser_raw)
         context = await browser.new_context()
-        yield context
+        page = await context.new_page()
+        async with ClickSolver(
+            framework=FrameworkType.CAMOUFOX,
+            page=page,
+            max_attempts=MAX_ATTEMPTS,
+            attempt_delay=1,
+        ) as solver:
+            yield CamoufoxDepType(page, solver, context)
