@@ -33,10 +33,10 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync
 
 COPY . .
-RUN ["uv", "run", "main.py", "--init"]
 
 FROM app AS test
 RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync --group test
+RUN ["uv", "run", "main.py", "--init"]
 RUN chmod +x ./test.sh && ./test.sh
 
 FROM app
