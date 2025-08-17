@@ -6,8 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ## Uncomment below to use byparr outside of internal network
-    ports:
-      - "8191:8191"
+    # ports:
+    #   - "8191:8191"
   ## Uncomment the following lines to use custom proxy protocol
   #   environment:
   #     - PROXY=http://pproxy:8080
