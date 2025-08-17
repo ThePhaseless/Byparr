@@ -33,7 +33,8 @@ if __name__ == "__main__":
     # Check for --init flag to run the app in development mode
     if "--init" in sys.argv:
         logger.info("Running initialization script...")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.run_until_complete(init())
         logger.info("Initialization complete.")
     else:
