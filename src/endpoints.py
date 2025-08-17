@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from playwright.async_api import BrowserContext
 
+from src.consts import CHALLENGE_TITLES
 from src.models import (
     HealthcheckResponse,
     LinkRequest,
@@ -51,7 +52,9 @@ async def read_item(request: LinkRequest, sb: CamoufoxDep) -> LinkResponse:
     page = await sb.new_page()
     page_request = await page.goto(request.url, timeout=request.max_timeout * 1000)
     logger.debug(f"Got webpage: {request.url}")
-    await solve_turnstile(page)
+    if await page.title() in CHALLENGE_TITLES:
+        logger.info("Challenge detected, attempting to solve...")
+        await solve_turnstile(page)
 
     cookies = await sb.cookies()
 
