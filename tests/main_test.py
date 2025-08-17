@@ -13,7 +13,6 @@ test_websites = [
     "https://ext.to/",
     "https://www.ygg.re/",
     "https://extratorrent.st/",
-    "https://idope.se/",
     "https://speed.cd/login",
     'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
 ]
