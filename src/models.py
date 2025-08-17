@@ -17,7 +17,10 @@ class LinkRequest(BaseModel):
         description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
     )
     url: str = Field(pattern=r"^https?://", default="https://")
-    max_timeout: int = Field(default=60)
+    max_timeout: int = Field(
+        default=60,
+        description="Maximum timeout in seconds for resolving the anti-bot challenge.",
+    )
 
 
 class HealthcheckResponse(BaseModel):
