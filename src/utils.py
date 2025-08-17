@@ -66,7 +66,7 @@ async def get_camoufox(
         main_world_eval=True,
         addons=[ADDON_PATH],
         geoip=True,
-        proxy={"server": proxy},
+        proxy={"server": proxy} if proxy else None,
         locale="en-US",
         headless=True,
         i_know_what_im_doing=True,
