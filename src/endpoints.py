@@ -54,7 +54,7 @@ async def read_item(request: LinkRequest, sb: CamoufoxDep) -> LinkResponse:
     logger.debug(f"Got webpage: {request.url}")
     if await page.title() in CHALLENGE_TITLES:
         logger.info("Challenge detected, attempting to solve...")
-        await solve_turnstile(page)
+        await solve_turnstile(page, max_attempts=request.max_timeout)
 
     cookies = await sb.cookies()
 

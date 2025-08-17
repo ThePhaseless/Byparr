@@ -28,9 +28,14 @@ if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
 
 
-async def solve_turnstile(page: Page):
+async def solve_turnstile(page: Page, max_attempts: int):
     """Solve Turnstile challenge."""
-    async with ClickSolver(framework=FrameworkType.CAMOUFOX, page=page) as solver:
+    async with ClickSolver(
+        framework=FrameworkType.CAMOUFOX,
+        page=page,
+        max_attempts=max_attempts,
+        attempt_delay=1,
+    ) as solver:
         await page.goto("https://www.crunchbase.com/organization/scrapingbee")
         await page.wait_for_load_state(state="domcontentloaded")
         await page.wait_for_load_state("networkidle")
