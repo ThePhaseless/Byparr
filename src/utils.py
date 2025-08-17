@@ -1,24 +1,26 @@
 import logging
-from pathlib import Path
+from collections.abc import AsyncGenerator
+from typing import cast
 
 from camoufox import AsyncCamoufox
 from fastapi import Header, HTTPException
 from httpx import codes
-from playwright.async_api import Page
-from playwright_captcha import (  # pyright: ignore[reportMissingTypeStubs]
+from playwright.async_api import Browser, BrowserContext, Page
+from playwright_captcha import (
     CaptchaType,
     ClickSolver,
     FrameworkType,
 )
-from playwright_captcha.utils.camoufox_add_init_script.add_init_script import (  # pyright: ignore[reportMissingTypeStubs]
-    get_addon_path,
-)
 
 from src.consts import (
-    HEADLESS_MODE,
+    ADDON_PATH,
     LOG_LEVEL,
     PROXY,
 )
+
+solver_logger = logging.getLogger("playwright_captcha.solvers")
+solver_logger.handlers.clear()
+solver_logger.handlers.append(logging.NullHandler())
 
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(LOG_LEVEL)
@@ -38,7 +40,7 @@ async def solve_turnstile(page: Page):
             captcha_container=page,
             captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
         )
-        logger.info("Captcha Turnstile solved")
+        logger.debug("Challenge solved successfully.")
 
 
 async def get_camoufox(
@@ -47,7 +49,7 @@ async def get_camoufox(
         examples=["protocol://username:password@host:port"],
         description="Override default proxy address",
     ),
-):
+) -> AsyncGenerator[BrowserContext, None]:
     """Get Camoufox instance."""
     if proxy and proxy.startswith("socks5://") and "@" in proxy:
         raise HTTPException(
@@ -56,16 +58,17 @@ async def get_camoufox(
         )
 
     async with AsyncCamoufox(
-        main_world_eval=True,  # add this
-        addons=[str(Path(get_addon_path()).resolve())],  # add this
+        main_world_eval=True,
+        addons=[ADDON_PATH],
         geoip=True,
         proxy=proxy,
         locale="en-US",
-        persistent_context=True,
-        user_data_dir="browser_data",
-        headless=HEADLESS_MODE,
+        headless=True,
         i_know_what_im_doing=True,
         config={"forceScopeAccess": True},  # add this when creating Camoufox instance
         disable_coop=True,  # add this when creating Camoufox instance
-    ) as sb:
-        yield sb
+    ) as browser_raw:
+        # Cast to Browser since AsyncCamoufox always returns a Browser, not BrowserContext
+        browser = cast("Browser", browser_raw)
+        context = await browser.new_context()
+        yield context
