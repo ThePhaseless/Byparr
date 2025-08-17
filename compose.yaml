@@ -18,5 +18,7 @@ services:
   #   image: mosajjal/pproxy:latest
   #   command:
   #     - -vv
-  #     - -l http://:8080
-  #     - -r socks5://host:port#username:password # Fill in your proxy credentials and address
+  #     - -l
+  #     - http://:8080
+  #     - -r
+  #     - protocol://host:port#username:password # Fill in your proxy credentials and address
