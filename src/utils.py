@@ -28,16 +28,22 @@ def get_sb(
             detail="SOCKS5 proxy with authentication is not supported. Check README for more info.",
         )
 
-    with SB(
-        uc=True,
-        test=True,
-        headless=USE_HEADLESS,
-        xvfb=USE_XVFB,
-        locale_code="en",
-        ad_block=True,
-        proxy=proxy,
-    ) as sb:
-        yield sb
+    sb = None
+    try:
+        with SB(
+            uc=True,
+            test=True,
+            headless=USE_HEADLESS,
+            xvfb=USE_XVFB,
+            locale_code="en",
+            ad_block=True,
+            proxy=proxy,
+        ) as sb:
+            yield sb
+    except Exception:
+        # Log the exception but re-raise it to let FastAPI handle it properly
+        logger.exception("Exception in SeleniumBase dependency")
+        raise
 
 
 def save_screenshot(sb: BaseCase):
