@@ -61,3 +61,4 @@ extend-safe-fixes = ["D415"]
 
 [tool.pyright]
 reportMissingTypeStubs = false
+typeCheckingMode = "strict"
