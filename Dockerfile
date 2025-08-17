@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim AS base
+FROM debian:trixie-slim AS base
 ENV HOME=/root
 
 ARG GITHUB_BUILD=false \
