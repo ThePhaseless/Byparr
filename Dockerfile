@@ -36,7 +36,7 @@ COPY . .
 
 FROM app AS test
 RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync --group test
-RUN ["uv", "run", "main.py", "--init"]
+# RUN ["uv", "run", "main.py", "--init"]
 RUN chmod +x ./test.sh && ./test.sh
 
 FROM app
