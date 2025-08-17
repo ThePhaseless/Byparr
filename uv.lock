@@ -172,7 +172,7 @@ test = [
 requires-dist = [
     { name = "camoufox", extras = ["geoip"], specifier = "==0.4.*" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.116.*" },
-    { name = "playwright-captcha", specifier = ">=0.1.1" },
+    { name = "playwright-captcha", specifier = "==0.1.*" },
     { name = "pydantic", specifier = "==2.11.*" },
 ]
 
