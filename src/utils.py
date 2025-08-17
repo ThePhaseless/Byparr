@@ -36,7 +36,6 @@ async def solve_turnstile(page: Page, max_attempts: int):
         max_attempts=max_attempts,
         attempt_delay=1,
     ) as solver:
-        await page.goto("https://www.crunchbase.com/organization/scrapingbee")
         await page.wait_for_load_state(state="domcontentloaded")
         await page.wait_for_load_state("networkidle")
 
