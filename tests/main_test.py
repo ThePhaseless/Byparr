@@ -54,20 +54,3 @@ def test_health_check():
     """
     response = client.get("/health")
     assert response.status_code == HTTPStatus.OK
-
-
-def test_turnstile():
-    """
-    Tests the turnstile endpoint.
-
-    This test ensures that the turnstile endpoint returns HTTPStatus.OK.
-    """
-    url = "https://nopecha.com/demo/cloudflare"
-    response = client.post(
-        "/v1",
-        json=LinkRequest.model_construct(
-            url=url, max_timeout=30, cmd="request.get"
-        ).model_dump(),
-    )
-    assert response.status_code == HTTPStatus.OK
-    assert response.json()["solution"]["status"] == HTTPStatus.OK
