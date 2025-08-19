@@ -77,7 +77,7 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         solution=Solution(
             user_agent=await dep.page.evaluate("navigator.userAgent"),
             url=dep.page.url,
-            status=200,
+            status=page_request.status if page_request else HTTPStatus.OK,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
             response=await dep.page.content(),
