@@ -89,7 +89,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = "==0.116.*" },
     { name = "pyautogui", specifier = "==0.9.*" },
     { name = "pydantic", specifier = "==2.11.*" },
-    { name = "seleniumbase", specifier = "==4.41.2" },
+    { name = "seleniumbase", specifier = "==4.41.3" },
 ]
 
 [package.metadata.requires-dev]
@@ -1165,7 +1165,7 @@ wheels = [
 
 [[package]]
 name = "seleniumbase"
-version = "4.41.2"
+version = "4.41.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1228,9 +1228,9 @@ dependencies = [
     { name = "wheel" },
     { name = "wsproto" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4a/18/21e9cee0267d521adee2a7edf2d1cf87752c13583bc4c80e248de27ef863/seleniumbase-4.41.2.tar.gz", hash = "sha256:7b8ea0e5024c995fd7a9dbab5f4104a2114e57a37b9a7ab5849afcee653db758", size = 627890, upload-time = "2025-08-27T02:29:31.676Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/c0/f89b64be6ea4ffff3737af06d5960133178d896e9395a964a65f2be075e3/seleniumbase-4.41.3.tar.gz", hash = "sha256:75b3412c4cd0ff3fef505a853e097d23722236ad4c5e8e5f8953bd4d9ca1f406", size = 627901, upload-time = "2025-08-29T06:02:00.429Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/06/48/35e85617b38d7b5161439af3b41913634d97b7e085de84a6bbc96d6fa564/seleniumbase-4.41.2-py3-none-any.whl", hash = "sha256:8bcec3428c37fddea11b6771a83138add43853285a33568c87b234cda28eeb0f", size = 634460, upload-time = "2025-08-27T02:29:26.434Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/cd/2a032b73dbf9550e749680e3365b302388ea88e4b1b9f8990e8963e71627/seleniumbase-4.41.3-py3-none-any.whl", hash = "sha256:040b0061678c3f140fa19dff50f93470e73f568f6fd6d1bd21b5dae876c8b090", size = 634482, upload-time = "2025-08-29T06:01:57.554Z" },
 ]
 
 [[package]]
@@ -1293,11 +1293,11 @@ wheels = [
 
 [[package]]
 name = "soupsieve"
-version = "2.7"
+version = "2.8"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3f/f4/4a80cd6ef364b2e8b65b15816a843c0980f7a5a2b4dc701fc574952aa19f/soupsieve-2.7.tar.gz", hash = "sha256:ad282f9b6926286d2ead4750552c8a6142bc4c783fd66b0293547c8fe6ae126a", size = 103418, upload-time = "2025-04-20T18:50:08.518Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/e6/21ccce3262dd4889aa3332e5a119a3491a95e8f60939870a3a035aabac0d/soupsieve-2.8.tar.gz", hash = "sha256:e2dd4a40a628cb5f28f6d4b0db8800b8f581b65bb380b97de22ba5ca8d72572f", size = 103472, upload-time = "2025-08-27T15:39:51.78Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/9c/0e6afc12c269578be5c0c1c9f4b49a8d32770a080260c333ac04cc1c832d/soupsieve-2.7-py3-none-any.whl", hash = "sha256:6e60cc5c1ffaf1cebcc12e8188320b72071e922c2e897f737cadce79ad5d30c4", size = 36677, upload-time = "2025-04-20T18:50:07.196Z" },
+    { url = "https://files.pythonhosted.org/packages/14/a0/bb38d3b76b8cae341dad93a2dd83ab7462e6dbcdd84d43f54ee60a8dc167/soupsieve-2.8-py3-none-any.whl", hash = "sha256:0cc76456a30e20f5d7f2e14a98a4ae2ee4e5abdc7c5ea0aafe795f344bc7984c", size = 36679, upload-time = "2025-08-27T15:39:50.179Z" },
 ]
 
 [[package]]
