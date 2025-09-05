@@ -25,12 +25,14 @@ test = [
     "pytest-xdist==3.8.*",
     "setuptools==80.9.*",
 ]
-dev = ["deptry==0.23.1", "ruff==0.12.7"]
+dev = ["deptry==0.23.*", "ruff==0.12.*"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["pyautogui"]
 
 [tool.ruff.lint]
+
+[tool.pyright]
 ignore = [
     "D203",
     "D212",
@@ -58,7 +60,5 @@ ignore = [
 ]
 select = ["ALL"]
 extend-safe-fixes = ["D415"]
-
-[tool.pyright]
 reportMissingTypeStubs = false
 typeCheckingMode = "strict"

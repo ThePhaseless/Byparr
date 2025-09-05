@@ -17,6 +17,9 @@ from src.models import (
 )
 from src.utils import CamoufoxDepType, get_camoufox, logger
 
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+
+
 router = APIRouter()
 
 CamoufoxDep = Annotated[CamoufoxDepType, Depends(get_camoufox)]
@@ -50,6 +53,7 @@ async def health_check(sb: CamoufoxDep):
 async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
     """Handle POST requests."""
     start_time = int(time.time() * 1000)
+
     request.url = request.url.replace('"', "").strip()
     page_request = await dep.page.goto(request.url)
     await dep.page.wait_for_load_state(state="domcontentloaded")

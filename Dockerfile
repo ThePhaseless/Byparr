@@ -1,4 +1,4 @@
-FROM debian:latest AS base
+FROM debian:stable-slim AS base
 ENV HOME=/root
 
 ARG GITHUB_BUILD=false \
