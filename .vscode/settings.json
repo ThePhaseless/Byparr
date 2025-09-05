@@ -1,23 +1,18 @@
 {
-    "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff"
-    },
-    "python.analysis.autoImportCompletions": true,
-    "python.analysis.packageIndexDepths": [
-        {
-            "depth": 5,
-            "includeAllSymbols": true,
-            "name": ""
-        }
-    ],
-    "python.analysis.typeCheckingMode": "standard",
-    "python.terminal.activateEnvironment": true,
-    "python.testing.pytestArgs": [
-        "tests",
-        "-n",
-        "auto",
-        "--retries=3",
-    ],
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.packageIndexDepths": [
+    {
+      "depth": 5,
+      "includeAllSymbols": true,
+      "name": ""
+    }
+  ],
+  "python.terminal.activateEnvironment": true,
+  "python.testing.pytestArgs": ["tests", "-n", "auto", "--retries=3"],
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "cSpell.words": ["camoufox", "domcontentloaded", "networkidle"]
 }
