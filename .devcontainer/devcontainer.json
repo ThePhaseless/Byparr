@@ -6,6 +6,7 @@
     "dockerfile": "../Dockerfile",
     "target": "devcontainer"
   },
+  "runArgs": ["--security-opt", "label=disable", "--privileged"],
   "customizations": {
     "vscode": {
       "extensions": ["charliermarsh.ruff", "ms-python.python"],
@@ -14,5 +15,10 @@
       }
     }
   },
-  "postCreateCommand": "uv sync --group test"
+  "postCreateCommand": "uv sync --group test",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": false
+    }
+  }
 }
