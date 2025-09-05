@@ -30,8 +30,6 @@ dev = ["deptry==0.23.*", "ruff==0.12.*"]
 DEP002 = ["pyautogui"]
 
 [tool.ruff.lint]
-
-[tool.pyright]
 ignore = [
     "D203",
     "D212",
@@ -59,5 +57,7 @@ ignore = [
 ]
 select = ["ALL"]
 extend-safe-fixes = ["D415"]
+
+[tool.pyright]
 reportMissingTypeStubs = false
 typeCheckingMode = "strict"
