@@ -11,8 +11,6 @@ LOG_LEVEL = logging.getLevelNamesMapping()[os.getenv("LOG_LEVEL", "INFO").upper(
 
 VERSION = os.getenv("VERSION", "unknown").removeprefix("v")
 
-HEADLESS_MODE = os.getenv("HEADLESS_MODE") or True
-
 ADDON_PATH = str(Path(get_addon_path()).absolute())
 MAX_ATTEMPTS = 2**10
 
