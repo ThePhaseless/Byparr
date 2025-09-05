@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim AS base
+FROM debian:latest AS base
 ENV HOME=/root
 
 ARG GITHUB_BUILD=false \
@@ -24,7 +24,6 @@ RUN uvx playwright install-deps firefox && uvx camoufox fetch
 
 FROM base AS devcontainer
 RUN apt install -y git && apt upgrade -y
-ENV UV_LINK_MODE=copy
 ENTRYPOINT [ "sleep", "infinity" ]
 
 
@@ -37,7 +36,7 @@ COPY . .
 FROM app AS test
 RUN --mount=type=cache,target=${HOME}/.cache/uv uv sync --group test
 # RUN ["uv", "run", "main.py", "--init"]
-RUN chmod +x ./test.sh && ./test.sh
+RUN uv run pytest --retries 3 -n auto
 
 FROM app
 EXPOSE 8191
