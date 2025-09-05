@@ -63,7 +63,9 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
     if await dep.page.title() in CHALLENGE_TITLES:
         logger.info("Challenge detected, attempting to solve...")
         # Solve the captcha
-        remaining_timeout = request.max_timeout - (int(time.time()) - start_time / 1000)
+        remaining_timeout = (
+            request.max_timeout - (int(time.time()) * 1000 - start_time) / 1000
+        )
         logger.debug(
             "Remaining timeout for solving the challenge: %d ms", remaining_timeout
         )
