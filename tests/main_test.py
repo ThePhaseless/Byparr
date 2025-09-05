@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from json import JSONDecodeError
 
 import httpx
 import pytest
@@ -15,6 +16,7 @@ test_websites = [
     "https://extratorrent.st/",
     "https://speed.cd/login",
     'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
+    "https://1337x.to/home/",
 ]
 
 
@@ -32,14 +34,17 @@ def test_bypass(website: str):
         test_request.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR
         and "Just a moment..." not in test_request.text
     ):
+        try:
+            error_details = test_request.json()
+        except JSONDecodeError:
+            error_details = test_request.text
         pytest.skip(
-            f"Skipping {website} - ({test_request.status_code}) {test_request.json()}"
+            f"Skipping {website} - ({test_request.status_code}) {error_details}"
         )
 
     response = client.post(
         "/v1",
         json=LinkRequest.model_construct(url=website, cmd="request.get").model_dump(),
-        # "proxy": "203.174.15.83:8080",
     )
 
     assert response.status_code == HTTPStatus.OK
