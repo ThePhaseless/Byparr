@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from httpx import TimeoutException
 from playwright_captcha import CaptchaType
 
 from src.consts import CHALLENGE_TITLES
@@ -61,13 +62,17 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         logger.debug(
             "Remaining timeout for solving the challenge: %d ms", remaining_timeout
         )
-        await wait_for(
-            dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
-                captcha_container=dep.page,
-                captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-            ),
-            timeout=remaining_timeout,
-        )
+        try:
+            await wait_for(
+                dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
+                    captcha_container=dep.page,
+                    captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
+                ),
+                timeout=remaining_timeout,
+            )
+        except TimeoutException as e:
+            logger.error("Failed to solve challenge: %s", e)
+            return LinkResponse.invalid(url=request.url)
         logger.debug("Challenge solved successfully.")
 
     cookies = await dep.context.cookies()
