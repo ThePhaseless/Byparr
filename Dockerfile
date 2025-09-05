@@ -15,15 +15,14 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
 
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y libgtk-3-0 libasound2 libx11-xcb1 wget xvfb curl
+RUN apt update && apt -y upgrade && apt install -y curl
 
 ADD https://astral.sh/uv/install.sh install.sh
 RUN sh install.sh && uv --version
 RUN uvx playwright install-deps firefox && uvx camoufox fetch
 
 FROM base AS devcontainer
-RUN apt install -y git && apt upgrade -y
+RUN apt install -y git
 ENTRYPOINT [ "sleep", "infinity" ]
 
 

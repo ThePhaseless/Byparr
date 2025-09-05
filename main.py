@@ -9,7 +9,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
-from src.consts import LOG_LEVEL, PROXY, VERSION
+from src.consts import LOG_LEVEL, VERSION
 from src.endpoints import health_check, router
 from src.middlewares import LogRequest
 from src.utils import get_camoufox, logger
@@ -25,7 +25,7 @@ app.include_router(router=router)
 
 async def init():
     """Initialize the application."""
-    async for browser in get_camoufox(PROXY):
+    async for browser in get_camoufox():
         await health_check(browser)
 
 

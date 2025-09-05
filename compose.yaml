@@ -4,25 +4,8 @@ services:
     restart: unless-stopped
     build:
       context: .
+      target: test
       dockerfile: Dockerfile
     # Uncomment below to use byparr outside of internal network
     # ports:
     #   - "8191:8191"
-    # Uncomment the following lines to use custom proxy protocol
-  #   depends_on:
-  #     - pproxy
-  #   environment:
-  #     - PROXY=http://pproxy:8080
-  # pproxy:
-  #   tty: true # Required for pproxy to work
-  #   container_name: pproxy
-  #   restart: unless-stopped
-  #   image: mosajjal/pproxy:latest
-  #   ports:
-  #     - "8080:8080"
-  #   command:
-  #     - -vv
-  #     - -l
-  #     - http://:8080
-  #     - -r
-  #     - protocol://host:port#username:password # Fill in your proxy credentials and address

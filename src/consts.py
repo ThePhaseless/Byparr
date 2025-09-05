@@ -15,7 +15,9 @@ ADDON_PATH = str(Path(get_addon_path()).absolute())
 MAX_ATTEMPTS = 2**10
 
 
-PROXY = os.getenv("PROXY")
+PROXY_SERVER = os.getenv("PROXY_SERVER")
+PROXY_USERNAME = os.getenv("PROXY_USERNAME")
+PROXY_PASSWORD = os.getenv("PROXY_PASSWORD")
 
 CHALLENGE_TITLES_MAP: dict[CaptchaType, list[str]] = {
     # Cloudflare
