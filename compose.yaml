@@ -4,7 +4,6 @@ services:
     restart: unless-stopped
     build:
       context: .
-      target: test
       dockerfile: Dockerfile
     # Uncomment below to use byparr outside of internal network
     # ports:
