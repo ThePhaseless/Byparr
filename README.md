@@ -1,6 +1,6 @@
 # Byparr
 
-Built with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastapi.tiangolo.com), this project aims to mimic [FlareSolverr's](https://github.com/FlareSolverr/FlareSolverr) API and functionality of providing you with http cookies and headers for websites protected with anti-bot protections.
+Built with [camoufox](https://camoufox.com/) and [FastAPI](https://fastapi.tiangolo.com), this project aims to mimic [FlareSolverr's](https://github.com/FlareSolverr/FlareSolverr) API and functionality of providing you with http cookies and headers for websites protected with anti-bot protections.
 
 > [!IMPORTANT]
 > This software does not **guarantee** (only greatly increases the chance) that any challenge will be bypassed. While this tool passes the initial browser check, Cloudflare and other captcha providers likely require valid network traffic originating from the user’s public IP address to mark a connection as legitimate. If any website does not pass the challenge, please run troubleshooting steps and check if other websites work before you create an GitHub issue.
@@ -33,18 +33,16 @@ Built with [seleniumbase](https://seleniumbase.io/) and [FastAPI](https://fastap
 
 ## Options
 
-| Environment Variable | Default                | Description                                                                                                                                                                                                                                                                                    |
-|----------------------|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `HOST`               | `0.0.0.0`              | Host address to bind the server to. Use `0.0.0.0` to bind to all IPv4 interfaces, `::` for all IPv6 interfaces, or `127.0.0.1`/`localhost` for local access only.                                                                                                                              |
-| `PROXY`              | None                   | Proxy to use in format: `protocol://username:password@host:port`. [SOCKS5 with authentication is not supported by Chrome](https://stackoverflow.com/questions/75602916/connection-to-private-proxy-socks5-with-chrome-webrequest-onauthrequired-and), see `compose.yaml` file for a workaround |
-| `USE_HEADLESS`       | `SeleniumBase default` | Use headless  chromium.                                                                                                                                                                                                                                                                        |
-| `USE_XVFB`           | `SeleniumBase default` | Use activate the special virtual display.                                                                                                                                                                                                                                                      |
-| `CAPTCHA_RETRIES`    | 3                      | Number of times to retry solving a CAPTCHA challenge before giving up. This helps in cases where CAPTCHA challenges fail intermittently and can be retried successfully.                                                                                                                       |
+| Environment Variable | Default   | Description                                                                                                                                                       |
+| -------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HOST`               | `0.0.0.0` | Host address to bind the server to. Use `0.0.0.0` to bind to all IPv4 interfaces, `::` for all IPv6 interfaces, or `127.0.0.1`/`localhost` for local access only. |
+| `PROXY_SERVER`       | None      | Proxy to use in format: `protocol://host:port`.                                                                                                                   |
+| `PROXY_USERNAME`     | None      |                                                                                                                                                                   |
+| `PROXY_PASSWORD`     | None      |                                                                                                                                                                   |
 
 ## Proxy Recommendation
 
-Recently I've partnered with a *new in town* proxy service - ProxyBase - to offer affordable proxy services that seems to work seamlessly with Byparr! Using my affiliate code `byparr` (case sensitive!) when signing up will not only get you access to their cost-effective (**$0.69/GB with occasional promotions**) proxy network but will also help support the continued development of this project. ProxyBase's proxies can significantly improve your success rate when bypassing anti-bot challenges. [Check out ProxyBase](https://client.proxybase.org/signup?ref=byparr
-) and enhance your Byparr experience!
+Recently I've partnered with a _new in town_ proxy service - ProxyBase - to offer affordable proxy services that seems to work seamlessly with Byparr! Using my affiliate code `byparr` (case sensitive!) when signing up will not only get you access to their cost-effective (**$0.69/GB with occasional promotions** _at the time of writing_) proxy network but will also help support the continued development of this project. ProxyBase's proxies can significantly improve your success rate when bypassing anti-bot challenges. [Check out ProxyBase](https://client.proxybase.org/signup?ref=byparr) and enhance your Byparr experience!
 
 ## Tags
 
@@ -60,7 +58,7 @@ See `compose.yaml`
 ### Docker
 
 ```bash
-docker run --shm-size=2gb -p 8191:8191 ghcr.io/thephaseless/byparr:latest
+docker run -p 8191:8191 ghcr.io/thephaseless/byparr:latest
 ```
 
 ### Local

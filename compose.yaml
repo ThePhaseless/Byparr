@@ -2,28 +2,9 @@ services:
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     restart: unless-stopped
-    shm_size: 2gb
     build:
       context: .
       dockerfile: Dockerfile
-    ## Save screenshots when exception occurs
-    # volumes:
-    #   - ./screenshots:/app/screenshots
-    ## Enable traffic outside of compose internal network
+    # Uncomment below to use byparr outside of internal network
     # ports:
     #   - "8191:8191"
-  ## Uncomment below to use proxy with unsupported protocol
-  #   environment:
-  #     - PROXY=http://pproxy.service:8080
-  # pproxy:
-  #   tty: true # Required for pproxy to work
-  #   container_name: pproxy
-  #   hostname: pproxy.service # Selenium required a dot in hostname
-  #   restart: unless-stopped
-  #   image: mosajjal/pproxy:latest
-  #   command:
-  #     - "-vv"
-  #     - "-l"
-  #     - "http://:8080"
-  #     - "-r"
-  #     - "prot://host:port#username:password"

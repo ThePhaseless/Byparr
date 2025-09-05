@@ -1,12 +1,26 @@
 import logging
-from time import gmtime, strftime
+from collections.abc import AsyncGenerator
+from typing import NamedTuple, cast
 
-from anyio.streams import file
-from fastapi import Header, HTTPException
-from httpx import codes
-from sbase import SB, BaseCase
+from camoufox import AsyncCamoufox
+from playwright.async_api import Browser, BrowserContext, Page
+from playwright_captcha import (
+    ClickSolver,
+    FrameworkType,
+)
 
-from src.consts import LOG_LEVEL, PROXY, USE_HEADLESS, USE_XVFB
+from src.consts import (
+    ADDON_PATH,
+    LOG_LEVEL,
+    MAX_ATTEMPTS,
+    PROXY_PASSWORD,
+    PROXY_SERVER,
+    PROXY_USERNAME,
+)
+
+solver_logger = logging.getLogger("playwright_captcha.solvers")
+solver_logger.handlers.clear()
+solver_logger.handlers.append(logging.NullHandler())
 
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(LOG_LEVEL)
@@ -14,41 +28,44 @@ if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
 
 
-def get_sb(
-    proxy: str | None = Header(
-        default=PROXY,
-        examples=["protocol://username:password@host:port"],
-        description="Override default proxy address",
-    ),
-):
-    """Get SeleniumBase instance."""
-    if proxy and proxy.startswith("socks5://") and "@" in proxy:
-        raise HTTPException(
-            status_code=codes.BAD_REQUEST,
-            detail="SOCKS5 proxy with authentication is not supported. Check README for more info.",
-        )
-
-    sb = None
-    try:
-        with SB(
-            uc=True,
-            test=True,
-            headless=USE_HEADLESS,
-            xvfb=USE_XVFB,
-            locale_code="en",
-            ad_block=True,
-            proxy=proxy,
-        ) as sb:
-            yield sb
-    except Exception:
-        # Log the exception but re-raise it to let FastAPI handle it properly
-        logger.exception("Exception in SeleniumBase dependency")
-        raise
+class CamoufoxDepType(NamedTuple):
+    page: Page
+    solver: ClickSolver
+    context: BrowserContext
 
 
-def save_screenshot(sb: BaseCase):
-    """Save screenshot on HTTPException."""
-    file_name = f"screenshots_{strftime('%Y-%m-%d_%H:%M:%S', gmtime())}.png"
+async def get_camoufox() -> AsyncGenerator[CamoufoxDepType, None]:
+    """Get Camoufox instance."""
+    proxy_config = (
+        {
+            "server": PROXY_SERVER,
+            "username": PROXY_USERNAME,
+            "password": PROXY_PASSWORD,
+        }
+        if PROXY_SERVER
+        else None
+    )
 
-    logger.info(f"Saving screenshot to {file_name}")
-    sb.save_screenshot(file_name)
+    async with AsyncCamoufox(
+        main_world_eval=True,
+        addons=[ADDON_PATH],
+        geoip=True,
+        proxy=proxy_config,
+        locale="en-US",
+        headless=True,
+        humanize=True,
+        i_know_what_im_doing=True,
+        config={"forceScopeAccess": True},  # add this when creating Camoufox instance
+        disable_coop=True,  # add this when creating Camoufox instance
+    ) as browser_raw:
+        # Cast to Browser since AsyncCamoufox always returns a Browser, not BrowserContext
+        browser = cast("Browser", browser_raw)
+        context = await browser.new_context()
+        page = await context.new_page()
+        async with ClickSolver(
+            framework=FrameworkType.CAMOUFOX,
+            page=page,
+            max_attempts=MAX_ATTEMPTS,
+            attempt_delay=1,
+        ) as solver:
+            yield CamoufoxDepType(page, solver, context)
