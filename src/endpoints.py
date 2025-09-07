@@ -57,8 +57,13 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
 
     request.url = request.url.replace('"', "").strip()
     page_request = await dep.page.goto(request.url)
-    await dep.page.wait_for_load_state(state="domcontentloaded")
-    await dep.page.wait_for_load_state("networkidle")
+
+    # Handle load states with reasonable timeouts to avoid hanging
+    try:
+        await dep.page.wait_for_load_state(state="domcontentloaded", timeout=10000)
+        await dep.page.wait_for_load_state("networkidle", timeout=15000)
+    except Exception as e:
+        logger.debug(f"Load state timeout (continuing anyway): {e}")
 
     if await dep.page.title() in CHALLENGE_TITLES:
         logger.info("Challenge detected, attempting to solve...")
@@ -82,6 +87,29 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
             return LinkResponse.invalid(url=request.url)
         logger.debug("Challenge solved successfully.")
 
+        # After solving challenge, verify we're not still on an error page
+        try:
+            await dep.page.wait_for_load_state("networkidle", timeout=10000)
+        except Exception as e:
+            logger.debug(f"Post-challenge networkidle timeout: {e}")
+
+        current_title = await dep.page.title()
+        current_content = await dep.page.content()
+
+        # If we're still on a challenge page or obvious error page
+        if (current_title in CHALLENGE_TITLES or
+            "access denied" in current_title.lower() or
+            "forbidden" in current_title.lower() or
+            len(current_content) < 500):  # Very short content suggests error page
+            logger.warning("Challenge appeared to be solved but page still shows error")
+            final_status = HTTPStatus.FORBIDDEN
+        else:
+            # Challenge was solved successfully and we have real content
+            final_status = HTTPStatus.OK
+    else:
+        # No challenge detected, use original status
+        final_status = page_request.status if page_request else HTTPStatus.OK
+
     cookies = await dep.context.cookies()
 
     return LinkResponse(
@@ -89,7 +117,7 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         solution=Solution(
             user_agent=await dep.page.evaluate("navigator.userAgent"),
             url=dep.page.url,
-            status=page_request.status if page_request else HTTPStatus.OK,
+            status=final_status,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
             response=await dep.page.content(),
