@@ -18,9 +18,13 @@ from src.consts import (
     PROXY_USERNAME,
 )
 
-solver_logger = logging.getLogger("playwright_captcha.solvers")
+solver_logger = logging.getLogger("playwright_captcha")
 solver_logger.handlers.clear()
-solver_logger.handlers.append(logging.NullHandler())
+if LOG_LEVEL == logging.DEBUG:
+    solver_logger.addHandler(logging.StreamHandler())
+    solver_logger.setLevel(LOG_LEVEL)
+else:
+    solver_logger.handlers.append(logging.NullHandler())
 
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(LOG_LEVEL)
