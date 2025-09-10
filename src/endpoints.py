@@ -6,7 +6,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from httpx import TimeoutException
 from playwright_captcha import CaptchaType
 
 from src.consts import CHALLENGE_TITLES
@@ -79,9 +78,12 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
                 ),
                 timeout=remaining_timeout,
             )
-        except TimeoutException as e:
-            logger.error("Failed to solve challenge: %s", e)
-            return LinkResponse.invalid(url=request.url)
+        except TimeoutError as e:
+            logger.error("Timed out while solving the challenge")
+            raise HTTPException(
+                status_code=408,
+                detail="Timed out while solving the challenge",
+            ) from e
         logger.debug("Challenge solved successfully.")
 
     cookies = await dep.context.cookies()
