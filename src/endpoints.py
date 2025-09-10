@@ -74,6 +74,8 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
                 dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
                     captcha_container=dep.page,
                     captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
+                    wait_checkbox_attempts=1,
+                    wait_checkbox_delay=0.5,
                 ),
                 timeout=remaining_timeout,
             )
