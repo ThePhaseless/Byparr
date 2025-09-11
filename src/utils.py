@@ -1,4 +1,5 @@
 import logging
+import time
 from collections.abc import AsyncGenerator
 from typing import NamedTuple, cast
 
@@ -8,6 +9,7 @@ from playwright_captcha import (
     ClickSolver,
     FrameworkType,
 )
+from pydantic import BaseModel, Field
 
 from src.consts import (
     ADDON_PATH,
@@ -32,13 +34,22 @@ if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
 
 
-class CamoufoxDepType(NamedTuple):
+class TimeoutTimer(BaseModel):
+    duration: int  # in seconds
+    start_time: float = Field(default_factory=time.perf_counter)
+
+    def remaining(self) -> float:
+        """Get remaining time in seconds."""
+        return max(0, self.duration - (time.perf_counter() - self.start_time))
+
+
+class CamoufoxDepClass(NamedTuple):
     page: Page
     solver: ClickSolver
     context: BrowserContext
 
 
-async def get_camoufox() -> AsyncGenerator[CamoufoxDepType, None]:
+async def get_camoufox() -> AsyncGenerator[CamoufoxDepClass, None]:
     """Get Camoufox instance."""
     proxy_config = (
         {
@@ -72,4 +83,4 @@ async def get_camoufox() -> AsyncGenerator[CamoufoxDepType, None]:
             max_attempts=MAX_ATTEMPTS,
             attempt_delay=1,
         ) as solver:
-            yield CamoufoxDepType(page, solver, context)
+            yield CamoufoxDepClass(page, solver, context)

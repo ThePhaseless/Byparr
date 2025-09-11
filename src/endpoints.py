@@ -15,14 +15,14 @@ from src.models import (
     LinkResponse,
     Solution,
 )
-from src.utils import CamoufoxDepType, get_camoufox, logger
+from src.utils import CamoufoxDepClass, TimeoutTimer, get_camoufox, logger
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 
 router = APIRouter()
 
-CamoufoxDep = Annotated[CamoufoxDepType, Depends(get_camoufox)]
+CamoufoxDep = Annotated[CamoufoxDepClass, Depends(get_camoufox)]
 
 
 @router.get("/", include_in_schema=False)
@@ -54,20 +54,24 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
     """Handle POST requests."""
     start_time = int(time.time() * 1000)
 
-    request.url = request.url.replace('"', "").strip()
-    page_request = await dep.page.goto(request.url)
-    status = page_request.status if page_request else HTTPStatus.OK
+    timer = TimeoutTimer(duration=request.max_timeout)
 
-    if await dep.page.title() in CHALLENGE_TITLES:
-        logger.info("Challenge detected, attempting to solve...")
-        # Solve the captcha
-        remaining_timeout = (
-            request.max_timeout - (int(time.time()) * 1000 - start_time) / 1000
+    request.url = request.url.replace('"', "").strip()
+    try:
+        page_request = await dep.page.goto(
+            request.url, timeout=timer.remaining() * 1000
         )
-        logger.debug(
-            "Remaining timeout for solving the challenge: %d ms", remaining_timeout
+        status = page_request.status if page_request else HTTPStatus.OK
+        await dep.page.wait_for_load_state(
+            state="domcontentloaded", timeout=timer.remaining() * 1000
         )
-        try:
+        await dep.page.wait_for_load_state(
+            "networkidle", timeout=timer.remaining() * 1000
+        )
+
+        if await dep.page.title() in CHALLENGE_TITLES:
+            logger.info("Challenge detected, attempting to solve...")
+            # Solve the captcha
             await wait_for(
                 dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
                     captcha_container=dep.page,
@@ -75,16 +79,16 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
                     wait_checkbox_attempts=1,
                     wait_checkbox_delay=0.5,
                 ),
-                timeout=remaining_timeout,
+                timeout=timer.remaining(),
             )
             status = HTTPStatus.OK
-        except TimeoutError as e:
-            logger.error("Timed out while solving the challenge")
-            raise HTTPException(
-                status_code=408,
-                detail="Timed out while solving the challenge",
-            ) from e
-        logger.debug("Challenge solved successfully.")
+            logger.debug("Challenge solved successfully.")
+    except TimeoutError as e:
+        logger.error("Timed out while solving the challenge")
+        raise HTTPException(
+            status_code=408,
+            detail="Timed out while solving the challenge",
+        ) from e
 
     cookies = await dep.context.cookies()
 
