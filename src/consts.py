@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from pathlib import Path
 
 from playwright_captcha import CaptchaType
@@ -12,8 +13,7 @@ LOG_LEVEL = logging.getLevelNamesMapping()[os.getenv("LOG_LEVEL", "INFO").upper(
 VERSION = os.getenv("VERSION", "unknown").removeprefix("v")
 
 ADDON_PATH = str(Path(get_addon_path()).absolute())
-MAX_ATTEMPTS = 2**10
-
+MAX_ATTEMPTS = sys.maxsize
 
 PROXY_SERVER = os.getenv("PROXY_SERVER")
 PROXY_USERNAME = os.getenv("PROXY_USERNAME")
