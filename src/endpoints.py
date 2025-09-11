@@ -56,8 +56,7 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
 
     request.url = request.url.replace('"', "").strip()
     page_request = await dep.page.goto(request.url)
-    await dep.page.wait_for_load_state(state="domcontentloaded")
-    await dep.page.wait_for_load_state("networkidle")
+    status = page_request.status if page_request else HTTPStatus.OK
 
     if await dep.page.title() in CHALLENGE_TITLES:
         logger.info("Challenge detected, attempting to solve...")
@@ -78,6 +77,7 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
                 ),
                 timeout=remaining_timeout,
             )
+            status = HTTPStatus.OK
         except TimeoutError as e:
             logger.error("Timed out while solving the challenge")
             raise HTTPException(
@@ -93,7 +93,7 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         solution=Solution(
             user_agent=await dep.page.evaluate("navigator.userAgent"),
             url=dep.page.url,
-            status=page_request.status if page_request else HTTPStatus.OK,
+            status=status,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
             response=await dep.page.content(),
