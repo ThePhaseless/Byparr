@@ -25,6 +25,6 @@ class LogRequest(BaseHTTPMiddleware):
         if response.status_code == HTTPStatus.OK:
             logger.info(f"Done {request_body.url} in {process_time:.2f}s")
         else:
-            logger.info(f"Failed {request_body.url} in {process_time:.2f}s")
+            logger.warning(f"Failed {request_body.url} in {process_time:.2f}s")
 
         return response
