@@ -25,7 +25,7 @@ class LinkRequest(BaseModel):
 
 class HealthcheckResponse(BaseModel):
     model_config = {"alias_generator": to_camel, "populate_by_name": True}
-    msg: str = "Byparr is ready!"
+    msg: str = "Byparr is working!"
     version: str = consts.VERSION
     user_agent: str
 
