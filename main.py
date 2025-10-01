@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import sys
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
-from src.consts import LOG_LEVEL, VERSION
+from src.consts import HOST, LOG_LEVEL, PORT, VERSION
 from src.endpoints import health_check, router
 from src.middlewares import LogRequest
 from src.utils import get_camoufox, logger
@@ -39,5 +38,4 @@ if __name__ == "__main__":
         loop.run_until_complete(init())
         logger.info("Initialization complete.")
     else:
-        host = os.getenv("HOST", "0.0.0.0")  # noqa: S104
-        uvicorn.run(app, host=host, port=8191)
+        uvicorn.run(app, host=HOST, port=PORT)
