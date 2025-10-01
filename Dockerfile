@@ -10,15 +10,13 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     PYTHONUNBUFFERED=1 \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
-    UV_LINK_MODE=copy \
-    PATH="${HOME}/.local/bin:$PATH"
+    UV_LINK_MODE=copy
 
 WORKDIR /app
 
 RUN apt update && apt -y upgrade && apt install -y curl
 
-ADD https://astral.sh/uv/install.sh install.sh
-RUN sh install.sh && uv --version
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 RUN uvx playwright install-deps firefox && uvx camoufox fetch
 
 FROM base AS devcontainer
