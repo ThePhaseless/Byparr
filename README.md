@@ -34,12 +34,12 @@ Built with [camoufox](https://camoufox.com/) and [FastAPI](https://fastapi.tiang
 ## Options
 
 | Environment Variable | Default   | Description                                                                                                                                                       |
-| -------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| -------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `HOST`               | `0.0.0.0` | Host address to bind the server to. Use `0.0.0.0` to bind to all IPv4 interfaces, `::` for all IPv6 interfaces, or `127.0.0.1`/`localhost` for local access only. |
 | `PORT`               | `8196`    | Port to bind the server to.                                                                                                                                       |
-| `PROXY_SERVER`       | None      | Proxy to use in format: `protocol://host:port`.                                                                                                                   | w   |
-| `PROXY_USERNAME`     | None      |                                                                                                                                                                   |
-| `PROXY_PASSWORD`     | None      |                                                                                                                                                                   |
+| `PROXY_SERVER`       | None      | Proxy to use in format: `protocol://host:port`.                                                                                                                   |
+| `PROXY_USERNAME`     | None      | Username for proxy authentication.                                                                                                                                |
+| `PROXY_PASSWORD`     | None      | Password for proxy authentication.                                                                                                                                |
 
 ## Proxy Recommendation
 
