@@ -2,16 +2,16 @@
 [project]
 authors = [{ name = "ThePhaseless", email = "kukubaorch@gmail.com" }]
 license = { text = "LICENSE" }
-requires-python = "<4.0,>=3.12"
+requires-python = "==3.13.*"
 name = "Byparr"
 version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
     "camoufox[geoip]==0.4.*",
-    "fastapi[standard]==0.118.*",
+    "fastapi[standard]==0.119.*",
     "playwright-captcha==0.1.*",
-    "pydantic==2.11.*",
+    "pydantic==2.*",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 
