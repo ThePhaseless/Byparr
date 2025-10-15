@@ -11,7 +11,7 @@ dependencies = [
     "camoufox[geoip]==0.4.*",
     "fastapi[standard]==0.118.*",
     "playwright-captcha==0.1.*",
-    "pydantic==2.11.*",
+    "pydantic==2.12.*",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 
