@@ -1,7 +1,14 @@
-FROM debian:stable-slim AS base
+# Ubuntu is required by playwright
+FROM ubuntu:latest AS base
 
 ARG GITHUB_BUILD=false \
-    VERSION
+    UV_CACHE_DIR=/var/cache/uv \
+    VERSION \
+    USER=ubuntu \
+    UID=1000
+
+ARG GROUP=${USER} \
+    GID=${UID}
 
 ENV GITHUB_BUILD=${GITHUB_BUILD}\
     VERSION=${VERSION}\
@@ -10,36 +17,41 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_CACHE_DIR=/var/cache/uv
+    UV_CACHE_DIR=${UV_CACHE_DIR}
 
-WORKDIR /app
-
-RUN apt update && apt -y upgrade && apt install -y curl
-
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser -u 1000 appuser
-
+RUN apt update &&\
+    apt -y upgrade &&\
+    apt install -y curl
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-RUN uvx playwright install-deps firefox && uvx camoufox fetch
 
 FROM base AS devcontainer
-RUN apt install -y git
+RUN apt install -y git &&\
+    uvx playwright install-deps firefox &&\
+    uvx camoufox fetch
 ENTRYPOINT [ "sleep", "infinity" ]
 
-
 FROM base AS app
+WORKDIR /app
+RUN chown ${USER}:${GROUP} /app &&\
+    mkdir -p ${UV_CACHE_DIR} &&\
+    chown ${USER}:${GROUP} ${UV_CACHE_DIR}
+
+USER ${USER}
 COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/var/cache/uv uv sync
+RUN uv sync && uv run camoufox fetch
+
+USER root
+RUN uv run playwright install-deps firefox
+USER ${USER}
 
 COPY . .
-RUN chown -R appuser:appuser /app
 
 FROM app AS test
-RUN --mount=type=cache,target=/var/cache/uv uv sync --group test
-RUN uv run pytest --retries 3
+RUN \
+    uv sync --group test &&\
+    uv run pytest --retries 3
 
 FROM app
-USER appuser
 EXPOSE 8191
 HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
 ENTRYPOINT ["uv", "run", "main.py"]
