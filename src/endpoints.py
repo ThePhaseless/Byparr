@@ -6,8 +6,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from playwright.async_api import Error as PlaywrightError
+from playwright.async_api import Error as PlaywrightError, Page
 from playwright_captcha import CaptchaType
+from tenacity import (
+    AsyncRetrying,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_fixed,
+)
 
 from src.consts import CHALLENGE_TITLES
 from src.models import (
@@ -50,6 +56,11 @@ async def health_check(sb: CamoufoxDep):
     return HealthcheckResponse(user_agent=health_check_request.solution.user_agent)
 
 
+def _is_page_crash(exception: BaseException) -> bool:
+    """Check if exception is a page crash error."""
+    return isinstance(exception, PlaywrightError) and "Page crashed" in str(exception)
+
+
 @router.post("/v1")
 async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
     """Handle POST requests."""
@@ -59,67 +70,81 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
 
     request.url = request.url.replace('"', "").strip()
 
-    # Track retry attempts for page crashes
-    max_retries = 2
-    current_page = dep.page
+    # Use a container to hold the current page so we can update it during retries
+    page_container: list[Page] = [dep.page]
     page_request = None
     status = HTTPStatus.OK
 
-    for attempt in range(max_retries):
-        try:
-            page_request = await current_page.goto(
-                request.url, timeout=timer.remaining() * 1000
-            )
-            status = page_request.status if page_request else HTTPStatus.OK
-            await current_page.wait_for_load_state(
-                state="domcontentloaded", timeout=timer.remaining() * 1000
-            )
-            await current_page.wait_for_load_state(
-                "networkidle", timeout=timer.remaining() * 1000
-            )
+    async def _navigate_and_solve() -> None:
+        """Navigate to URL and solve challenges if present."""
+        nonlocal page_request, status
 
-            if await current_page.title() in CHALLENGE_TITLES:
-                logger.info("Challenge detected, attempting to solve...")
-                # Solve the captcha
-                await wait_for(
-                    dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
-                        captcha_container=current_page,
-                        captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-                        wait_checkbox_attempts=1,
-                        wait_checkbox_delay=0.5,
-                    ),
-                    timeout=timer.remaining(),
-                )
-                status = HTTPStatus.OK
-                logger.debug("Challenge solved successfully.")
-            break  # Success, exit retry loop
-        except PlaywrightError as e:
-            if "Page crashed" in str(e) and attempt < max_retries - 1:
-                logger.warning(f"Page crashed on attempt {attempt + 1}, recreating page and retrying...")
+        current_page = page_container[0]
+
+        page_request = await current_page.goto(
+            request.url, timeout=timer.remaining() * 1000
+        )
+        status = page_request.status if page_request else HTTPStatus.OK
+        await current_page.wait_for_load_state(
+            state="domcontentloaded", timeout=timer.remaining() * 1000
+        )
+        await current_page.wait_for_load_state(
+            "networkidle", timeout=timer.remaining() * 1000
+        )
+
+        if await current_page.title() in CHALLENGE_TITLES:
+            logger.info("Challenge detected, attempting to solve...")
+            # Solve the captcha
+            await wait_for(
+                dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
+                    captcha_container=current_page,
+                    captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
+                    wait_checkbox_attempts=1,
+                    wait_checkbox_delay=0.5,
+                ),
+                timeout=timer.remaining(),
+            )
+            status = HTTPStatus.OK
+            logger.debug("Challenge solved successfully.")
+
+    # Use tenacity for retry logic with page crash handling
+    try:
+        async for attempt in AsyncRetrying(
+            retry=retry_if_exception(_is_page_crash),
+            stop=stop_after_attempt(2),
+            wait=wait_fixed(0.5),
+            reraise=True,
+        ):
+            with attempt:
                 try:
-                    # Close the crashed page
-                    await current_page.close()
-                except Exception as close_error:
-                    logger.debug(f"Error closing crashed page: {close_error}")
+                    await _navigate_and_solve()
+                except PlaywrightError as e:
+                    if _is_page_crash(e):
+                        logger.warning(f"Page crashed on attempt {attempt.retry_state.attempt_number}, recreating page and retrying...")
+                        try:
+                            # Close the crashed page
+                            await page_container[0].close()
+                        except Exception as close_error:
+                            logger.debug(f"Error closing crashed page: {close_error}")
 
-                # Create a new page from the existing context
-                current_page = await dep.context.new_page()
-                continue  # Retry with the new page
-            else:
-                # Either not a page crash or out of retries
-                logger.error(f"Playwright error: {e}")
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Browser error: {str(e)}",
-                ) from e
-        except TimeoutError as e:
-            logger.error("Timed out while solving the challenge")
-            raise HTTPException(
-                status_code=408,
-                detail="Timed out while solving the challenge",
-            ) from e
+                        # Create a new page from the existing context
+                        page_container[0] = await dep.context.new_page()
+                    raise  # Re-raise to trigger retry or final failure
+    except PlaywrightError as e:
+        logger.error(f"Playwright error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Browser error: {str(e)}",
+        ) from e
+    except TimeoutError as e:
+        logger.error("Timed out while solving the challenge")
+        raise HTTPException(
+            status_code=408,
+            detail="Timed out while solving the challenge",
+        ) from e
 
     cookies = await dep.context.cookies()
+    current_page = page_container[0]
 
     return LinkResponse(
         message="Success",
