@@ -38,7 +38,7 @@ RUN chown ${USER}:${GROUP} /app &&\
 
 USER ${USER}
 COPY pyproject.toml uv.lock ./
-RUN uv sync && uv run camoufox fetch
+RUN uv sync --locked && uv run camoufox fetch
 
 USER root
 RUN uv run playwright install-deps firefox
@@ -48,7 +48,7 @@ COPY . .
 
 FROM app AS test
 RUN \
-    uv sync --group test &&\
+    uv sync --group test --locked &&\
     uv run pytest --retries 3
 
 FROM app
