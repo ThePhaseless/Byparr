@@ -12,8 +12,26 @@ on:
     branches: ["*"]
     # Publish semver tags as releases.
     tags: ["v*.*.*"]
+    paths:
+      - "src/**"
+      - "main.py"
+      - "tests/**"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "compose.yaml"
+      - ".github/workflows/docker-publish.yml"
   pull_request:
     branches: ["main"]
+    paths:
+      - "src/**"
+      - "main.py"
+      - "tests/**"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "compose.yaml"
+      - ".github/workflows/docker-publish.yml"
   workflow_dispatch:
 
 env:
