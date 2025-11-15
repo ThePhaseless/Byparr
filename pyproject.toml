@@ -12,6 +12,7 @@ dependencies = [
     "fastapi[standard]==0.121.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",
+    "tenacity==9.*",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 
