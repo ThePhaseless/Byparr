@@ -54,7 +54,6 @@ jobs:
 
   build:
     needs: test
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -76,6 +75,11 @@ jobs:
           echo "SURFIX=$SURFIX" >> $GITHUB_OUTPUT
           # Generate a unique local tag for the image
           echo "LOCAL_TAG=${{ github.sha }}-$SURFIX" >> $GITHUB_OUTPUT
+          # Extract branch name for labeling
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          # Sanitize branch name for Docker tag (replace / with -)
+          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+          echo "BRANCH_TAG=$BRANCH_TAG" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -99,15 +103,18 @@ jobs:
         with:
           tags: type=raw,value=${{ steps.vars.outputs.LOCAL_TAG }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.branch=${{ steps.vars.outputs.BRANCH_TAG }}
+            branch=${{ steps.vars.outputs.BRANCH_TAG }}
 
-      # Build and export Docker image for each platform (without pushing)
+      # Build and push Docker image for each platform
       - name: Build Docker image
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           pull: true
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ matrix.platform }}
@@ -145,6 +152,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Prepare branch name variable
+      - name: Prepare branch name
+        id: branch
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+          echo "BRANCH_TAG=$BRANCH_TAG" >> $GITHUB_OUTPUT
+
       # Extract Docker metadata for tagging
       - name: Extract Docker metadata
         id: meta
@@ -157,6 +172,9 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.branch=${{ steps.branch.outputs.BRANCH_TAG }}
+            branch=${{ steps.branch.outputs.BRANCH_TAG }}
 
       # Create manifest lists and push
       - name: Create and push manifest lists
