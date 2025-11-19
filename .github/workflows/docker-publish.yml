@@ -93,11 +93,6 @@ jobs:
           echo "SURFIX=$SURFIX" >> $GITHUB_OUTPUT
           # Generate a unique local tag for the image
           echo "LOCAL_TAG=${{ github.sha }}-$SURFIX" >> $GITHUB_OUTPUT
-          # Extract branch name for labeling
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
-          # Sanitize branch name for Docker tag (replace / with -)
-          BRANCH_TAG=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
-          echo "BRANCH_TAG=$BRANCH_TAG" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -121,9 +116,6 @@ jobs:
         with:
           tags: type=raw,value=${{ steps.vars.outputs.LOCAL_TAG }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          labels: |
-            org.opencontainers.image.branch=${{ steps.vars.outputs.BRANCH_TAG }}
-            branch=${{ steps.vars.outputs.BRANCH_TAG }}
 
       # Build and push Docker image for each platform
       - name: Build Docker image
