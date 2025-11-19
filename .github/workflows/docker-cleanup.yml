@@ -1,0 +1,110 @@
+name: Cleanup PR Docker Images
+
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Delete PR Docker images
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner.toLowerCase();
+            const repo = context.repo.repo.toLowerCase();
+            const prNumber = context.payload.pull_request.number;
+            const sha = context.payload.pull_request.head.sha;
+
+            // Get the package
+            const packageName = `${repo}`;
+
+            console.log(`Cleaning up images for PR #${prNumber}`);
+            console.log(`Looking for images with SHA: ${sha}`);
+
+            // Check if owner is an org or user
+            let isOrg = false;
+            try {
+              await github.rest.orgs.get({ org: owner });
+              isOrg = true;
+              console.log(`Repository owner is an organization`);
+            } catch (error) {
+              console.log(`Repository owner is a user account`);
+            }
+
+            try {
+              // Get all versions of the package
+              let versions;
+              if (isOrg) {
+                versions = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+                  package_type: 'container',
+                  package_name: packageName,
+                  org: owner,
+                  per_page: 100
+                });
+              } else {
+                versions = await github.rest.packages.getAllPackageVersionsForPackageOwnedByUser({
+                  package_type: 'container',
+                  package_name: packageName,
+                  username: owner,
+                  per_page: 100
+                });
+              }
+
+              // Filter versions that match this PR's SHA (for both amd64 and arm64)
+              const prVersions = versions.data.filter(version => {
+                const tags = version.metadata?.container?.tags || [];
+                // Match tags like: pr-123, sha-amd64, sha-arm64
+                return tags.some(tag =>
+                  tag === `pr-${prNumber}` ||
+                  tag === `${sha}-amd64` ||
+                  tag === `${sha}-arm64` ||
+                  tag.startsWith(`${sha.substring(0, 7)}-`)
+                );
+              });
+
+              console.log(`Found ${prVersions.length} image version(s) to delete`);
+
+              // Delete each version
+              for (const version of prVersions) {
+                console.log(`Deleting version ${version.id} with tags: ${version.metadata?.container?.tags?.join(', ')}`);
+                try {
+                  if (isOrg) {
+                    await github.rest.packages.deletePackageVersionForOrg({
+                      package_type: 'container',
+                      package_name: packageName,
+                      org: owner,
+                      package_version_id: version.id
+                    });
+                  } else {
+                    await github.rest.packages.deletePackageVersionForUser({
+                      package_type: 'container',
+                      package_name: packageName,
+                      username: owner,
+                      package_version_id: version.id
+                    });
+                  }
+                  console.log(`✓ Deleted version ${version.id}`);
+                } catch (error) {
+                  console.error(`Failed to delete version ${version.id}:`, error.message);
+                }
+              }
+
+              console.log('Cleanup completed');
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('No package found - nothing to clean up');
+              } else {
+                console.error('Error during cleanup:', error.message);
+                throw error;
+              }
+            }
