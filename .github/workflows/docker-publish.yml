@@ -12,8 +12,26 @@ on:
     branches: ["*"]
     # Publish semver tags as releases.
     tags: ["v*.*.*"]
+    paths:
+      - "src/**"
+      - "main.py"
+      - "tests/**"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "compose.yaml"
+      - ".github/workflows/docker-publish.yml"
   pull_request:
     branches: ["main"]
+    paths:
+      - "src/**"
+      - "main.py"
+      - "tests/**"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "compose.yaml"
+      - ".github/workflows/docker-publish.yml"
   workflow_dispatch:
 
 env:
@@ -54,7 +72,6 @@ jobs:
 
   build:
     needs: test
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -74,8 +91,13 @@ jobs:
         run: |
           SURFIX=$(echo ${{ matrix.platform }} | cut -d'/' -f2)
           echo "SURFIX=$SURFIX" >> $GITHUB_OUTPUT
-          # Generate a unique local tag for the image
-          echo "LOCAL_TAG=${{ github.sha }}-$SURFIX" >> $GITHUB_OUTPUT
+
+          # Use PR number for PRs, SHA for everything else
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "LOCAL_TAG=pr-${{ github.event.pull_request.number }}-$SURFIX" >> $GITHUB_OUTPUT
+          else
+            echo "LOCAL_TAG=${{ github.sha }}-$SURFIX" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -100,14 +122,14 @@ jobs:
           tags: type=raw,value=${{ steps.vars.outputs.LOCAL_TAG }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      # Build and export Docker image for each platform (without pushing)
+      # Build and push Docker image for each platform
       - name: Build Docker image
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           pull: true
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ matrix.platform }}
@@ -178,9 +200,16 @@ jobs:
 
           echo $args
 
-          docker buildx imagetools create $args \
-          ${image}:${{github.sha}}-amd64 \
-          ${image}:${{github.sha}}-arm64
+          # Use PR-based tags for PRs, SHA-based tags for everything else
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            docker buildx imagetools create $args \
+            ${image}:pr-${{ github.event.pull_request.number }}-amd64 \
+            ${image}:pr-${{ github.event.pull_request.number }}-arm64
+          else
+            docker buildx imagetools create $args \
+            ${image}:${{github.sha}}-amd64 \
+            ${image}:${{github.sha}}-arm64
+          fi
 
       # Sign the manifest
       - name: Sign the manifests
