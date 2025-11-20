@@ -23,13 +23,11 @@ jobs:
             const owner = context.repo.owner.toLowerCase();
             const repo = context.repo.repo.toLowerCase();
             const prNumber = context.payload.pull_request.number;
-            const sha = context.payload.pull_request.head.sha;
 
             // Get the package
             const packageName = `${repo}`;
 
             console.log(`Cleaning up images for PR #${prNumber}`);
-            console.log(`Looking for images with SHA: ${sha}`);
 
             // Check if owner is an org or user
             let isOrg = false;
@@ -60,15 +58,14 @@ jobs:
                 });
               }
 
-              // Filter versions that match this PR's SHA (for both amd64 and arm64)
+              // Filter versions that match this PR (pr-123, pr-123-amd64, pr-123-arm64)
               const prVersions = versions.data.filter(version => {
                 const tags = version.metadata?.container?.tags || [];
-                // Match tags like: pr-123, sha-amd64, sha-arm64
+                // Match tags like: pr-123, pr-123-amd64, pr-123-arm64
                 return tags.some(tag =>
                   tag === `pr-${prNumber}` ||
-                  tag === `${sha}-amd64` ||
-                  tag === `${sha}-arm64` ||
-                  tag.startsWith(`${sha.substring(0, 7)}-`)
+                  tag === `pr-${prNumber}-amd64` ||
+                  tag === `pr-${prNumber}-arm64`
                 );
               });
 
