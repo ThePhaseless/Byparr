@@ -49,6 +49,7 @@ Recently I've partnered with a _new in town_ proxy service - ProxyBase - to offe
 
 - `v*.*.*`/`latest` - Releases considered stable
 - `main` - Latest release from main branch (untested)
+- `pr-{number}` - Pull request images for testing (automatically cleaned up when PR closes)
 
 ## Usage
 
