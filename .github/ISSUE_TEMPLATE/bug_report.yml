@@ -9,7 +9,7 @@ body:
       label: "I've completed the following steps:"
       options:
         - label: Read Loop Warning on Readme
-        - label: "Used `--init`/`init: true` in `docker run`/`compose.yaml`"
+        - label: Used --init/init: true in docker run/compose.yaml
         - label: Done the troubleshooting from Readme
         - label: Checked if such issue already exists
         - label: Checked other websites with Cloudflare Turnstile
