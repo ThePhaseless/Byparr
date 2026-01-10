@@ -14,6 +14,7 @@ body:
         - label: Checked if such issue already exists
         - label: Checked other websites with Cloudflare Turnstile
         - label: I am able to access the webpage from my browser
+        - label: (Docker only) Checked that the problem does also occur on main tag
   - type: checkboxes
     attributes:
       label: "If checked other websites with Cloudflare Turnstile:"
