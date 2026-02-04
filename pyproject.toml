@@ -2,7 +2,7 @@
 [project]
 authors = [{ name = "ThePhaseless", email = "kukubaorch@gmail.com" }]
 license = { text = "LICENSE" }
-requires-python = "==3.13.*"
+requires-python = "==3.14.*"
 name = "Byparr"
 version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
