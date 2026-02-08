@@ -45,15 +45,15 @@ docker compose up -d
 
 1. Pull and run the image:
 
-```bash
-docker run -p 8191:8191 ghcr.io/thephaseless/byparr:latest
-```
+   ```bash
+   docker run -p 8191:8191 ghcr.io/thephaseless/byparr:latest
+   ```
 
 2. Optional: set env vars using `-e` or `--env-file`.
 
 ### Local install
 
-1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
+1. Install ([or update when Python version changes](https://github.com/astral-sh/uv/issues/17887)) [uv](https://docs.astral.sh/uv/getting-started/installation/).
 2. Clone this repo - `git clone https://github.com/ThePhaseless/Byparr`
 3. Run `uv run main.py`
 4. Enjoy!
