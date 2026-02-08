@@ -27,8 +27,8 @@ body:
     attributes:
       label: "The issue is still present in the latest main tag:"
       options:
-        - label: Yes
-        - label: No
+        - label: "Yes"
+        - label: "No"
 
   - type: input
     id: docker-host
