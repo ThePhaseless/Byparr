@@ -1,9 +1,10 @@
 import logging
 import time
 from collections.abc import AsyncGenerator
-from typing import NamedTuple, cast
+from typing import Annotated, NamedTuple, cast
 
 from camoufox import AsyncCamoufox
+from fastapi import Header
 from playwright.async_api import Browser, BrowserContext, Page
 from playwright_captcha import (
     ClickSolver,
@@ -49,17 +50,46 @@ class CamoufoxDepClass(NamedTuple):
     context: BrowserContext
 
 
-async def get_camoufox() -> AsyncGenerator[CamoufoxDepClass, None]:
+async def get_camoufox(
+    x_proxy_server: Annotated[
+        str | None,
+        Header(
+            alias="X-Proxy-Server",
+            description="Override proxy server for this request in protocol://host:port format.",
+        ),
+    ] = None,
+    x_proxy_username: Annotated[
+        str | None,
+        Header(
+            alias="X-Proxy-Username",
+        ),
+    ] = None,
+    x_proxy_password: Annotated[
+        str | None,
+        Header(
+            alias="X-Proxy-Password",
+        ),
+    ] = None,
+) -> AsyncGenerator[CamoufoxDepClass]:
     """Get Camoufox instance."""
-    proxy_config = (
-        {
+    header_server = x_proxy_server
+    header_username = x_proxy_username
+    header_password = x_proxy_password
+
+    proxy_config = None
+
+    if header_server:
+        proxy_config = {
+            "server": header_server,
+            "username": header_username,
+            "password": header_password,
+        }
+    elif PROXY_SERVER:
+        proxy_config = {
             "server": PROXY_SERVER,
             "username": PROXY_USERNAME,
             "password": PROXY_PASSWORD,
         }
-        if PROXY_SERVER
-        else None
-    )
 
     async with AsyncCamoufox(
         main_world_eval=True,
