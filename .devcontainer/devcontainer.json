@@ -9,7 +9,11 @@
   "runArgs": ["--security-opt", "label=disable", "--privileged"],
   "customizations": {
     "vscode": {
-      "extensions": ["charliermarsh.ruff", "ms-python.python"],
+      "extensions": [
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "tamasfe.even-better-toml"
+      ],
       "settings": {
         "python.venvPath": "./venv"
       }
