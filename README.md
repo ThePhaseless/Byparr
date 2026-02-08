@@ -49,7 +49,7 @@ docker compose up -d
 docker run -p 8191:8191 ghcr.io/thephaseless/byparr:latest
 ```
 
-1. Optional: set env vars using `-e` or `--env-file`.
+2. Optional: set env vars using `-e` or `--env-file`.
 
 ### Local install
 
