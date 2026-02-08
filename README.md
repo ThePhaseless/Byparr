@@ -54,8 +54,9 @@ docker run -p 8191:8191 ghcr.io/thephaseless/byparr:latest
 ### Local install
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
-2. Run `uv run main.py`
-3. Profit.
+2. Clone this repo - `git clone https://github.com/ThePhaseless/Byparr`
+3. Run `uv run main.py`
+4. Enjoy!
 
 ### API Docs
 
