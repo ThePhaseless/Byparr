@@ -15,6 +15,7 @@ body:
         - label: Checked other websites with Cloudflare Turnstile
         - label: I am able to access the webpage from my browser
         - label: (Docker only) Checked that the problem does also occur on main tag
+
   - type: checkboxes
     attributes:
       label: "If checked other websites with Cloudflare Turnstile:"
@@ -22,11 +23,18 @@ body:
         - label: Other websites do work.
         - label: Other websites do not work.
 
+  - type: checkboxes
+    attributes:
+      label: "The issue is still present in the latest main tag:"
+      options:
+        - label: Yes
+        - label: No
+
   - type: input
     id: docker-host
     attributes:
       label: OS/Docker Host
-      placeholder: e.g. Docker, WSL2, Ubuntu, Windows 
+      placeholder: e.g. Docker, WSL2, Ubuntu, Windows
 
   - type: input
     id: platform-model
@@ -51,7 +59,7 @@ body:
       label: Describe the bug
       description: A clear and concise description of what the bug is.
       placeholder: "Example: The application crashes when trying to load a new file"
-  
+
   - type: textarea
     id: config
     attributes:
