@@ -9,7 +9,7 @@ description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
     "camoufox[geoip]==0.4.*",
-    "fastapi[standard]==0.129.*",
+    "fastapi[standard]==0.131.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",
 ]
