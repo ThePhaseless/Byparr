@@ -11,15 +11,38 @@ from pydantic.alias_generators import to_camel
 from src import consts
 
 
+class InteractAction(BaseModel):
+    action: str = Field(description="Action type: 'fill', 'click', 'type', 'wait', 'wait_url', 'solve_turnstile'")
+    selector: str | None = None
+    value: str | None = None
+    timeout: int = Field(default=30000, description="Timeout in milliseconds")
+
+
 class LinkRequest(BaseModel):
     cmd: str = Field(
         default="request.get",
-        description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
+        description="Type of request: 'request.get', 'request.post', or 'request.interact'. FlareSolverr-compatible.",
     )
     url: str = Field(pattern=r"^https?://", default="https://")
     max_timeout: int = Field(
         default=60,
         description="Maximum timeout in seconds for resolving the anti-bot challenge.",
+    )
+    cookies: list[Cookie] = Field(
+        default_factory=list,
+        description="Cookies to inject into browser context before navigation.",
+    )
+    post_data: str | None = Field(
+        default=None,
+        description="Form data for POST requests (application/x-www-form-urlencoded).",
+    )
+    return_only_cookies: bool = Field(
+        default=False,
+        description="Only return cookies, omit response body.",
+    )
+    actions: list[InteractAction] = Field(
+        default_factory=list,
+        description="Sequential browser actions for 'request.interact' command.",
     )
 
 
