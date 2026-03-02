@@ -19,6 +19,7 @@ class InteractAction(BaseModel):
 
 
 class LinkRequest(BaseModel):
+    model_config = {"extra": "forbid"}
     cmd: str = Field(
         default="request.get",
         description="Type of request: 'request.get', 'request.post', or 'request.interact'. FlareSolverr-compatible.",
