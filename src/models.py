@@ -38,6 +38,10 @@ class Solution(BaseModel):
     user_agent: str = ""
     headers: dict[str, Any] = {}
     response: str = ""
+    response_type: str = Field(
+        default="text",
+        description="Response encoding: 'text' for HTML/text, 'base64' for binary content.",
+    )
 
 
 class LinkResponse(BaseModel):
