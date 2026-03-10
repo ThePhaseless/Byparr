@@ -119,7 +119,7 @@ jobs:
       # Extract metadata (tags, labels) for Docker
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           tags: type=raw,value=${{ steps.vars.outputs.LOCAL_TAG }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -172,7 +172,7 @@ jobs:
       # Extract Docker metadata for tagging
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           tags: |
             type=ref,event=branch
