@@ -1,11 +1,15 @@
+import base64
+import contextlib
 import time
 import warnings
 from asyncio import wait_for
 from http import HTTPStatus
 from typing import Annotated
+from urllib.parse import urlparse, urlunparse
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from playwright.async_api import Response
 from playwright_captcha import CaptchaType
 
 from src.consts import CHALLENGE_TITLES
@@ -17,12 +21,30 @@ from src.models import (
 )
 from src.utils import CamoufoxDepClass, TimeoutTimer, get_camoufox, logger
 
+BINARY_CONTENT_TYPES = (
+    "application/pdf", "application/zip", "application/gzip",
+    "application/octet-stream", "application/x-tar",
+    "image/", "audio/", "video/", "font/",
+)
+
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 
 router = APIRouter()
 
 CamoufoxDep = Annotated[CamoufoxDepClass, Depends(get_camoufox)]
+
+
+def _strip_url_params(url: str) -> str:
+    """Strip query string and fragment from URL using urllib."""
+    parsed = urlparse(url)
+    return urlunparse(parsed._replace(query="", fragment=""))
+
+
+def _is_binary_content_type(ct: str) -> bool:
+    """Check if content-type indicates binary content."""
+    ct_lower = ct.lower()
+    return any(ct_lower.startswith(b) for b in BINARY_CONTENT_TYPES)
 
 
 @router.get("/", include_in_schema=False)
@@ -57,6 +79,26 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
     timer = TimeoutTimer(duration=request.max_timeout)
 
     request.url = request.url.replace('"', "").strip()
+
+    # Capture binary responses (PDF, images, etc.) at network level
+    captured_binary: bytes | None = None
+    target_url = _strip_url_params(request.url)
+
+    async def _capture_binary_response(response: Response) -> None:
+        nonlocal captured_binary
+        resp_url = _strip_url_params(response.url)
+        if resp_url != target_url:
+            return
+        ct = response.headers.get("content-type", "")
+        if _is_binary_content_type(ct):
+            try:
+                captured_binary = await response.body()
+                logger.info(f"Captured binary response: {ct} ({len(captured_binary)} bytes)")
+            except TimeoutError as e:
+                logger.warning(f"Failed to capture binary body: {e}")
+
+    dep.page.on("response", _capture_binary_response)
+
     try:
         page_request = await dep.page.goto(
             request.url, timeout=timer.remaining() * 1000
@@ -65,13 +107,13 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         await dep.page.wait_for_load_state(
             state="domcontentloaded", timeout=timer.remaining() * 1000
         )
-        await dep.page.wait_for_load_state(
-            "networkidle", timeout=timer.remaining() * 1000
-        )
+        with contextlib.suppress(TimeoutError):
+            await dep.page.wait_for_load_state(
+                "networkidle", timeout=timer.remaining() * 1000
+            )
 
         if await dep.page.title() in CHALLENGE_TITLES:
             logger.info("Challenge detected, attempting to solve...")
-            # Solve the captcha
             await wait_for(
                 dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
                     captcha_container=dep.page,
@@ -89,8 +131,19 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
             status_code=408,
             detail="Timed out while solving the challenge",
         ) from e
+    finally:
+        dep.page.remove_listener("response", _capture_binary_response)
 
     cookies = await dep.context.cookies()
+
+    # Binary content: use captured response if available
+    response_body = ""
+    response_type = "text"
+    if captured_binary is not None:
+        response_body = base64.b64encode(captured_binary).decode("ascii")
+        response_type = "base64"
+    else:
+        response_body = await dep.page.content()
 
     return LinkResponse(
         message="Success",
@@ -100,7 +153,8 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
             status=status,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
-            response=await dep.page.content(),
+            response=response_body,
+            response_type=response_type,
         ),
         start_timestamp=start_time,
     )
