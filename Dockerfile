@@ -17,7 +17,8 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_CACHE_DIR=${UV_CACHE_DIR}
+    UV_CACHE_DIR=${UV_CACHE_DIR} \
+    PORT=8191
 
 RUN apt update &&\
     apt -y upgrade &&\
@@ -52,6 +53,7 @@ RUN \
     uv run pytest --retries 3
 
 FROM app
-EXPOSE 8191
-HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD [ "curl", "http://localhost:8191/health" ]
+EXPOSE $PORT
+# Shell form is required here (instead of exec form) to enable ${PORT} variable expansion at runtime
+HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://localhost:${PORT}/health"
 ENTRYPOINT ["uv", "run", "main.py"]
