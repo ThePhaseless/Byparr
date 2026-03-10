@@ -54,6 +54,5 @@ RUN \
 
 FROM app
 EXPOSE $PORT
-# Shell form is required here (instead of exec form) to enable ${PORT} variable expansion at runtime
 HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://localhost:${PORT}/health"
 ENTRYPOINT ["uv", "run", "main.py"]
