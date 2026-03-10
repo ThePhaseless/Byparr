@@ -61,7 +61,7 @@ jobs:
 
       - name: Test
         id: test
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
@@ -127,7 +127,7 @@ jobs:
       # Build and push Docker image for each platform
       - name: Build Docker image
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           pull: true
