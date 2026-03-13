@@ -18,7 +18,8 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_CACHE_DIR=${UV_CACHE_DIR} \
-    PORT=8191
+    PORT=8191 \
+    HOME=/home/${USER}
 
 RUN apt update &&\
     apt -y upgrade &&\
@@ -40,6 +41,7 @@ RUN chown ${USER}:${GROUP} /app &&\
 USER ${USER}
 COPY pyproject.toml uv.lock ./
 RUN uv sync && uv run camoufox fetch
+RUN chmod -R a+rwX ${UV_CACHE_DIR} /home/${USER} /app/.venv/
 
 USER root
 RUN uv run playwright install-deps firefox
