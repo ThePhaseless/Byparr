@@ -2,7 +2,6 @@
 FROM ubuntu:latest AS base
 
 ARG GITHUB_BUILD=false \
-    UV_CACHE_DIR=/var/cache/uv \
     VERSION
 
 ENV GITHUB_BUILD=${GITHUB_BUILD}\
@@ -12,20 +11,23 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_CACHE_DIR=${UV_CACHE_DIR} \
     PORT=8191 \
     XDG_CACHE_HOME=/cache \
     HOME=/tmp
 
-RUN apt update &&\
-    apt -y upgrade &&\
-    apt install -y curl
+RUN apt-get update &&\
+    apt-get install -y --no-install-recommends curl ca-certificates &&\
+    apt-get clean &&\
+    rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 FROM base AS devcontainer
-RUN apt install -y git &&\
+RUN apt-get update &&\
+    apt-get install -y --no-install-recommends git &&\
     uvx playwright install-deps firefox &&\
-    uvx camoufox fetch
+    uvx camoufox fetch &&\
+    apt-get clean &&\
+    rm -rf /var/lib/apt/lists/*
 ENTRYPOINT [ "sleep", "infinity" ]
 
 FROM base AS app
@@ -35,7 +37,11 @@ COPY pyproject.toml uv.lock ./
 RUN mkdir -p /cache &&\
     uv sync &&\
     uv run camoufox fetch &&\
-    uv run playwright install-deps firefox
+    apt-get update &&\
+    uv run playwright install-deps firefox &&\
+    uv cache clean &&\
+    apt-get clean &&\
+    rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
