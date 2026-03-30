@@ -2,6 +2,16 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "forkProcessing": "enabled",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "rebaseStalePrs": true,
+    "branchTopic": "lock-file-maintenance",
+    "commitMessageAction": "Lock file maintenance",
+    "schedule": ["before 4am on monday"],
+    "prBodyDefinitions": {
+      "Change": "All locks refreshed"
+    }
+  },
   "packageRules": [
     {
       "automerge": true,
