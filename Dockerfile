@@ -16,7 +16,7 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     HOME=/tmp
 
 RUN apt-get update &&\
-    apt-get install -y --no-install-recommends curl ca-certificates &&\
+    apt-get install -y --no-install-recommends curl ca-certificates tini &&\
     apt-get clean &&\
     rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -58,4 +58,4 @@ FROM app
 USER 1000
 EXPOSE $PORT
 HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://localhost:${PORT}/health"
-ENTRYPOINT ["/app/.venv/bin/python", "main.py"]
+ENTRYPOINT ["tini", "--", "/app/.venv/bin/python", "main.py"]
