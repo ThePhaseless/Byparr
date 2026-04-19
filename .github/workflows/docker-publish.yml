@@ -155,7 +155,7 @@ jobs:
 
       # Install the cosign tool
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@v4
 
       # Set up Docker Buildx
       - name: Set up Docker Buildx
