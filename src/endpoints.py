@@ -3,9 +3,10 @@ import warnings
 from asyncio import wait_for
 from http import HTTPStatus
 from typing import Annotated
+from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import RedirectResponse, Response
 from playwright_captcha import CaptchaType
 
 from src.consts import CHALLENGE_TITLES
@@ -23,6 +24,11 @@ warnings.filterwarnings("ignore", category=SyntaxWarning)
 router = APIRouter()
 
 CamoufoxDep = Annotated[CamoufoxDepClass, Depends(get_camoufox)]
+
+# /binary endpoint defaults
+BINARY_DEFAULT_MAX_BYTES = 25 * 1024 * 1024  # 25 MiB
+BINARY_DEFAULT_MAX_TIMEOUT = 90  # seconds (whole-request budget)
+BINARY_FETCH_TIMEOUT_MS = 60_000  # per direct subresource fetch attempt
 
 
 @router.get("/", include_in_schema=False)
@@ -104,3 +110,161 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         ),
         start_timestamp=start_time,
     )
+
+
+def _is_cf_challenge_body(body: bytes) -> bool:
+    """Heuristic: detect Cloudflare interstitial HTML in a response body."""
+    if len(body) > 200_000:  # CF challenge pages are small HTML
+        return False
+    head = body[:4096].lower()
+    if b"<html" not in head and b"<!doctype" not in head:
+        return False
+    return (
+        b"just a moment" in head
+        or b"cf-challenge" in head
+        or b"cf_chl_opt" in head
+        or b"challenge-platform" in head
+    )
+
+
+async def _solve_challenge_for_origin(dep: CamoufoxDepClass, origin: str, timer: TimeoutTimer) -> None:
+    """Navigate to the origin root and solve any CF interstitial.
+
+    This warms the browser context's cookie jar with cf_clearance bound to
+    THIS browser's TLS+H2 fingerprint, so the subsequent context.request.get()
+    can succeed. Bytes never leave the browser process, eliminating cookie
+    portability issues.
+    """
+    page_request = await dep.page.goto(origin, timeout=timer.remaining() * 1000)
+    status = page_request.status if page_request else HTTPStatus.OK
+    try:
+        await dep.page.wait_for_load_state(
+            state="domcontentloaded", timeout=timer.remaining() * 1000
+        )
+    except TimeoutError:
+        pass  # noqa: S110 — best-effort warm-up; the solver below is what matters
+    try:
+        if await dep.page.title() in CHALLENGE_TITLES:
+            logger.info("Challenge detected at %s, attempting to solve...", origin)
+            await wait_for(
+                dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
+                    captcha_container=dep.page,
+                    captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
+                    wait_checkbox_attempts=1,
+                    wait_checkbox_delay=0.5,
+                ),
+                timeout=timer.remaining(),
+            )
+            logger.debug("Challenge at %s solved.", origin)
+    except TimeoutError as e:
+        logger.error("Timed out solving the challenge at %s", origin)
+        raise HTTPException(
+            status_code=408, detail="Timed out while solving the challenge"
+        ) from e
+    logger.debug("Origin warm-up status=%s for %s", status, origin)
+
+
+@router.get("/binary")
+async def fetch_binary(
+    dep: CamoufoxDep,
+    url: Annotated[str, Query(description="Absolute http(s) URL of the binary asset to fetch")],
+    referer: Annotated[
+        str | None,
+        Query(description="Optional referer URL; defaults to <scheme>://<host>/ of `url`"),
+    ] = None,
+    max_bytes: Annotated[
+        int,
+        Query(ge=1, le=200 * 1024 * 1024, description="Reject responses larger than this"),
+    ] = BINARY_DEFAULT_MAX_BYTES,
+    max_timeout: Annotated[
+        int,
+        Query(ge=10, le=180, description="Whole-request budget in seconds"),
+    ] = BINARY_DEFAULT_MAX_TIMEOUT,
+):
+    """Fetch a binary asset (e.g. an image) through the same browser session
+    that solves the Cloudflare challenge.
+
+    Strategy:
+      1. Try a direct subresource fetch via `context.request.get` — uses the
+         browser's TLS/H2 fingerprint, UA, and cookie jar. Cheapest path.
+      2. If that returns a CF challenge (status >= 400 or HTML interstitial),
+         navigate to the origin root, solve the challenge, then retry (1).
+
+    Bytes are streamed back with the upstream Content-Type. cf_clearance never
+    leaves the browser process, which avoids the cookie-portability problem
+    that breaks out-of-browser HTTP clients.
+    """
+    timer = TimeoutTimer(duration=max_timeout)
+
+    cleaned_url = url.replace('"', "").strip()
+    parsed = urlparse(cleaned_url)
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="url scheme must be http or https")
+    if not parsed.netloc:
+        raise HTTPException(status_code=400, detail="url has no host")
+
+    origin = f"{parsed.scheme}://{parsed.netloc}/"
+    referer_url = referer.strip() if referer else origin
+
+    async def _do_fetch() -> tuple[int, dict[str, str], bytes]:
+        per_attempt_timeout = min(BINARY_FETCH_TIMEOUT_MS, int(timer.remaining() * 1000))
+        if per_attempt_timeout <= 0:
+            raise HTTPException(status_code=408, detail="Time budget exhausted")
+        try:
+            response = await dep.context.request.get(
+                cleaned_url,
+                headers={"Referer": referer_url, "Accept": "*/*"},
+                max_redirects=5,
+                timeout=per_attempt_timeout,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Subresource fetch errored for %s: %s", cleaned_url, exc)
+            raise HTTPException(status_code=502, detail=f"upstream fetch error: {exc}") from exc
+        body = await response.body()
+        return response.status, dict(response.headers), body
+
+    # Phase A — direct attempt
+    status, headers, body = await _do_fetch()
+    needs_warmup = (
+        status in (HTTPStatus.FORBIDDEN, HTTPStatus.SERVICE_UNAVAILABLE, 429)
+        or _is_cf_challenge_body(body)
+    )
+
+    if needs_warmup:
+        logger.info(
+            "Direct fetch for %s returned status=%s, body=%dB — warming up via origin %s",
+            cleaned_url, status, len(body), origin,
+        )
+        await _solve_challenge_for_origin(dep, origin, timer)
+        # Phase B — retry after warm-up
+        status, headers, body = await _do_fetch()
+
+    if status < HTTPStatus.OK or status >= HTTPStatus.MULTIPLE_CHOICES:
+        raise HTTPException(
+            status_code=status if 400 <= status < 600 else HTTPStatus.BAD_GATEWAY,
+            detail=f"upstream returned {status}",
+        )
+
+    if len(body) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"response too large: {len(body)} > {max_bytes}",
+        )
+
+    if _is_cf_challenge_body(body):
+        # Still a challenge after warm-up — give up.
+        raise HTTPException(
+            status_code=403,
+            detail="upstream returned a Cloudflare challenge after warm-up",
+        )
+
+    media_type = headers.get("content-type") or headers.get("Content-Type") or "application/octet-stream"
+    # Strip parameters like "image/jpeg; charset=binary" we don't care about, but keep "image/jpeg"
+    safe_media_type = media_type.split(";")[0].strip() or "application/octet-stream"
+
+    response_headers = {
+        "X-Byparr-Bytes": str(len(body)),
+        "X-Byparr-Source": cleaned_url,
+        "Cache-Control": "no-store",
+    }
+    return Response(content=body, media_type=safe_media_type, headers=response_headers)
