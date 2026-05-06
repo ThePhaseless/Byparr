@@ -207,6 +207,17 @@ async def fetch_binary(
     referer_url = referer.strip() if referer else origin
 
     async def _do_fetch() -> tuple[int, dict[str, str], bytes]:
+        """Issue one subresource fetch through the browser context.
+
+        Returns (status, lowercased-headers, body). Verifies the body
+        length matches the upstream Content-Length header when present
+        — Playwright's APIRequestContext.body() can return early if
+        the upstream connection drops before the full response body is
+        delivered (most commonly seen with large JPEGs over flaky CDN
+        edge nodes). Without this check, Sharp downstream would crash
+        with `VipsJpeg: Premature end of input file` on 50%+ of
+        chapter pages. We retry once at the call site if mismatch.
+        """
         per_attempt_timeout = min(BINARY_FETCH_TIMEOUT_MS, int(timer.remaining() * 1000))
         if per_attempt_timeout <= 0:
             raise HTTPException(status_code=408, detail="Time budget exhausted")
@@ -221,10 +232,39 @@ async def fetch_binary(
             logger.warning("Subresource fetch errored for %s: %s", cleaned_url, exc)
             raise HTTPException(status_code=502, detail=f"upstream fetch error: {exc}") from exc
         body = await response.body()
-        return response.status, dict(response.headers), body
+        # Lowercase header dict so callers can do case-insensitive
+        # lookups without re-implementing it everywhere.
+        headers_lc = {k.lower(): v for k, v in dict(response.headers).items()}
+        # Defensive length check — rejects truncated bodies that
+        # Playwright didn't catch.
+        cl_raw = headers_lc.get("content-length")
+        if cl_raw is not None:
+            try:
+                expected = int(cl_raw)
+            except ValueError:
+                expected = -1
+            if expected >= 0 and len(body) != expected:
+                logger.warning(
+                    "Body length mismatch for %s: got %dB, Content-Length=%dB — likely truncated",
+                    cleaned_url, len(body), expected,
+                )
+                # Sentinel status — caller will treat as a transient
+                # failure and retry once. Never collides with real HTTP
+                # codes (max 599).
+                return -1, headers_lc, body
+        return response.status, headers_lc, body
 
     # Phase A — direct attempt
     status, headers, body = await _do_fetch()
+    # Truncation retry — one extra attempt before giving up.
+    if status == -1:
+        logger.info("Retrying truncated fetch for %s", cleaned_url)
+        status, headers, body = await _do_fetch()
+        if status == -1:
+            raise HTTPException(
+                status_code=502,
+                detail=f"upstream body truncated (got {len(body)}B vs Content-Length)",
+            )
     needs_warmup = (
         status in (HTTPStatus.FORBIDDEN, HTTPStatus.SERVICE_UNAVAILABLE, 429)
         or _is_cf_challenge_body(body)
@@ -236,8 +276,17 @@ async def fetch_binary(
             cleaned_url, status, len(body), origin,
         )
         await _solve_challenge_for_origin(dep, origin, timer)
-        # Phase B — retry after warm-up
+        # Phase B — retry after warm-up. Truncation here also retries
+        # once for symmetry with Phase A, then escalates to 502.
         status, headers, body = await _do_fetch()
+        if status == -1:
+            logger.info("Retrying truncated fetch (post-warmup) for %s", cleaned_url)
+            status, headers, body = await _do_fetch()
+            if status == -1:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"upstream body truncated (got {len(body)}B vs Content-Length)",
+                )
 
     if status < HTTPStatus.OK or status >= HTTPStatus.MULTIPLE_CHOICES:
         raise HTTPException(
@@ -258,7 +307,8 @@ async def fetch_binary(
             detail="upstream returned a Cloudflare challenge after warm-up",
         )
 
-    media_type = headers.get("content-type") or headers.get("Content-Type") or "application/octet-stream"
+    # Headers are always lowercased by _do_fetch().
+    media_type = headers.get("content-type") or "application/octet-stream"
     # Strip parameters like "image/jpeg; charset=binary" we don't care about, but keep "image/jpeg"
     safe_media_type = media_type.split(";")[0].strip() or "application/octet-stream"
 
