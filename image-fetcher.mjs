@@ -103,7 +103,21 @@ async function handleFetch(req, res, parsed) {
     upstream = await fetch(byparrUrl.toString(), {
       method: 'GET',
       signal: ctrl.signal,
-      headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' },
+      headers: {
+        Accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
+        // BUGFIX 2026-05-06: undici (Node fetch) auto-sends an
+        // accept-encoding header. uvicorn (byparr's server) honors it
+        // and returns gzip-compressed bytes with Content-Length set
+        // to the GZIP size — but undici transparently decompresses
+        // the streamed body. We were forwarding the (smaller) gzip
+        // Content-Length downstream while writing the (larger)
+        // decompressed body, causing the client to truncate at the
+        // gzip-size mark and miss the JPEG EOI bytes. >50% of chapter
+        // images then crashed Sharp with "VipsJpeg: Premature end of
+        // input file". Disabling compression on this hop side-steps
+        // the entire mismatch.
+        'Accept-Encoding': 'identity',
+      },
     });
   } catch (err) {
     clearTimeout(timeout);
@@ -129,13 +143,20 @@ async function handleFetch(req, res, parsed) {
   // we double-check on this side for defense-in-depth.
   const ct = upstream.headers.get('content-type') || 'application/octet-stream';
   const cl = upstream.headers.get('content-length');
+  // Don't trust the upstream Content-Length even after the
+  // accept-encoding=identity fix above — any future intermediate
+  // (proxy, sidecar, etc.) could re-introduce the mismatch.
+  // Falling through to chunked-transfer encoding is safe: clients
+  // that don't speak chunked don't exist in 2026.
+  const ce = upstream.headers.get('content-encoding');
+  const lengthIsTrustworthy = !ce || ce.toLowerCase() === 'identity';
   if (cl && Number(cl) > maxBytes) {
     return sendJson(res, 413, { error: `Content-Length ${cl} exceeds ${maxBytes}` });
   }
   res.writeHead(200, {
     'Content-Type': ct,
     'Cache-Control': 'no-store',
-    ...(cl ? { 'Content-Length': cl } : {}),
+    ...(cl && lengthIsTrustworthy ? { 'Content-Length': cl } : {}),
   });
 
   const reader = upstream.body && upstream.body.getReader();
