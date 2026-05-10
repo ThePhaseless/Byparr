@@ -57,5 +57,5 @@ RUN \
 FROM app
 USER 1000
 EXPOSE $PORT
-HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://localhost:${PORT}/health"
+HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://127.0.0.1:${PORT}/health"
 ENTRYPOINT ["/app/.venv/bin/python", "main.py"]
