@@ -1,7 +1,9 @@
 import time
 from http import HTTPStatus
+from json import JSONDecodeError
 
 from fastapi import Request
+from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from src.models import LinkRequest
@@ -15,16 +17,24 @@ class LogRequest(BaseHTTPMiddleware):
             return await call_next(request)
 
         start_time = time.perf_counter()
-        request_body = LinkRequest.model_validate(await request.json())
+        try:
+            request_body = LinkRequest.model_validate(await request.json())
+            request_url = request_body.url
+        except (JSONDecodeError, ValidationError) as e:
+            # Malformed body — let FastAPI's own validation produce the 4xx
+            # instead of crashing the middleware with a 500.
+            logger.debug(f"Could not pre-parse request body for logging: {e}")
+            request_url = "<unparseable>"
+
         logger.info(
-            f"From: {request.client.host if request.client else 'unknown'} at {time.strftime('%Y-%m-%d %H:%M:%S')}: {request_body.url}"
+            f"From: {request.client.host if request.client else 'unknown'} at {time.strftime('%Y-%m-%d %H:%M:%S')}: {request_url}"
         )
         response = await call_next(request)
         process_time = time.perf_counter() - start_time
 
         if response.status_code == HTTPStatus.OK:
-            logger.info(f"Done {request_body.url} in {process_time:.2f}s")
+            logger.info(f"Done {request_url} in {process_time:.2f}s")
         else:
-            logger.warning(f"Failed {request_body.url} in {process_time:.2f}s")
+            logger.warning(f"Failed {request_url} in {process_time:.2f}s")
 
         return response
