@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from playwright.async_api import Error as PlaywrightError
 from playwright_captcha import CaptchaType
 
 from src.consts import CHALLENGE_TITLES
@@ -88,6 +89,12 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         raise HTTPException(
             status_code=408,
             detail="Timed out while solving the challenge",
+        ) from e
+    except PlaywrightError as e:
+        logger.error("Upstream navigation failed: %s", e)
+        raise HTTPException(
+            status_code=502,
+            detail=str(e),
         ) from e
 
     cookies = await dep.context.cookies()
