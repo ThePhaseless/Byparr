@@ -4,8 +4,9 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, NamedTuple, cast
 
 from camoufox import AsyncCamoufox
-from fastapi import Header
+from fastapi import Header, HTTPException
 from playwright.async_api import Browser, BrowserContext, Page
+from playwright.async_api import Error as PlaywrightError
 from playwright_captcha import (
     ClickSolver,
     FrameworkType,
@@ -91,26 +92,43 @@ async def get_camoufox(
             "password": PROXY_PASSWORD,
         }
 
-    async with AsyncCamoufox(
-        main_world_eval=True,
-        addons=[ADDON_PATH],
-        geoip=True,
-        proxy=proxy_config,
-        locale="en-US",
-        headless=True,
-        humanize=True,
-        i_know_what_im_doing=True,
-        config={"forceScopeAccess": True},  # add this when creating Camoufox instance
-        disable_coop=True,  # add this when creating Camoufox instance
-    ) as browser_raw:
-        # Cast to Browser since AsyncCamoufox always returns a Browser, not BrowserContext
-        browser = cast("Browser", browser_raw)
-        context = await browser.new_context()
-        page = await context.new_page()
-        async with ClickSolver(
-            framework=FrameworkType.CAMOUFOX,
-            page=page,
-            max_attempts=MAX_ATTEMPTS,
-            attempt_delay=1,
-        ) as solver:
-            yield CamoufoxDepClass(page, solver, context)
+    yielded = False
+    try:
+        async with AsyncCamoufox(
+            main_world_eval=True,
+            addons=[ADDON_PATH],
+            geoip=True,
+            proxy=proxy_config,
+            locale="en-US",
+            headless=True,
+            humanize=True,
+            i_know_what_im_doing=True,
+            config={"forceScopeAccess": True},  # add this when creating Camoufox instance
+            disable_coop=True,  # add this when creating Camoufox instance
+        ) as browser_raw:
+            # Cast to Browser since AsyncCamoufox always returns a Browser, not BrowserContext
+            browser = cast("Browser", browser_raw)
+            context = await browser.new_context()
+            page = await context.new_page()
+            async with ClickSolver(
+                framework=FrameworkType.CAMOUFOX,
+                page=page,
+                max_attempts=MAX_ATTEMPTS,
+                attempt_delay=1,
+            ) as solver:
+                yielded = True
+                yield CamoufoxDepClass(page, solver, context)
+    except (OSError, PlaywrightError) as e:
+        if yielded:
+            # Failure happened mid-request; let it propagate so the request
+            # handler can shape the response (endpoints.read_item turns
+            # PlaywrightError into 502).
+            raise
+        # Setup-time failure (e.g. missing /dev/shm in OCI/LXC, glibc
+        # entropy errors, sandbox issues). Surface it as 503 with detail
+        # instead of leaking a generic 500.
+        logger.exception("Failed to launch Camoufox")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Browser unavailable: {e}",
+        ) from e
