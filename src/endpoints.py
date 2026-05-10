@@ -34,8 +34,19 @@ def read_root():
 
 
 @router.get("/health")
-async def health_check(sb: CamoufoxDep):
-    """Health check endpoint."""
+async def health_check():
+    """
+    Lightweight liveness check.
+
+    Returns immediately so docker healthchecks are not held hostage by upstream
+    network latency. Use ``--init`` to exercise the full Camoufox stack at
+    startup.
+    """
+    return HealthcheckResponse()
+
+
+async def deep_health_check(sb: CamoufoxDep) -> HealthcheckResponse:
+    """Exercise the bypass stack against google.com. Used by ``--init``."""
     health_check_request = await read_item(
         LinkRequest.model_construct(url="https://google.com"),
         sb,

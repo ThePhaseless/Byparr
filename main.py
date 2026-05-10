@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
 from src.consts import HOST, LOG_LEVEL, PORT, VERSION
-from src.endpoints import health_check, router
+from src.endpoints import deep_health_check, router
 from src.middlewares import LogRequest
 from src.utils import get_camoufox, logger
 
@@ -26,7 +26,7 @@ app.include_router(router=router)
 async def init():
     """Initialize the application."""
     async for browser in get_camoufox():
-        await health_check(browser)
+        await deep_health_check(browser)
 
 
 if __name__ == "__main__":
