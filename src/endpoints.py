@@ -1,3 +1,4 @@
+import base64
 import time
 import warnings
 from asyncio import wait_for
@@ -110,6 +111,20 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
 
     cookies = await dep.context.cookies()
 
+    headers = page_request.headers if page_request else {}
+    raw_content_type = (headers.get("content-type") or "").lower()
+    # Firefox renders PDFs in its built-in viewer, so page.content() would
+    # return the viewer's HTML chrome instead of the PDF. Re-fetch via the
+    # context's API client (which inherits cookies/UA) and return bytes.
+    if "application/pdf" in raw_content_type:
+        api_resp = await dep.context.request.get(dep.page.url)
+        body_bytes = await api_resp.body()
+        response_body = base64.b64encode(body_bytes).decode("ascii")
+        response_content_type = "application/pdf"
+    else:
+        response_body = await dep.page.content()
+        response_content_type = "text/html"
+
     return LinkResponse(
         message="Success",
         solution=Solution(
@@ -117,8 +132,9 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
             url=dep.page.url,
             status=status,
             cookies=cookies,
-            headers=page_request.headers if page_request else {},
-            response=await dep.page.content(),
+            headers=headers,
+            response=response_body,
+            content_type=response_content_type,
         ),
         start_timestamp=start_time,
     )

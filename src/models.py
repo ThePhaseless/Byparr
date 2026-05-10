@@ -38,6 +38,10 @@ class Solution(BaseModel):
     user_agent: str = ""
     headers: dict[str, Any] = {}
     response: str = ""
+    # MIME type of `response`. For text/html (default), `response` is the
+    # rendered DOM string. For binary types like application/pdf, `response`
+    # is base64-encoded bytes.
+    content_type: str = "text/html"
 
 
 class LinkResponse(BaseModel):
