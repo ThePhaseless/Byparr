@@ -116,6 +116,18 @@ wheels = [
 ]
 
 [[package]]
+name = "anticaptchaofficial"
+version = "1.0.69"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "py" },
+    { name = "requests" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/57/aa88720967430732242c154292e2fe57019163ab2a3d68b503ab59e2ca5f/anticaptchaofficial-1.0.69-py3-none-any.whl", hash = "sha256:20acffe51ee507cc0e23e96c156c6a70b067bf0e222ca141a01746cba41f0025", size = 25952, upload-time = "2025-10-18T10:03:58.256Z" },
+]
+
+[[package]]
 name = "anyio"
 version = "4.12.1"
 source = { registry = "https://pypi.org/simple" }
@@ -163,6 +175,7 @@ name = "byparr"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "anticaptchaofficial" },
     { name = "camoufox", extra = ["geoip"] },
     { name = "fastapi", extra = ["standard"] },
     { name = "playwright-captcha" },
@@ -185,6 +198,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anticaptchaofficial", specifier = ">=1.0.59" },
     { name = "camoufox", extras = ["geoip"], specifier = "==0.4.*" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.136.*" },
     { name = "playwright-captcha", specifier = "==0.1.*" },
@@ -954,6 +968,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/ef/3c6ecf8b317aa982f309835e8f96987466123c6e596646d4e6a1dfcd080f/propcache-0.4.1-cp314-cp314t-win_amd64.whl", hash = "sha256:990f6b3e2a27d683cb7602ed6c86f15ee6b43b1194736f9baaeb93d0016633b1", size = 46259, upload-time = "2025-10-08T19:48:34.226Z" },
     { url = "https://files.pythonhosted.org/packages/c4/2d/346e946d4951f37eca1e4f55be0f0174c52cd70720f84029b02f296f4a38/propcache-0.4.1-cp314-cp314t-win_arm64.whl", hash = "sha256:ecef2343af4cc68e05131e45024ba34f6095821988a9d0a02aa7c73fcc448aa9", size = 40428, upload-time = "2025-10-08T19:48:35.441Z" },
     { url = "https://files.pythonhosted.org/packages/5b/5a/bc7b4a4ef808fa59a816c17b20c4bef6884daebbdf627ff2a161da67da19/propcache-0.4.1-py3-none-any.whl", hash = "sha256:af2a6052aeb6cf17d3e46ee169099044fd8224cbaf75c76a2ef596e8163e2237", size = 13305, upload-time = "2025-10-08T19:49:00.792Z" },
+]
+
+[[package]]
+name = "py"
+version = "1.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/98/ff/fec109ceb715d2a6b4c4a85a61af3b40c723a961e8828319fbcb15b868dc/py-1.11.0.tar.gz", hash = "sha256:51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719", size = 207796, upload-time = "2021-11-04T17:17:01.377Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/f0/10642828a8dfb741e5f3fbaac830550a518a775c7fff6f04a007259b0548/py-1.11.0-py2.py3-none-any.whl", hash = "sha256:607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378", size = 98708, upload-time = "2021-11-04T17:17:00.152Z" },
 ]
 
 [[package]]

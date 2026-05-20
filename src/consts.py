@@ -22,6 +22,9 @@ PROXY_PASSWORD = os.getenv("PROXY_PASSWORD")
 HOST = os.getenv("HOST", "0.0.0.0")  # noqa: S104
 PORT = int(os.getenv("PORT", "8191"))
 
+SOLVER_TYPE = os.getenv("SOLVER_TYPE", "click").lower()
+ANTICAPTCHA_KEY = os.getenv("ANTICAPTCHA_KEY")
+
 CHALLENGE_TITLES_MAP: dict[CaptchaType, list[str]] = {
     # Cloudflare
     CaptchaType.CLOUDFLARE_INTERSTITIAL: ["Just a moment..."],

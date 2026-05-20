@@ -6,20 +6,17 @@ from typing import Annotated, NamedTuple, cast
 from camoufox import AsyncCamoufox
 from fastapi import Header
 from playwright.async_api import Browser, BrowserContext, Page
-from playwright_captcha import (
-    ClickSolver,
-    FrameworkType,
-)
 from pydantic import BaseModel, Field
 
 from src.consts import (
     ADDON_PATH,
     LOG_LEVEL,
-    MAX_ATTEMPTS,
     PROXY_PASSWORD,
     PROXY_SERVER,
     PROXY_USERNAME,
+    SOLVER_TYPE,
 )
+from src.solvers import BaseSolverAdapter, get_solver
 
 solver_logger = logging.getLogger("playwright_captcha")
 solver_logger.handlers.clear()
@@ -46,7 +43,7 @@ class TimeoutTimer(BaseModel):
 
 class CamoufoxDepClass(NamedTuple):
     page: Page
-    solver: ClickSolver
+    solver: BaseSolverAdapter
     context: BrowserContext
 
 
@@ -107,10 +104,6 @@ async def get_camoufox(
         browser = cast("Browser", browser_raw)
         context = await browser.new_context()
         page = await context.new_page()
-        async with ClickSolver(
-            framework=FrameworkType.CAMOUFOX,
-            page=page,
-            max_attempts=MAX_ATTEMPTS,
-            attempt_delay=1,
-        ) as solver:
+        solver = get_solver(SOLVER_TYPE, page)
+        async with solver:
             yield CamoufoxDepClass(page, solver, context)

@@ -1,12 +1,10 @@
 import time
 import warnings
-from asyncio import wait_for
 from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from playwright_captcha import CaptchaType
 
 from src.consts import CHALLENGE_TITLES
 from src.models import (
@@ -71,16 +69,8 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
 
         if await dep.page.title() in CHALLENGE_TITLES:
             logger.info("Challenge detected, attempting to solve...")
-            # Solve the captcha
-            await wait_for(
-                dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
-                    captcha_container=dep.page,
-                    captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-                    wait_checkbox_attempts=1,
-                    wait_checkbox_delay=0.5,
-                ),
-                timeout=timer.remaining(),
-            )
+            # Solve the captcha using the pluggable adapter
+            await dep.solver.solve(dep.page, timer.remaining())
             status = HTTPStatus.OK
             logger.debug("Challenge solved successfully.")
     except TimeoutError as e:
