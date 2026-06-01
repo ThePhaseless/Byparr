@@ -100,6 +100,10 @@ async def get_camoufox(
         headless=True,
         humanize=True,
         i_know_what_im_doing=True,
+        firefox_user_prefs={
+            "network.http.http3.enable": False,
+            "network.http.http3.enabled": False,
+        },
         config={"forceScopeAccess": True},  # add this when creating Camoufox instance
         disable_coop=True,  # add this when creating Camoufox instance
     ) as browser_raw:

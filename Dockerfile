@@ -1,5 +1,5 @@
-# Ubuntu is required by playwright
-FROM ubuntu:latest AS base
+# Pin to a Playwright-supported Ubuntu release for stable browser dependencies.
+FROM ubuntu:24.04 AS base
 
 ARG GITHUB_BUILD=false \
     VERSION
