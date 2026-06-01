@@ -57,5 +57,5 @@ RUN \
 FROM app
 USER 1000
 EXPOSE $PORT
-HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://localhost:${PORT}/health"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl --fail --silent --show-error --output /dev/null "http://127.0.0.1:${PORT}/docs" || exit 1
 ENTRYPOINT ["/app/.venv/bin/python", "main.py"]
