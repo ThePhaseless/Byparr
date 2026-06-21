@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha import CaptchaType
 
 from src.consts import CHALLENGE_TITLES
@@ -65,9 +66,14 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         await dep.page.wait_for_load_state(
             state="domcontentloaded", timeout=timer.remaining() * 1000
         )
-        await dep.page.wait_for_load_state(
-            "networkidle", timeout=timer.remaining() * 1000
-        )
+        try:
+            await dep.page.wait_for_load_state(
+                "networkidle", timeout=timer.remaining() * 1000
+            )
+        except PlaywrightTimeoutError:
+            logger.warning(
+                "Timed out waiting for networkidle after domcontentloaded; continuing"
+            )
 
         if await dep.page.title() in CHALLENGE_TITLES:
             logger.info("Challenge detected, attempting to solve...")
@@ -83,11 +89,11 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
             )
             status = HTTPStatus.OK
             logger.debug("Challenge solved successfully.")
-    except TimeoutError as e:
-        logger.error("Timed out while solving the challenge")
+    except (TimeoutError, PlaywrightTimeoutError) as e:
+        logger.error("Timed out while loading the page or solving the challenge")
         raise HTTPException(
             status_code=408,
-            detail="Timed out while solving the challenge",
+            detail="Timed out while loading the page or solving the challenge",
         ) from e
 
     cookies = await dep.context.cookies()

@@ -1,5 +1,6 @@
-# Ubuntu is required by playwright
-FROM ubuntu:latest AS base
+# Ubuntu is required by Playwright. Pin the base image so browser dependencies
+# do not silently move to unsupported Ubuntu releases when latest advances.
+FROM ubuntu:24.04 AS base
 
 ARG GITHUB_BUILD=false \
     VERSION
