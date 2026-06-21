@@ -93,14 +93,19 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
             status = HTTPStatus.OK
             logger.debug("Challenge solved successfully.")
         else:
-            await dep.page.wait_for_load_state(
-                "networkidle", timeout=timer.remaining() * 1000
-            )
+            try:
+                await dep.page.wait_for_load_state(
+                    "networkidle", timeout=timer.remaining() * 1000
+                )
+            except PlaywrightTimeoutError:
+                logger.warning(
+                    "Timed out waiting for networkidle after domcontentloaded; continuing"
+                )
     except (TimeoutError, PlaywrightTimeoutError) as e:
-        logger.error("Timed out while solving the challenge")
+        logger.error("Timed out while loading the page or solving the challenge")
         raise HTTPException(
             status_code=408,
-            detail="Timed out while solving the challenge",
+            detail="Timed out while loading the page or solving the challenge",
         ) from e
 
     cookies = await dep.context.cookies()
