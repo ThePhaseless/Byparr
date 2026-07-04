@@ -8,9 +8,9 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "cloverlabs-camoufox[geoip]==0.6.*",
+    "camoufox[geoip]==0.4.*",
     "fastapi[standard]==0.139.*",
-    "playwright>=1.58,<1.61",
+    "playwright==1.60.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",
 ]
@@ -26,6 +26,8 @@ test = [
     "setuptools>=80.9.0",
 ]
 dev = ["deptry==0.25.*", "ruff==0.15.*"]
+[tool.deptry.per_rule_ignores]
+DEP002 = ["pyautogui"]
 [tool.ruff.lint]
 ignore = [
     "D203",
