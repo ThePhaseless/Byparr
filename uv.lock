@@ -65,6 +65,7 @@ dependencies = [
     { name = "playwright" },
     { name = "playwright-captcha" },
     { name = "pydantic" },
+    { name = "pydantic-settings" },
 ]
 
 [package.dev-dependencies]
@@ -88,6 +89,7 @@ requires-dist = [
     { name = "playwright", specifier = "==1.60.*" },
     { name = "playwright-captcha", specifier = "==0.1.*" },
     { name = "pydantic", specifier = "==2.*" },
+    { name = "pydantic-settings", specifier = "==2.*" },
 ]
 
 [package.metadata.requires-dev]

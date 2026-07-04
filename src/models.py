@@ -24,12 +24,12 @@ class LinkRequest(BaseModel):
         description="Maximum timeout in seconds for resolving the anti-bot challenge.",
     )
     block_media: bool = Field(
-        default=False,
+        default=consts.BLOCK_MEDIA,
         alias="blockMedia",
         description="Block image, media, and font resources from loading.",
     )
     return_only_cookies: bool = Field(
-        default=False,
+        default=consts.RETURN_ONLY_COOKIES,
         alias="returnOnlyCookies",
         description="Return only cookies, skip the page HTML content in the response.",
     )

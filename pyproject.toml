@@ -13,6 +13,7 @@ dependencies = [
     "playwright==1.60.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",
+    "pydantic-settings==2.*",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 [dependency-groups]
