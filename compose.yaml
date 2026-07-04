@@ -2,7 +2,6 @@ services:
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     restart: unless-stopped
-    init: true
     build:
       context: .
       dockerfile: Dockerfile
