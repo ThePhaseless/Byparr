@@ -75,6 +75,20 @@ Once running, open:
    1. If run successfully, try updating container or if already on newest stable release create an issue for creating new release with new dependencies
    2. If build fails, try troubleshooting on another host/using other method
 
+#### Proxmox OCI / LXC browser launch errors
+
+If you are running Byparr as an OCI container in Proxmox (or another LXC-based setup) and see a `FileNotFoundError` from `multiprocessing.synchronize`/`camoufox` when processing requests, increase the service's shared memory in `compose.yaml`:
+
+```yaml
+services:
+  byparr:
+    shm_size: 512mb
+    stdin_open: true
+    tty: true
+```
+
+`shm_size: 512mb` is usually enough; `stdin_open` and `tty` are only needed if your orchestrator runs the container without a TTY.
+
 ### Local troubleshooting
 
 1. Download [uv](https://docs.astral.sh/uv/getting-started/installation/)
