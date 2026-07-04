@@ -3,8 +3,8 @@ import time
 from collections.abc import AsyncGenerator
 from typing import Annotated, NamedTuple, cast
 
-from camoufox import AsyncCamoufox
 from fastapi import Header
+from invisible_playwright.async_api import InvisiblePlaywright
 from playwright.async_api import Browser, BrowserContext, Page
 from playwright_captcha import (
     ClickSolver,
@@ -13,7 +13,6 @@ from playwright_captcha import (
 from pydantic import BaseModel, Field
 
 from src.consts import (
-    ADDON_PATH,
     LOG_LEVEL,
     MAX_ATTEMPTS,
     PROXY_PASSWORD,
@@ -44,13 +43,13 @@ class TimeoutTimer(BaseModel):
         return max(0, self.duration - (time.perf_counter() - self.start_time))
 
 
-class CamoufoxDepClass(NamedTuple):
+class BrowserDepClass(NamedTuple):
     page: Page
     solver: ClickSolver
     context: BrowserContext
 
 
-async def get_camoufox(
+async def get_browser(
     x_proxy_server: Annotated[
         str | None,
         Header(
@@ -70,8 +69,8 @@ async def get_camoufox(
             alias="X-Proxy-Password",
         ),
     ] = None,
-) -> AsyncGenerator[CamoufoxDepClass]:
-    """Get Camoufox instance."""
+) -> AsyncGenerator[BrowserDepClass]:
+    """Get InvisiblePlaywright browser instance."""
     header_server = x_proxy_server
     header_username = x_proxy_username
     header_password = x_proxy_password
@@ -91,26 +90,20 @@ async def get_camoufox(
             "password": PROXY_PASSWORD,
         }
 
-    async with AsyncCamoufox(
-        main_world_eval=True,
-        addons=[ADDON_PATH],
-        geoip=True,
-        proxy=proxy_config,
-        locale="en-US",
+    async with InvisiblePlaywright(
         headless=True,
+        proxy=proxy_config,
         humanize=True,
-        i_know_what_im_doing=True,
-        config={"forceScopeAccess": True},  # add this when creating Camoufox instance
-        disable_coop=True,  # add this when creating Camoufox instance
+        locale="auto",
     ) as browser_raw:
-        # Cast to Browser since AsyncCamoufox always returns a Browser, not BrowserContext
+        # InvisiblePlaywright yields a Browser instance
         browser = cast("Browser", browser_raw)
         context = await browser.new_context()
         page = await context.new_page()
         async with ClickSolver(
-            framework=FrameworkType.CAMOUFOX,
+            framework=FrameworkType.PLAYWRIGHT,
             page=page,
             max_attempts=MAX_ATTEMPTS,
             attempt_delay=1,
         ) as solver:
-            yield CamoufoxDepClass(page, solver, context)
+            yield BrowserDepClass(page, solver, context)

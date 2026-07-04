@@ -18,7 +18,7 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     HOME=/tmp
 
 RUN apt-get update &&\
-    apt-get install -y --no-install-recommends curl ca-certificates tini &&\
+    apt-get install -y --no-install-recommends curl ca-certificates git tini &&\
     apt-get clean &&\
     rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -27,7 +27,7 @@ FROM base AS devcontainer
 RUN apt-get update &&\
     apt-get install -y --no-install-recommends git &&\
     uvx playwright install-deps firefox &&\
-    uvx camoufox fetch &&\
+    uvx --from git+https://github.com/feder-cr/invisible_playwright.git python -m invisible_playwright fetch &&\
     apt-get clean &&\
     rm -rf /var/lib/apt/lists/*
 ENTRYPOINT [ "sleep", "infinity" ]
@@ -38,7 +38,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN mkdir -p /cache &&\
     uv sync &&\
-    uv run camoufox fetch &&\
+    uv run python -m invisible_playwright fetch &&\
     apt-get update &&\
     uv run playwright install-deps firefox &&\
     uv cache clean &&\
@@ -47,9 +47,9 @@ RUN mkdir -p /cache &&\
 
 COPY . .
 
-# Make app and cache world-readable; addon scripts dir world-writable (runtime writes)
+# Make app and cache world-readable; cache must be writable for runtime browser/profile data
 RUN chmod -R o+rX /app /cache &&\
-    find /app/.venv -path "*/camoufox_add_init_script/addon" -type d -exec chmod -R o+rwX {} +
+    chmod -R o+w /cache
 
 FROM app AS test
 RUN \

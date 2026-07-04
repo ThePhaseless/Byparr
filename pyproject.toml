@@ -8,8 +8,8 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "camoufox[geoip]==0.4.*",
     "fastapi[standard]==0.139.*",
+    "invisible_playwright @ git+https://github.com/feder-cr/invisible_playwright.git",
     "playwright==1.60.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",

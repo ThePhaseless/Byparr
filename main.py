@@ -11,7 +11,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from src.consts import HOST, LOG_LEVEL, PORT, VERSION
 from src.endpoints import health_check, router
 from src.middlewares import LogRequest
-from src.utils import get_camoufox, logger
+from src.utils import get_browser, logger
 
 logger.info("Using version %s", VERSION)
 logger.info("Log level set to %s", logging.getLevelName(LOG_LEVEL))
@@ -25,7 +25,7 @@ app.include_router(router=router)
 
 async def init():
     """Initialize the application."""
-    async for browser in get_camoufox():
+    async for browser in get_browser():
         await health_check(browser)
 
 
