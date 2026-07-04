@@ -1,7 +1,7 @@
 # Ubuntu is required by playwright.
 # Pin to 24.04 LTS: ubuntu:latest floats to 26.04, which Playwright 1.58
 # cannot install firefox deps for (no libgtk-3 -> camoufox fails to launch).
-FROM ubuntu:24.04 AS base
+FROM ubuntu:26.04 AS base
 
 ARG GITHUB_BUILD=false \
     VERSION
