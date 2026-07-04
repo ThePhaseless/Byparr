@@ -12,6 +12,8 @@ from src import consts
 
 
 class LinkRequest(BaseModel):
+    model_config = {"populate_by_name": True}
+
     cmd: str = Field(
         default="request.get",
         description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
@@ -20,6 +22,16 @@ class LinkRequest(BaseModel):
     max_timeout: int = Field(
         default=60,
         description="Maximum timeout in seconds for resolving the anti-bot challenge.",
+    )
+    block_media: bool = Field(
+        default=False,
+        alias="blockMedia",
+        description="Block image, media, and font resources from loading.",
+    )
+    return_only_cookies: bool = Field(
+        default=False,
+        alias="returnOnlyCookies",
+        description="Return only cookies, skip the page HTML content in the response.",
     )
 
 
@@ -38,6 +50,7 @@ class Solution(BaseModel):
     user_agent: str = ""
     headers: dict[str, Any] = {}
     response: str = ""
+    content_type: str = Field(default="text/html", alias="contentType")
 
 
 class LinkResponse(BaseModel):

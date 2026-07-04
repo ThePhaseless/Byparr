@@ -1,3 +1,4 @@
+import base64
 import time
 import warnings
 from asyncio import wait_for
@@ -6,6 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha import CaptchaType
 
 from src.consts import CHALLENGE_TITLES
@@ -15,14 +17,14 @@ from src.models import (
     LinkResponse,
     Solution,
 )
-from src.utils import CamoufoxDepClass, TimeoutTimer, get_camoufox, logger
+from src.utils import BrowserDepClass, TimeoutTimer, get_browser, logger
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 
 router = APIRouter()
 
-CamoufoxDep = Annotated[CamoufoxDepClass, Depends(get_camoufox)]
+BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
 
 
 @router.get("/", include_in_schema=False)
@@ -33,7 +35,7 @@ def read_root():
 
 
 @router.get("/health")
-async def health_check(sb: CamoufoxDep):
+async def health_check(sb: BrowserDep):
     """Health check endpoint."""
     health_check_request = await read_item(
         LinkRequest.model_construct(url="https://google.com"),
@@ -50,13 +52,23 @@ async def health_check(sb: CamoufoxDep):
 
 
 @router.post("/v1")
-async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
+async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     """Handle POST requests."""
     start_time = int(time.time() * 1000)
 
     timer = TimeoutTimer(duration=request.max_timeout)
 
     request.url = request.url.replace('"', "").strip()
+
+    if request.block_media:
+        async def block_media_route(route):
+            if route.request.resource_type in ("image", "media", "font"):
+                await route.abort()
+            else:
+                await route.continue_()
+
+        await dep.page.route("**/*", block_media_route)
+
     try:
         page_request = await dep.page.goto(
             request.url, timeout=timer.remaining() * 1000
@@ -64,9 +76,6 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         status = page_request.status if page_request else HTTPStatus.OK
         await dep.page.wait_for_load_state(
             state="domcontentloaded", timeout=timer.remaining() * 1000
-        )
-        await dep.page.wait_for_load_state(
-            "networkidle", timeout=timer.remaining() * 1000
         )
 
         if await dep.page.title() in CHALLENGE_TITLES:
@@ -83,7 +92,11 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
             )
             status = HTTPStatus.OK
             logger.debug("Challenge solved successfully.")
-    except TimeoutError as e:
+        else:
+            await dep.page.wait_for_load_state(
+                "networkidle", timeout=timer.remaining() * 1000
+            )
+    except (TimeoutError, PlaywrightTimeoutError) as e:
         logger.error("Timed out while solving the challenge")
         raise HTTPException(
             status_code=408,
@@ -91,6 +104,27 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
         ) from e
 
     cookies = await dep.context.cookies()
+
+    content_type = "text/html"
+    response_content = ""
+
+    if request.return_only_cookies:
+        response_content = ""
+    elif page_request and page_request.headers.get("content-type", "").startswith(
+        "application/pdf"
+    ):
+        content_type = "application/pdf"
+        try:
+            fetch_response = await dep.page.request.fetch(dep.page.url)
+            response_content = base64.b64encode(
+                await fetch_response.body()
+            ).decode("ascii")
+        except Exception:
+            logger.exception("Failed to fetch PDF bytes, falling back to viewer HTML")
+            content_type = "text/html"
+            response_content = await dep.page.content()
+    else:
+        response_content = await dep.page.content()
 
     return LinkResponse(
         message="Success",
@@ -100,7 +134,8 @@ async def read_item(request: LinkRequest, dep: CamoufoxDep) -> LinkResponse:
             status=status,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
-            response=await dep.page.content(),
+            response=response_content,
+            content_type=content_type,
         ),
         start_timestamp=start_time,
     )
