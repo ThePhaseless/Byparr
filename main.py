@@ -11,6 +11,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from src.consts import HOST, LOG_LEVEL, PORT, VERSION
 from src.endpoints import health_check, router
 from src.middlewares import LogRequest
+from src.owui import router as owui_router
 from src.utils import get_browser, logger
 
 logger.info("Using version %s", VERSION)
@@ -21,6 +22,7 @@ app.add_middleware(GZipMiddleware)
 app.add_middleware(LogRequest)
 
 app.include_router(router=router)
+app.include_router(router=owui_router)
 
 
 async def init():

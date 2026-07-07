@@ -16,6 +16,7 @@
 | `PROXY_SERVER`       | None      | Proxy to use in format: `protocol://host:port`.                                                                                                                   |
 | `PROXY_USERNAME`     | None      | Username for proxy authentication.                                                                                                                                |
 | `PROXY_PASSWORD`     | None      | Password for proxy authentication.                                                                                                                                |
+| `OWUI_API_KEY`       | None      | Bearer token for `/load` endpoint authentication. Must match `EXTERNAL_WEB_LOADER_API_KEY` in Open WebUI.                                                         |
 
 ## Proxy Recommendation
 
@@ -64,6 +65,20 @@ Once running, open:
 
 - `http://localhost:8191/docs`
 - `http://localhost:8191/` (redirects to `/docs`)
+
+### Open WebUI Integration
+
+Byparr can serve as an external web loader for [Open WebUI](https://github.com/open-webui/open-webui), allowing it to fetch web content through Byparr's anti-bot bypassing capabilities.
+
+Configure Open WebUI with these environment variables:
+
+```bash
+WEB_LOADER_ENGINE=external
+EXTERNAL_WEB_LOADER_URL=http://byparr:8191/load
+EXTERNAL_WEB_LOADER_API_KEY=your-secret-key  # Optional, must match OWUI_API_KEY
+```
+
+The `/load` endpoint accepts `POST` requests with `{"urls": ["https://..."]}` and returns extracted text content for RAG pipelines.
 
 ## Troubleshooting
 
