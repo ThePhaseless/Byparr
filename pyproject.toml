@@ -10,7 +10,7 @@ readme = "README.md"
 dependencies = [
     "fastapi[standard]==0.139.*",
     "invisible_playwright @ git+https://github.com/feder-cr/invisible_playwright.git",
-    "playwright==1.60.*",
+    "playwright==1.61.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",
     "pydantic-settings==2.*",
