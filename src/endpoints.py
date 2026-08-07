@@ -118,10 +118,6 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
             status = HTTPStatus.OK
             logger.debug("Challenge solved successfully.")
         else:
-            # Best-effort: some sites keep background connections open
-            # (analytics beacons, websockets, ...), so ``networkidle`` may
-            # never settle. The page is fully usable once ``domcontentloaded``
-            # has fired, so log and continue instead of failing the request.
             try:
                 await dep.page.wait_for_load_state(
                     "networkidle", timeout=timer.remaining() * 1000
