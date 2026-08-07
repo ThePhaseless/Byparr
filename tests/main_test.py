@@ -82,3 +82,20 @@ def test_pdf_handling():
 
     decoded = base64.b64decode(solution["response"])
     assert decoded[:5] == b"%PDF-"
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({"max_timeout": 60}, 60),  # native API: seconds
+        ({"maxTimeout": 60}, 60),  # FlareSolverr alias, seconds-range value
+        ({"maxTimeout": 60000}, 60),  # FlareSolverr alias: milliseconds
+        ({"maxTimeout": 55000}, 55),
+        ({"maxTimeout": 1000}, 1),
+        ({}, 60),  # default
+    ],
+)
+def test_max_timeout_normalization(payload: dict, expected: int):
+    """MaxTimeout must accept FlareSolverr's milliseconds while keeping seconds."""
+    request = LinkRequest(url="https://example.com", **payload)
+    assert request.max_timeout == expected
