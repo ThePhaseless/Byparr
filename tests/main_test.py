@@ -2,7 +2,7 @@ from http import HTTPStatus
 from json import JSONDecodeError
 from unittest.mock import AsyncMock, MagicMock
 
-import httpx2
+import httpx
 import pytest
 from fastapi import HTTPException
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
@@ -32,7 +32,7 @@ def test_bypass(website: str):
 
     This test is skipped if the website is not reachable or does not have cloudflare/DDOS-GUARD.
     """
-    test_request = httpx2.get(
+    test_request = httpx.get(
         website,
     )
     if (
