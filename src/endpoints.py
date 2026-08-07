@@ -26,6 +26,10 @@ router = APIRouter()
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
 
+CSP_HEADERS = frozenset(
+    {"content-security-policy", "content-security-policy-report-only"}
+)
+
 
 @router.get("/", include_in_schema=False)
 def read_root():
@@ -61,13 +65,34 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     request.url = request.url.replace('"', "").strip()
 
     if request.block_media:
-        async def block_media_route(route):
+        async def block_media_route(route) -> None:
             if route.request.resource_type in ("image", "media", "font"):
                 await route.abort()
             else:
                 await route.continue_()
 
         await dep.page.route("**/*", block_media_route)
+
+    final_url: str | None = None
+
+    async def strip_csp_route(route) -> None:
+        nonlocal final_url
+        if route.request.resource_type != "document":
+            await route.continue_()
+            return
+        response = await route.fetch()
+        if route.request.frame == dep.page.main_frame:
+            final_url = response.url
+        await route.fulfill(
+            response=response,
+            headers={
+                key: value
+                for key, value in response.headers.items()
+                if key.lower() not in CSP_HEADERS
+            },
+        )
+
+    await dep.page.route("**/*", strip_csp_route)
 
     try:
         page_request = await dep.page.goto(
@@ -139,7 +164,7 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         message="Success",
         solution=Solution(
             user_agent=await dep.page.evaluate("navigator.userAgent"),
-            url=dep.page.url,
+            url=final_url if final_url is not None else dep.page.url,
             status=status,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
