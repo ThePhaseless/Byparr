@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     block_media: bool = False
     return_only_cookies: bool = False
+    owui_api_key: str | None = None
 
 
 settings = Settings()
@@ -41,6 +42,8 @@ PORT = settings.port
 
 BLOCK_MEDIA = settings.block_media
 RETURN_ONLY_COOKIES = settings.return_only_cookies
+
+OWUI_API_KEY = settings.owui_api_key
 
 CHALLENGE_TITLES_MAP: dict[CaptchaType, list[str]] = {
     # Cloudflare

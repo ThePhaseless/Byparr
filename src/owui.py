@@ -1,41 +1,21 @@
-"""
-src/owui.py — Open WebUI external web loader endpoint.
-
-Implements the contract expected by Open WebUI's WEB_LOADER_ENGINE=external:
-  POST /load
-    Request:  {"urls": ["https://..."]}
-    Response: [{"page_content": str, "metadata": {"source": str}}]
-
-Reuses Byparr's existing browser dependency injection so each request
-gets a properly-initialised browser context with challenge solving.
-Uses document.body.innerText for content extraction.
-
-Configure in Open WebUI:
-  WEB_LOADER_ENGINE=external
-  EXTERNAL_WEB_LOADER_URL=http://byparr:8191/load
-  EXTERNAL_WEB_LOADER_API_KEY=<value of OWUI_API_KEY env var, if set>
-"""
+"""Open WebUI external web loader endpoint: POST /load."""
 
 from __future__ import annotations
 
-import os
-from typing import Annotated, Any
+from hmac import compare_digest
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from playwright.async_api import Page
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from pydantic import BaseModel
 
+from src.consts import OWUI_API_KEY
 from src.utils import BrowserDepClass, get_browser, logger
-
-_API_KEY: str | None = os.getenv("OWUI_API_KEY") or None
 
 router = APIRouter(tags=["Open WebUI"])
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
-
-
-# ---------------------------------------------------------------------------
-# Models
-# ---------------------------------------------------------------------------
 
 
 class LoadRequest(BaseModel):
@@ -44,71 +24,49 @@ class LoadRequest(BaseModel):
 
 class LoadResult(BaseModel):
     page_content: str
-    metadata: dict[str, Any]
+    metadata: dict[str, str]
 
 
-# ---------------------------------------------------------------------------
-# Content extraction
-# ---------------------------------------------------------------------------
-
-
-async def _extract_content(page: Any) -> str:
-    """
-    Extract text content from the page using document.body.innerText.
-    Whitespace is collapsed for clean RAG chunking.
-    """
-    result: str = await page.evaluate("""
-        () => {
-            return document.body ? document.body.innerText : "";
-        }
-    """)
-    lines = [line.strip() for line in result.splitlines() if line.strip()]
-    return "\n".join(lines)
-
-
-# ---------------------------------------------------------------------------
-# Auth
-# ---------------------------------------------------------------------------
-
-
-def _check_auth(authorization: str | None) -> None:
-    if not _API_KEY:
+def require_auth(authorization: Annotated[str | None, Header()] = None) -> None:
+    """Enforce a bearer token on /load when OWUI_API_KEY is set."""
+    if not OWUI_API_KEY:
         return
-    if authorization != f"Bearer {_API_KEY}":
+    if authorization is None or not compare_digest(
+        authorization.encode(), f"Bearer {OWUI_API_KEY}".encode()
+    ):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-# ---------------------------------------------------------------------------
-# Endpoint
-# ---------------------------------------------------------------------------
+async def _extract_content(page: Page) -> str:
+    """Return the page's visible text, with blank lines removed."""
+    result = await page.evaluate("() => document.body ? document.body.innerText : ''")
+    return "\n".join(line.strip() for line in result.splitlines() if line.strip())
 
 
 @router.post("/load", response_model=list[LoadResult])
 async def load_urls(
     request: LoadRequest,
-    authorization: Annotated[str | None, Header()] = None,
-    dep: BrowserDep = None,  # type: ignore[assignment]
+    _auth: Annotated[None, Depends(require_auth)],
+    dep: BrowserDep,
 ) -> list[LoadResult]:
     """
-    Fetch URLs through InvisiblePlaywright, bypassing Cloudflare challenges.
-    Returns plain-text content for Open WebUI's RAG pipeline.
-    Failed URLs return empty page_content so the search degrades gracefully.
+    Fetch URLs through the anti-bot browser and return their text content.
+
+    Each URL is fetched sequentially; a failing URL yields empty
+    page_content so Open WebUI's RAG pipeline degrades gracefully.
     """
-    _check_auth(authorization)
-
     results: list[LoadResult] = []
-
     for url in request.urls:
         try:
-            logger.info("OWUI loader fetching: %s", url)
             await dep.page.goto(url, timeout=60_000)
             await dep.page.wait_for_load_state("domcontentloaded", timeout=30_000)
-            await dep.page.wait_for_load_state("networkidle", timeout=15_000)
+            try:
+                await dep.page.wait_for_load_state("networkidle", timeout=15_000)
+            except PlaywrightTimeoutError:
+                logger.debug("networkidle timed out for %s; extracting anyway", url)
             content = await _extract_content(dep.page)
-            logger.debug("OWUI loader: %s -> %d chars", url, len(content))
-            results.append(LoadResult(page_content=content, metadata={"source": url}))
         except Exception as exc:  # noqa: BLE001
-            logger.warning("OWUI loader failed for %s: %s", url, exc)
-            results.append(LoadResult(page_content="", metadata={"source": url}))
-
+            logger.warning("Failed to load %s: %s", url, exc)
+            content = ""
+        results.append(LoadResult(page_content=content, metadata={"source": url}))
     return results

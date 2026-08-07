@@ -1,66 +1,63 @@
 from http import HTTPStatus
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from starlette.testclient import TestClient
 
 from main import app
+from src.owui import LoadRequest, load_urls
+from src.utils import BrowserDepClass
 
 client = TestClient(app)
 
 
 def test_owui_load_basic():
-    """Test /load endpoint returns correct structure."""
+    """/load returns one result per URL with the expected shape."""
     response = client.post("/load", json={"urls": ["https://example.com"]})
     assert response.status_code == HTTPStatus.OK
     results = response.json()
     assert len(results) == 1
-    assert "page_content" in results[0]
-    assert "metadata" in results[0]
-    assert results[0]["metadata"]["source"] == "https://example.com"
+    assert results[0]["page_content"]
+    assert results[0]["metadata"] == {"source": "https://example.com"}
 
 
 def test_owui_load_multiple_urls():
-    """Test /load endpoint handles multiple URLs."""
+    """/load returns one result per URL, in order."""
     urls = ["https://example.com", "https://example.org"]
     response = client.post("/load", json={"urls": urls})
     assert response.status_code == HTTPStatus.OK
     results = response.json()
-    assert len(results) == 2
-    assert results[0]["metadata"]["source"] == urls[0]
-    assert results[1]["metadata"]["source"] == urls[1]
+    assert [r["metadata"]["source"] for r in results] == urls
 
 
-def test_owui_load_extracts_content():
-    """Test /load endpoint extracts non-empty content from a real page."""
-    response = client.post("/load", json={"urls": ["https://example.com"]})
+def test_owui_load_invalid_url_graceful():
+    """Unreachable URLs yield empty page_content instead of an error."""
+    response = client.post(
+        "/load", json={"urls": ["https://this-domain-does-not-exist-12345.invalid"]}
+    )
     assert response.status_code == HTTPStatus.OK
     results = response.json()
-    # example.com has minimal content but should have something
-    assert len(results[0]["page_content"]) > 0
+    assert len(results) == 1
+    assert results[0]["page_content"] == ""
 
 
-def test_owui_load_auth_required():
-    """Test /load returns 401 when API key is set but not provided."""
-    with patch("src.owui._API_KEY", "test-secret-key"):
-        response = client.post("/load", json={"urls": ["https://example.com"]})
-        assert response.status_code == HTTPStatus.UNAUTHORIZED
-
-
-def test_owui_load_auth_invalid():
-    """Test /load returns 401 when API key is wrong."""
-    with patch("src.owui._API_KEY", "test-secret-key"):
+@pytest.mark.parametrize(
+    "headers",
+    [None, {"Authorization": "Bearer wrong-key"}],
+)
+def test_owui_load_rejects_missing_or_wrong_key(headers):
+    """/load returns 401 without a valid bearer token when a key is set."""
+    with patch("src.owui.OWUI_API_KEY", "test-secret-key"):
         response = client.post(
-            "/load",
-            json={"urls": ["https://example.com"]},
-            headers={"Authorization": "Bearer wrong-key"},
+            "/load", json={"urls": ["https://example.com"]}, headers=headers
         )
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
-def test_owui_load_auth_valid():
-    """Test /load succeeds with correct API key."""
-    with patch("src.owui._API_KEY", "test-secret-key"):
+def test_owui_load_accepts_valid_key():
+    """/load succeeds with the configured bearer token."""
+    with patch("src.owui.OWUI_API_KEY", "test-secret-key"):
         response = client.post(
             "/load",
             json={"urls": ["https://example.com"]},
@@ -69,13 +66,25 @@ def test_owui_load_auth_valid():
         assert response.status_code == HTTPStatus.OK
 
 
-def test_owui_load_invalid_url_graceful():
-    """Test /load returns empty content for unreachable URLs."""
-    response = client.post(
-        "/load", json={"urls": ["https://this-domain-does-not-exist-12345.invalid"]}
+def fake_dep() -> BrowserDepClass:
+    """Browser dependency whose page loads text but never reaches networkidle."""
+    page = AsyncMock()
+    page.goto.return_value = MagicMock()
+    page.evaluate.return_value = "line one\n\nline two"
+
+    def wait_for_load_state(state: str, **_kwargs: object) -> None:
+        if state == "networkidle":
+            message = "load state wait timed out"
+            raise PlaywrightTimeoutError(message)
+
+    page.wait_for_load_state.side_effect = wait_for_load_state
+    return BrowserDepClass(page=page, solver=AsyncMock(), context=AsyncMock())
+
+
+@pytest.mark.asyncio
+async def test_networkidle_timeout_still_extracts_content():
+    """A page that never reaches networkidle still yields its text."""
+    results = await load_urls(
+        LoadRequest(urls=["https://example.test"]), None, fake_dep()
     )
-    assert response.status_code == HTTPStatus.OK
-    results = response.json()
-    assert len(results) == 1
-    assert results[0]["page_content"] == ""
-    assert "this-domain-does-not-exist" in results[0]["metadata"]["source"]
+    assert results[0].page_content == "line one\nline two"

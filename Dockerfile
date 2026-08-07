@@ -15,10 +15,7 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     UV_LINK_MODE=copy \
     PORT=8191 \
     XDG_CACHE_HOME=/cache \
-    HOME=/tmp \
-    # Optional: set to require bearer token on /load requests.
-    # Must match EXTERNAL_WEB_LOADER_API_KEY in Open WebUI.
-    OWUI_API_KEY=""
+    HOME=/tmp
 
 RUN apt-get update &&\
     apt-get install -y --no-install-recommends curl ca-certificates git tini &&\
