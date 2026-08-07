@@ -5,10 +5,12 @@ from http.client import INTERNAL_SERVER_ERROR
 from typing import Any
 
 from playwright.sync_api import Cookie
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic.alias_generators import to_camel
 
 from src import consts
+
+MS_PER_SECOND = 1000
 
 
 class LinkRequest(BaseModel):
@@ -21,7 +23,12 @@ class LinkRequest(BaseModel):
     url: str = Field(pattern=r"^https?://", default="https://")
     max_timeout: int = Field(
         default=60,
-        description="Maximum timeout in seconds for resolving the anti-bot challenge.",
+        alias="maxTimeout",
+        description=(
+            "Maximum timeout for resolving the anti-bot challenge. Values below 1000 "
+            "are treated as seconds; values of 1000 or more as milliseconds, matching "
+            "FlareSolverr's maxTimeout parameter."
+        ),
     )
     block_media: bool = Field(
         default=consts.BLOCK_MEDIA,
@@ -33,6 +40,14 @@ class LinkRequest(BaseModel):
         alias="returnOnlyCookies",
         description="Return only cookies, skip the page HTML content in the response.",
     )
+
+    @field_validator("max_timeout")
+    @classmethod
+    def normalize_max_timeout(cls, value: int) -> int:
+        """Normalize FlareSolverr-style millisecond values to seconds."""
+        if value >= MS_PER_SECOND:
+            return value // MS_PER_SECOND
+        return value
 
 
 class HealthcheckResponse(BaseModel):
