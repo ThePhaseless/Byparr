@@ -73,12 +73,6 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
 
         await dep.page.route("**/*", block_media_route)
 
-    # The Firefox engine evaluates JS via eval(), which pages whose CSP lacks
-    # 'unsafe-eval' block - every page.evaluate() then fails with "call to
-    # eval() blocked by CSP". Rewrite document responses without CSP headers
-    # so the user-agent read and captcha solver work on CSP-locked pages.
-    # Juggler only routes the first request of a redirect chain, so follow
-    # redirects inside the fetch and record the final URL ourselves.
     final_url: str | None = None
 
     async def strip_csp_route(route) -> None:
@@ -86,24 +80,17 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         if route.request.resource_type != "document":
             await route.continue_()
             return
-        try:
-            response = await route.fetch()
-        except Exception:
-            await route.continue_()
-            return
+        response = await route.fetch()
         if route.request.frame == dep.page.main_frame:
             final_url = response.url
-        if response.headers.get("content-security-policy") or response.headers.get(
-            "content-security-policy-report-only"
-        ):
-            headers = {
+        await route.fulfill(
+            response=response,
+            headers={
                 key: value
                 for key, value in response.headers.items()
                 if key.lower() not in CSP_HEADERS
-            }
-            await route.fulfill(response=response, headers=headers)
-        else:
-            await route.fulfill(response=response)
+            },
+        )
 
     await dep.page.route("**/*", strip_csp_route)
 
