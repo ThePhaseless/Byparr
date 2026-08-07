@@ -1,12 +1,17 @@
 from http import HTTPStatus
 from json import JSONDecodeError
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
+from fastapi import HTTPException
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from starlette.testclient import TestClient
 
 from main import app
+from src.endpoints import read_item
 from src.models import LinkRequest
+from src.utils import BrowserDepClass
 
 client = TestClient(app)
 
@@ -99,3 +104,52 @@ def test_max_timeout_normalization(payload: dict, expected: int):
     """MaxTimeout must accept FlareSolverr's milliseconds while keeping seconds."""
     request = LinkRequest(url="https://example.com", **payload)
     assert request.max_timeout == expected
+
+
+def fake_dep(*, fail_states: set[str] | None = None) -> BrowserDepClass:
+    """Build a browser dependency triple backed by mocks."""
+    page = AsyncMock()
+    page.url = "https://example.test/login"
+    page.goto.return_value = MagicMock(
+        status=HTTPStatus.OK, headers={"content-type": "text/html"}
+    )
+    page.title.return_value = "Login"
+    page.evaluate.return_value = "UnitTestBrowser/1.0"
+    page.content.return_value = "<html><title>Login</title></html>"
+
+    def wait_for_load_state(state: str, **_kwargs: object) -> None:
+        """Fail the wait when asked for a configured state."""
+        if state in (fail_states or set()):
+            message = "load state wait timed out"
+            raise PlaywrightTimeoutError(message)
+
+    page.wait_for_load_state.side_effect = wait_for_load_state
+
+    context = AsyncMock()
+    context.cookies.return_value = []
+    return BrowserDepClass(page=page, solver=AsyncMock(), context=context)
+
+
+@pytest.mark.asyncio
+async def test_networkidle_timeout_after_domcontentloaded_returns_content():
+    """Pages that never go idle after DOM load must still return their content."""
+    response = await read_item(
+        LinkRequest(url="https://example.test/login"),
+        fake_dep(fail_states={"networkidle"}),
+    )
+
+    assert response.status == "ok"
+    assert response.solution.status == HTTPStatus.OK
+    assert response.solution.response == "<html><title>Login</title></html>"
+
+
+@pytest.mark.asyncio
+async def test_domcontentloaded_timeout_returns_408():
+    """Fatal timeouts during initial page load still return a controlled 408."""
+    with pytest.raises(HTTPException) as exc:
+        await read_item(
+            LinkRequest(url="https://example.test/login"),
+            fake_dep(fail_states={"domcontentloaded"}),
+        )
+
+    assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
