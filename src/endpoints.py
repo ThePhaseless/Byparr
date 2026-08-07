@@ -7,6 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from playwright.async_api import Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha import CaptchaType
 
@@ -51,6 +52,23 @@ async def health_check(sb: BrowserDep):
     return HealthcheckResponse(user_agent=health_check_request.solution.user_agent)
 
 
+async def _wait_for_networkidle(page: Page, timer: TimeoutTimer) -> None:
+    """
+    Wait for the network to go idle; a timeout is non-fatal.
+
+    Some sites keep background connections open (analytics beacons,
+    websockets, ...), so ``networkidle`` may never settle even though the page
+    is fully usable once ``domcontentloaded`` has fired. Log and continue
+    instead of failing the request.
+    """
+    try:
+        await page.wait_for_load_state("networkidle", timeout=timer.remaining() * 1000)
+    except PlaywrightTimeoutError:
+        logger.info(
+            "networkidle timed out after domcontentloaded; continuing with loaded page"
+        )
+
+
 @router.post("/v1")
 async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     """Handle POST requests."""
@@ -93,14 +111,12 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
             status = HTTPStatus.OK
             logger.debug("Challenge solved successfully.")
         else:
-            await dep.page.wait_for_load_state(
-                "networkidle", timeout=timer.remaining() * 1000
-            )
+            await _wait_for_networkidle(dep.page, timer)
     except (TimeoutError, PlaywrightTimeoutError) as e:
-        logger.error("Timed out while solving the challenge")
+        logger.error("Timed out while loading the page or solving the challenge")
         raise HTTPException(
             status_code=408,
-            detail="Timed out while solving the challenge",
+            detail="Timed out while loading the page or solving the challenge",
         ) from e
 
     cookies = await dep.context.cookies()
