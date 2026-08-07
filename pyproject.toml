@@ -9,7 +9,7 @@ description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
     "fastapi[standard]==0.139.*",
-    "invisible-playwright>=0.4.9",
+    "invisible-playwright>=0.6.1",
     "playwright==1.60.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",
