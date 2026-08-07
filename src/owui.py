@@ -5,6 +5,7 @@ from __future__ import annotations
 from hmac import compare_digest
 from typing import Annotated
 
+import trafilatura
 from fastapi import APIRouter, Depends, Header, HTTPException
 from playwright.async_api import Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
@@ -38,7 +39,10 @@ def require_auth(authorization: Annotated[str | None, Header()] = None) -> None:
 
 
 async def _extract_content(page: Page) -> str:
-    """Return the page's visible text, with blank lines removed."""
+    """Return the page's main article text, falling back to visible text."""
+    article = trafilatura.extract(await page.content())
+    if article:
+        return article
     result = await page.evaluate("() => document.body ? document.body.innerText : ''")
     return "\n".join(line.strip() for line in result.splitlines() if line.strip())
 

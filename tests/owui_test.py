@@ -66,10 +66,18 @@ def test_owui_load_accepts_valid_key():
         assert response.status_code == HTTPStatus.OK
 
 
-def fake_dep() -> BrowserDepClass:
-    """Browser dependency whose page loads text but never reaches networkidle."""
+ARTICLE_HTML = """<html><head><title>Test</title></head><body>
+<article><h1>Example Title</h1><p>This is the main article body with enough words for
+trafilatura to consider it real content rather than boilerplate.</p></article>
+<nav><a href="/x">nav link</a></nav>
+</body></html>"""
+
+
+def fake_dep(*, html: str = ARTICLE_HTML) -> BrowserDepClass:
+    """Browser dependency whose page loads HTML but never reaches networkidle."""
     page = AsyncMock()
     page.goto.return_value = MagicMock()
+    page.content.return_value = html
     page.evaluate.return_value = "line one\n\nline two"
 
     def wait_for_load_state(state: str, **_kwargs: object) -> None:
@@ -83,8 +91,22 @@ def fake_dep() -> BrowserDepClass:
 
 @pytest.mark.asyncio
 async def test_networkidle_timeout_still_extracts_content():
-    """A page that never reaches networkidle still yields its text."""
+    """A page that never reaches networkidle still yields its article text."""
     results = await load_urls(
         LoadRequest(urls=["https://example.test"]), None, fake_dep()
+    )
+    assert results[0].page_content == (
+        "Example TitleThis is the main article body with enough words for "
+        "trafilatura to consider it real content rather than boilerplate."
+    )
+
+
+@pytest.mark.asyncio
+async def test_extraction_falls_back_to_innertext():
+    """Pages trafilatura cannot score fall back to the rendered innerText."""
+    results = await load_urls(
+        LoadRequest(urls=["https://example.test"]),
+        None,
+        fake_dep(html="<html><body></body></html>"),
     )
     assert results[0].page_content == "line one\nline two"
