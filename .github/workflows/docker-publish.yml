@@ -184,6 +184,7 @@ jobs:
 
       # Create manifest lists and push
       - name: Create and push manifest lists
+        id: manifests
         run: |
           TAGS="${{ steps.meta.outputs.tags }}"
           args=""
@@ -213,11 +214,18 @@ jobs:
             ${image}:${{github.sha}}-arm64
           fi
 
-      # Sign the manifest
-      - name: Sign the manifests
+          # All tags created above alias a single manifest list; capture its digest
+          # so the signature is bound to the image bytes, not a mutable tag.
+          # Tags from metadata-action are full references (image:tag).
+          FIRST_TAG=${TAGS%% *}
+          DIGEST=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' ${FIRST_TAG})
+          echo "DIGEST=$DIGEST" >> $GITHUB_OUTPUT
+
+      # Sign the manifest list by digest — every consumer tag aliases this digest
+      - name: Sign the manifest list by digest
         env:
-          TAGS: ${{ steps.meta.outputs.tags }}
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          DIGEST: ${{ steps.manifests.outputs.DIGEST }}
         run: |
-          for TAG in $TAGS; do
-            cosign sign --yes $TAG
-          done
+          image=${IMAGE,,}
+          cosign sign --yes ${image}@${DIGEST}
