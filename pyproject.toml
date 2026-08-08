@@ -10,7 +10,7 @@ readme = "README.md"
 dependencies = [
     "fastapi[standard]==0.141.*",
     "invisible-playwright>=0.6.1",
-    "playwright==1.60.*",
+    "playwright==1.62.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",
     "pydantic-settings==2.*",
