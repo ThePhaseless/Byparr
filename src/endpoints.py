@@ -26,8 +26,16 @@ router = APIRouter()
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
 
-CSP_HEADERS = frozenset(
-    {"content-security-policy", "content-security-policy-report-only"}
+# Headers to strip from the fulfilled response: CSP is removed for navigation
+# freedom, and content-encoding/content-length are stale once we request an
+# uncompressed body via accept-encoding: identity below.
+DROP_HEADERS = frozenset(
+    {
+        "content-security-policy",
+        "content-security-policy-report-only",
+        "content-encoding",
+        "content-length",
+    }
 )
 
 
@@ -80,7 +88,13 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         if route.request.resource_type != "document":
             await route.continue_()
             return
-        response = await route.fetch()
+        # Request an uncompressed body via accept-encoding: identity. When
+        # route.fulfill re-serves the fetched response (by uid), it forwards
+        # the original compressed bytes; stripping content-encoding below
+        # would leave the browser reading compressed bytes as plain text.
+        response = await route.fetch(
+            headers={**route.request.headers, "accept-encoding": "identity"}
+        )
         if route.request.frame == dep.page.main_frame:
             final_url = response.url
         await route.fulfill(
@@ -88,7 +102,7 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
             headers={
                 key: value
                 for key, value in response.headers.items()
-                if key.lower() not in CSP_HEADERS
+                if key.lower() not in DROP_HEADERS
             },
         )
 
