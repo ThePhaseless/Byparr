@@ -3,8 +3,6 @@ import sys
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from playwright_captcha import CaptchaType
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -44,12 +42,3 @@ BLOCK_MEDIA = settings.block_media
 RETURN_ONLY_COOKIES = settings.return_only_cookies
 
 OWUI_API_KEY = settings.owui_api_key
-
-CHALLENGE_TITLES_MAP: dict[CaptchaType, list[str]] = {
-    # Cloudflare
-    CaptchaType.CLOUDFLARE_INTERSTITIAL: ["Just a moment..."],
-}
-
-CHALLENGE_TITLES = [
-    title for titles in CHALLENGE_TITLES_MAP.values() for title in titles
-]
