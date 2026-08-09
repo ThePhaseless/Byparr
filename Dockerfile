@@ -54,9 +54,6 @@ RUN \
     uv run pytest --retries 3
 
 FROM app
-# VERSION is a runtime-only env var (read by src.consts via Pydantic settings).
-# Declared here, not in base, so base/app layer cache keys don't depend on the
-# per-commit SHA — that would bust the cache every run.
 ARG VERSION
 ENV VERSION=${VERSION}
 USER 1000
