@@ -69,6 +69,8 @@ jobs:
           pull: true
           cache-to: type=gha,mode=max,scope=amd64
           target: test
+          build-args: |
+            GITHUB_BUILD=true
 
   build:
     needs: test
