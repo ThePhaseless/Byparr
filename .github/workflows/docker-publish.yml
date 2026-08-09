@@ -65,9 +65,9 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          cache-from: type=gha,scope=x64
+          cache-from: type=gha,scope=amd64
           pull: true
-          cache-to: type=gha,mode=max,scope=x64
+          cache-to: type=gha,mode=max,scope=amd64
           target: test
 
   build:
@@ -135,8 +135,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ matrix.platform }}
-          cache-from: type=gha,scope=${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ steps.vars.outputs.SURFIX }}
+          cache-to: type=gha,mode=max,scope=${{ steps.vars.outputs.SURFIX }}
           build-args: |
             GITHUB_BUILD=true
             VERSION=${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
