@@ -216,9 +216,10 @@ jobs:
 
           # All tags created above alias a single manifest list; capture its digest
           # so the signature is bound to the image bytes, not a mutable tag.
-          # Tags from metadata-action are full references (image:tag).
-          FIRST_TAG=${TAGS%% *}
-          DIGEST=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' ${FIRST_TAG})
+          # Tags from metadata-action are full references (image:tag), one per line,
+          # so take the first line rather than splitting on spaces.
+          FIRST_TAG=$(printf '%s' "$TAGS" | head -n1)
+          DIGEST=$(docker buildx imagetools inspect --format '{{.Manifest.Digest}}' "$FIRST_TAG")
           echo "DIGEST=$DIGEST" >> $GITHUB_OUTPUT
 
       # Sign the manifest list by digest — every consumer tag aliases this digest
