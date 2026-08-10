@@ -116,6 +116,9 @@ def fake_dep(*, fail_states: set[str] | None = None) -> BrowserDepClass:
     page.title.return_value = "Login"
     page.evaluate.return_value = "UnitTestBrowser/1.0"
     page.content.return_value = "<html><title>Login</title></html>"
+    locator = MagicMock()
+    locator.count = AsyncMock(return_value=0)
+    page.locator = MagicMock(return_value=locator)
 
     def wait_for_load_state(state: str, **_kwargs: object) -> None:
         """Fail the wait when asked for a configured state."""
@@ -133,14 +136,16 @@ def fake_dep(*, fail_states: set[str] | None = None) -> BrowserDepClass:
 @pytest.mark.asyncio
 async def test_networkidle_timeout_after_domcontentloaded_returns_content():
     """Pages that never go idle after DOM load must still return their content."""
+    dep = fake_dep(fail_states={"networkidle"})
     response = await read_item(
         LinkRequest(url="https://example.test/login"),
-        fake_dep(fail_states={"networkidle"}),
+        dep,
     )
 
     assert response.status == "ok"
     assert response.solution.status == HTTPStatus.OK
     assert response.solution.response == "<html><title>Login</title></html>"
+    dep.solver.solve_captcha.assert_not_called()
 
 
 @pytest.mark.asyncio
