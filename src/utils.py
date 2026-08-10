@@ -13,6 +13,7 @@ from playwright_captcha import (
 from pydantic import BaseModel, Field
 
 from src.consts import (
+    BROWSER_LOCALE,
     LOG_LEVEL,
     MAX_ATTEMPTS,
     PROXY_PASSWORD,
@@ -94,7 +95,7 @@ async def get_browser(
         headless=True,
         proxy=proxy_config,
         humanize=True,
-        locale="auto",
+        locale=BROWSER_LOCALE or "auto",
     ) as browser_raw:
         # InvisiblePlaywright yields a Browser instance
         browser = cast("Browser", browser_raw)
