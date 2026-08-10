@@ -3,12 +3,9 @@
 # cannot install firefox deps for (no libgtk-3 -> camoufox fails to launch).
 FROM ubuntu:24.04 AS base
 
-ARG GITHUB_BUILD=false \
-    VERSION
+ARG GITHUB_BUILD=false
 
 ENV GITHUB_BUILD=${GITHUB_BUILD}\
-    VERSION=${VERSION}\
-    DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     # prevents python creating .pyc files
     PYTHONDONTWRITEBYTECODE=1 \
@@ -57,6 +54,8 @@ RUN \
     uv run pytest --retries 3
 
 FROM app
+ARG VERSION
+ENV VERSION=${VERSION}
 USER 1000
 EXPOSE $PORT
 HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://127.0.0.1:${PORT}/health"
