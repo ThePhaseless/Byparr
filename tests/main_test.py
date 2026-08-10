@@ -1,3 +1,4 @@
+import base64
 from http import HTTPStatus
 from json import JSONDecodeError
 from unittest.mock import AsyncMock, MagicMock
@@ -83,7 +84,6 @@ def test_pdf_handling():
     if solution.get("contentType") != "application/pdf":
         pytest.skip("Skipping PDF test - PDF bytes could not be fetched (upstream issue)")
     assert solution["response"]  # non-empty base64
-    import base64
 
     decoded = base64.b64decode(solution["response"])
     assert decoded[:5] == b"%PDF-"

@@ -69,7 +69,7 @@ async def load_urls(
             except PlaywrightTimeoutError:
                 logger.debug("networkidle timed out for %s; extracting anyway", url)
             content = await _extract_content(dep.page)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Failed to load %s: %s", url, exc)
             content = ""
         results.append(LoadResult(page_content=content, metadata={"source": url}))

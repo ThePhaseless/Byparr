@@ -1,9 +1,8 @@
 import logging
 import sys
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
 from playwright_captcha import CaptchaType
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
