@@ -9,8 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha import CaptchaType
+from playwright_captcha.solvers.click.cloudflare.utils.detection import (
+    detect_cloudflare_challenge,
+)
 
-from src.consts import CHALLENGE_TITLES
 from src.models import (
     HealthcheckResponse,
     LinkRequest,
@@ -109,37 +111,9 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     await dep.page.route("**/*", strip_csp_route)
 
     try:
-        page_request = await dep.page.goto(
-            request.url, timeout=timer.remaining() * 1000
+        challenge_detected, page_html, page_request, status = (
+            await _navigate_and_solve(dep, request, timer)
         )
-        status = page_request.status if page_request else HTTPStatus.OK
-        await dep.page.wait_for_load_state(
-            state="domcontentloaded", timeout=timer.remaining() * 1000
-        )
-
-        if await dep.page.title() in CHALLENGE_TITLES:
-            logger.info("Challenge detected, attempting to solve...")
-            # Solve the captcha
-            await wait_for(
-                dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
-                    captcha_container=dep.page,
-                    captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-                    wait_checkbox_attempts=1,
-                    wait_checkbox_delay=0.5,
-                ),
-                timeout=timer.remaining(),
-            )
-            status = HTTPStatus.OK
-            logger.debug("Challenge solved successfully.")
-        else:
-            try:
-                await dep.page.wait_for_load_state(
-                    "networkidle", timeout=timer.remaining() * 1000
-                )
-            except PlaywrightTimeoutError:
-                logger.info(
-                    "networkidle timed out after domcontentloaded; continuing with loaded page"
-                )
     except (TimeoutError, PlaywrightTimeoutError) as e:
         logger.error("Timed out while loading the page or solving the challenge")
         raise HTTPException(
@@ -154,8 +128,11 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
 
     if request.return_only_cookies:
         response_content = ""
-    elif page_request and page_request.headers.get("content-type", "").startswith(
-        "application/pdf"
+    elif (
+        page_request
+        and page_request.headers.get("content-type", "").startswith(
+            "application/pdf"
+        )
     ):
         content_type = "application/pdf"
         try:
@@ -164,11 +141,17 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
                 await fetch_response.body()
             ).decode("ascii")
         except Exception:
-            logger.exception("Failed to fetch PDF bytes, falling back to viewer HTML")
+            logger.exception(
+                "Failed to fetch PDF bytes, falling back to viewer HTML"
+            )
             content_type = "text/html"
             response_content = await dep.page.content()
     else:
-        response_content = await dep.page.content()
+        response_content = (
+            page_html
+            if page_html is not None and not challenge_detected
+            else await dep.page.content()
+        )
 
     return LinkResponse(
         message="Success",
@@ -183,3 +166,49 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         ),
         start_timestamp=start_time,
     )
+
+
+async def _navigate_and_solve(
+    dep: BrowserDep,
+    request: LinkRequest,
+    timer: TimeoutTimer,
+) -> tuple[bool, str | None, object, HTTPStatus]:
+    page_html: str | None = None
+    page_request = await dep.page.goto(
+        request.url, timeout=timer.remaining() * 1000
+    )
+    status = page_request.status if page_request else HTTPStatus.OK
+    await dep.page.wait_for_load_state(
+        state="domcontentloaded", timeout=timer.remaining() * 1000
+    )
+
+    challenge_active = (
+        await detect_cloudflare_challenge(dep.page, "interstitial")
+        or await detect_cloudflare_challenge(dep.page, "turnstile")
+    )
+    if not challenge_active:
+        page_html = await dep.page.content()
+        try:
+            await dep.page.wait_for_load_state(
+                "networkidle", timeout=timer.remaining() * 1000
+            )
+        except PlaywrightTimeoutError:
+            logger.info(
+                "networkidle timed out after domcontentloaded; "
+                "continuing with loaded page"
+            )
+        return False, page_html, page_request, status
+
+    logger.info("Challenge detected, attempting to solve...")
+    await wait_for(
+        dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
+            captcha_container=dep.page,
+            captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
+            wait_checkbox_attempts=1,
+            wait_checkbox_delay=0.5,
+        ),
+        timeout=timer.remaining(),
+    )
+    status = HTTPStatus.OK
+    logger.debug("Challenge solved successfully.")
+    return True, page_html, page_request, status
