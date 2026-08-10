@@ -12,7 +12,7 @@ ENV GITHUB_BUILD=${GITHUB_BUILD}\
     UV_LINK_MODE=copy \
     PORT=8191 \
     XDG_CACHE_HOME=/cache \
-    HOME=/tmp
+    HOME=/home/byparr
 
 RUN apt-get update &&\
     apt-get install -y --no-install-recommends curl ca-certificates git tini &&\
@@ -44,9 +44,9 @@ RUN mkdir -p /cache &&\
 
 COPY . .
 
-# Make app and cache world-readable; cache must be writable for runtime browser/profile data
-RUN chmod -R o+rX /app /cache &&\
-    chmod -R o+w /cache
+RUN mkdir -p /home/byparr &&\
+    chmod -R o+rX /app &&\
+    chmod -R a+rwX /cache /home/byparr
 
 FROM app AS test
 RUN \
