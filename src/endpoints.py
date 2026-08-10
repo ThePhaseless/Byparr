@@ -9,8 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha import CaptchaType
+from playwright_captcha.solvers.click.cloudflare.utils.detection import (
+    detect_cloudflare_challenge,
+)
 
-from src.consts import CHALLENGE_TITLES
 from src.models import (
     HealthcheckResponse,
     LinkRequest,
@@ -73,7 +75,9 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     final_url = await setup_routes(request, dep)
 
     try:
-        page_request, status = await load_page_and_solve(dep, request, timer)
+        challenge_detected, page_html, page_request, status = (
+            await _navigate_and_solve(dep, request, timer)
+        )
     except (TimeoutError, PlaywrightTimeoutError) as e:
         logger.error("Timed out while loading the page or solving the challenge")
         raise HTTPException(
@@ -82,9 +86,10 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         ) from e
 
     cookies = await dep.context.cookies()
-
     content_type, response_content = await build_response_content(
-        dep, request, page_request
+        dep, request, page_request,
+        challenge_detected=challenge_detected,
+        page_html=page_html,
     )
 
     return LinkResponse(
@@ -106,8 +111,8 @@ async def setup_routes(request: LinkRequest, dep: BrowserDep) -> str | None:
     """
     Install request routes for media blocking and CSP stripping.
 
-    Returns a mutable holder for the final URL captured during navigation;
-    callers read it after the page settles.
+    Returns the final URL captured during navigation; callers read it after
+    the page settles.
     """
     if request.block_media:
 
@@ -148,26 +153,33 @@ async def setup_routes(request: LinkRequest, dep: BrowserDep) -> str | None:
     return final_url
 
 
-async def load_page_and_solve(
-    dep: BrowserDep, request: LinkRequest, timer: TimeoutTimer
-) -> tuple[object | None, HTTPStatus]:
+async def _navigate_and_solve(
+    dep: BrowserDep,
+    request: LinkRequest,
+    timer: TimeoutTimer,
+) -> tuple[bool, str | None, object, HTTPStatus]:
     """Navigate to the URL, then solve a challenge or wait for network idle."""
+    page_html: str | None = None
     page_request = await dep.page.goto(
         request.url, timeout=timer.remaining() * 1000
     )
-    status = HTTPStatus.OK if page_request is None else HTTPStatus(page_request.status)
+    status = page_request.status if page_request else HTTPStatus.OK
     await dep.page.wait_for_load_state(
         state="domcontentloaded", timeout=timer.remaining() * 1000
     )
 
-    if await dep.page.title() in CHALLENGE_TITLES:
-        await _solve_challenge(dep, timer)
-        status = HTTPStatus.OK
-        logger.debug("Challenge solved successfully.")
-    else:
+    challenge_active = (
+        await detect_cloudflare_challenge(dep.page, "interstitial")
+        or await detect_cloudflare_challenge(dep.page, "turnstile")
+    )
+    if not challenge_active:
+        page_html = await dep.page.content()
         await _wait_for_networkidle(dep, timer)
+        return False, page_html, page_request, status
 
-    return page_request, status
+    await _solve_challenge(dep, timer)
+    status = HTTPStatus.OK
+    return True, page_html, page_request, status
 
 
 async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
@@ -182,6 +194,7 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
         ),
         timeout=timer.remaining(),
     )
+    logger.debug("Challenge solved successfully.")
 
 
 async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:
@@ -192,12 +205,18 @@ async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:
         )
     except PlaywrightTimeoutError:
         logger.info(
-            "networkidle timed out after domcontentloaded; continuing with loaded page"
+            "networkidle timed out after domcontentloaded; "
+            "continuing with loaded page"
         )
 
 
 async def build_response_content(
-    dep: BrowserDep, request: LinkRequest, page_request: object | None
+    dep: BrowserDep,
+    request: LinkRequest,
+    page_request: object,
+    *,
+    challenge_detected: bool,
+    page_html: str | None,
 ) -> tuple[str, str]:
     """Build (content_type, response_content) from the settled page."""
     if request.return_only_cookies:
@@ -208,14 +227,21 @@ async def build_response_content(
     ):
         return await _fetch_pdf_content(dep)
 
-    return "text/html", await dep.page.content()
+    response_content = (
+        page_html
+        if page_html is not None and not challenge_detected
+        else await dep.page.content()
+    )
+    return "text/html", response_content
 
 
 async def _fetch_pdf_content(dep: BrowserDep) -> tuple[str, str]:
     """Fetch raw PDF bytes as base64, falling back to viewer HTML on failure."""
     try:
         fetch_response = await dep.page.request.fetch(dep.page.url)
-        response_content = base64.b64encode(await fetch_response.body()).decode("ascii")
+        response_content = base64.b64encode(
+            await fetch_response.body()
+        ).decode("ascii")
     except Exception:
         logger.exception("Failed to fetch PDF bytes, falling back to viewer HTML")
         return "text/html", await dep.page.content()

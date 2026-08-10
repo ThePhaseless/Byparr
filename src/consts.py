@@ -1,7 +1,6 @@
 import logging
 import sys
 
-from playwright_captcha import CaptchaType
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +22,7 @@ class Settings(BaseSettings):
     block_media: bool = False
     return_only_cookies: bool = False
     owui_api_key: str | None = None
+    browser_locale: str | None = None
 
 
 settings = Settings()
@@ -43,12 +43,4 @@ BLOCK_MEDIA = settings.block_media
 RETURN_ONLY_COOKIES = settings.return_only_cookies
 
 OWUI_API_KEY = settings.owui_api_key
-
-CHALLENGE_TITLES_MAP: dict[CaptchaType, list[str]] = {
-    # Cloudflare
-    CaptchaType.CLOUDFLARE_INTERSTITIAL: ["Just a moment..."],
-}
-
-CHALLENGE_TITLES = [
-    title for titles in CHALLENGE_TITLES_MAP.values() for title in titles
-]
+BROWSER_LOCALE = settings.browser_locale
