@@ -96,6 +96,12 @@ async def get_browser(
         proxy=proxy_config,
         humanize=True,
         locale=BROWSER_LOCALE or "auto",
+        # Firefox renders application/json documents in a built-in viewer whose
+        # own CSP (`script-src resource:`) blocks Playwright's eval-based
+        # evaluate(), crashing /v1 on JSON APIs (issue #394). Disabling the
+        # viewer renders JSON as plain text: evaluate works and consumers get
+        # the raw JSON instead of the viewer's HTML markup.
+        extra_prefs={"devtools.jsonview.enabled": False},
     ) as browser_raw:
         # InvisiblePlaywright yields a Browser instance
         browser = cast("Browser", browser_raw)

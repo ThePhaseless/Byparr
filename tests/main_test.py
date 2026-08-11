@@ -58,6 +58,34 @@ def test_bypass(website: str):
     assert response.status_code == HTTPStatus.OK
 
 
+def test_json_api():
+    """JSON APIs must return 200, not crash on the UA evaluate.
+
+    Firefox renders application/json in a built-in viewer whose CSP blocks
+    Playwright's eval-based evaluate() (issue #394). The browser must be
+    launched with the viewer disabled so /v1 works and returns the raw JSON.
+    """
+    url = "https://api.ipify.org?format=json"
+    test_request = httpx2.get(url)
+    if test_request.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+        pytest.skip(
+            f"Skipping JSON API test - upstream error ({test_request.status_code})"
+        )
+
+    response = client.post(
+        "/v1",
+        json=LinkRequest.model_construct(url=url, cmd="request.get").model_dump(),
+    )
+
+    if response.status_code == HTTPStatus.REQUEST_TIMEOUT:
+        pytest.skip("Skipping JSON API test - timed out (upstream issue)")
+
+    assert response.status_code == HTTPStatus.OK
+    solution = response.json()["solution"]
+    assert solution["user_agent"]
+    assert '"ip"' in solution["response"]
+
+
 def test_health_check():
     """
     Tests the health check endpoint.
