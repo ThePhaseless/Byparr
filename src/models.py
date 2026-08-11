@@ -78,7 +78,7 @@ class LinkResponse(BaseModel):
     version: str = consts.VERSION
 
     @classmethod
-    def invalid(cls, url: str):
+    def invalid(cls, url: str) -> LinkResponse:
         """
         Return an invalid LinkResponse with default error values.
 
