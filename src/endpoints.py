@@ -92,10 +92,20 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         page_html=page_html,
     )
 
+    user_agent = (
+        page_request.request.headers.get("user-agent") if page_request else None
+    )
+    if user_agent is None:
+        try:
+            user_agent = await dep.page.evaluate("navigator.userAgent")
+        except Exception:
+            logger.warning("Could not determine User-Agent via page.evaluate")
+            user_agent = ""
+
     return LinkResponse(
         message="Success",
         solution=Solution(
-            user_agent=await dep.page.evaluate("navigator.userAgent"),
+            user_agent=user_agent,
             url=final_url if final_url is not None else dep.page.url,
             status=status,
             cookies=cookies,

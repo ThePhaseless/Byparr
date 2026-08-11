@@ -96,6 +96,7 @@ async def get_browser(
         proxy=proxy_config,
         humanize=True,
         locale=BROWSER_LOCALE or "auto",
+        extra_prefs={"devtools.jsonview.enabled": False},
     ) as browser_raw:
         # InvisiblePlaywright yields a Browser instance
         browser = cast("Browser", browser_raw)
