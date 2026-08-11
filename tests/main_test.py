@@ -83,7 +83,7 @@ def test_json_api():
 
     assert response.status_code == HTTPStatus.OK
     solution = response.json()["solution"]
-    assert solution["user_agent"]
+    assert solution["userAgent"]
     assert '"ip"' in solution["response"]
 
 
