@@ -139,7 +139,9 @@ def fake_dep(*, fail_states: set[str] | None = None) -> BrowserDepClass:
     page = AsyncMock()
     page.url = "https://example.test/login"
     page.goto.return_value = MagicMock(
-        status=HTTPStatus.OK, headers={"content-type": "text/html"}
+        status=HTTPStatus.OK,
+        headers={"content-type": "text/html"},
+        request=MagicMock(headers={"user-agent": "UnitTestBrowser/1.0"}),
     )
     page.title.return_value = "Login"
     page.evaluate.return_value = "UnitTestBrowser/1.0"
@@ -181,3 +183,22 @@ async def test_domcontentloaded_timeout_returns_408():
         )
 
     assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
+
+
+@pytest.mark.asyncio
+async def test_user_agent_survives_csp_blocked_evaluate():
+    """UA comes from request headers when page CSP blocks evaluate (#394).
+
+    No CSP configuration (header, meta tag, or internal viewer document) may
+    turn /v1 into a 500.
+    """
+    dep = fake_dep()
+    dep.page.evaluate.side_effect = Exception("call to eval() blocked by CSP")
+
+    response = await read_item(
+        LinkRequest(url="https://example.test/login"),
+        dep,
+    )
+
+    assert response.status == "ok"
+    assert response.solution.user_agent == "UnitTestBrowser/1.0"

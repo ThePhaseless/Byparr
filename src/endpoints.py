@@ -153,10 +153,25 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
             else await dep.page.content()
         )
 
+    # The User-Agent the target site actually saw, taken from the navigation
+    # request headers. page.evaluate falls through to eval() in the page's
+    # main world and fails whenever the page CSP disallows eval (e.g. the
+    # Firefox JSON viewer in #394, or uncatchable meta-tag CSP), so evaluate
+    # is only a fallback and its failure must not turn the request into a 500.
+    user_agent = (
+        page_request.request.headers.get("user-agent") if page_request else None
+    )
+    if user_agent is None:
+        try:
+            user_agent = await dep.page.evaluate("navigator.userAgent")
+        except Exception:
+            logger.warning("Could not determine User-Agent via page.evaluate")
+            user_agent = ""
+
     return LinkResponse(
         message="Success",
         solution=Solution(
-            user_agent=await dep.page.evaluate("navigator.userAgent"),
+            user_agent=user_agent,
             url=final_url if final_url is not None else dep.page.url,
             status=status,
             cookies=cookies,
