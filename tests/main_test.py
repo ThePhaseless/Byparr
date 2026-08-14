@@ -53,9 +53,6 @@ def test_bypass(website: str):
         json=LinkRequest.model_construct(url=website, cmd="request.get").model_dump(),
     )
 
-    if response.status_code == HTTPStatus.REQUEST_TIMEOUT:
-        pytest.skip(f"Skipping {website} - timed out (upstream issue)")
-
     assert response.status_code == HTTPStatus.OK
 
 
@@ -110,7 +107,9 @@ def test_pdf_handling():
     assert response.status_code == HTTPStatus.OK
     solution = response.json()["solution"]
     if solution.get("contentType") != "application/pdf":
-        pytest.skip("Skipping PDF test - PDF bytes could not be fetched (upstream issue)")
+        pytest.skip(
+            "Skipping PDF test - PDF bytes could not be fetched (upstream issue)"
+        )
     assert solution["response"]  # non-empty base64
 
     decoded = base64.b64decode(solution["response"])

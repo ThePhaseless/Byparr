@@ -63,8 +63,8 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     await setup_routes(request, dep)
 
     try:
-        challenge_detected, page_html, page_request, status = (
-            await _navigate_and_solve(dep, request, timer)
+        challenge_detected, page_html, page_request, status = await _navigate_and_solve(
+            dep, request, timer
         )
     except (TimeoutError, PlaywrightTimeoutError) as e:
         logger.error("Timed out while loading the page or solving the challenge")
@@ -75,14 +75,14 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
 
     cookies = await dep.context.cookies()
     content_type, response_content = await build_response_content(
-        dep, request, page_request,
+        dep,
+        request,
+        page_request,
         challenge_detected=challenge_detected,
         page_html=page_html,
     )
 
-    user_agent = (
-        page_request.request.headers.get("user-agent") if page_request else ""
-    )
+    user_agent = page_request.request.headers.get("user-agent") if page_request else ""
 
     return LinkResponse(
         message="Success",
@@ -119,18 +119,15 @@ async def _navigate_and_solve(
 ) -> tuple[bool, str | None, object, HTTPStatus]:
     """Navigate to the URL, then solve a challenge or wait for network idle."""
     page_html: str | None = None
-    page_request = await dep.page.goto(
-        request.url, timeout=timer.remaining() * 1000
-    )
+    page_request = await dep.page.goto(request.url, timeout=timer.remaining() * 1000)
     status = page_request.status if page_request else HTTPStatus.OK
     await dep.page.wait_for_load_state(
         state="domcontentloaded", timeout=timer.remaining() * 1000
     )
 
-    challenge_active = (
-        await detect_cloudflare_challenge(dep.page, "interstitial")
-        or await detect_cloudflare_challenge(dep.page, "turnstile")
-    )
+    challenge_active = await detect_cloudflare_challenge(
+        dep.page, "interstitial"
+    ) or await detect_cloudflare_challenge(dep.page, "turnstile")
     if not challenge_active:
         page_html = await dep.page.content()
         await _wait_for_networkidle(dep, timer)
@@ -164,8 +161,7 @@ async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:
         )
     except PlaywrightTimeoutError:
         logger.info(
-            "networkidle timed out after domcontentloaded; "
-            "continuing with loaded page"
+            "networkidle timed out after domcontentloaded; continuing with loaded page"
         )
 
 
@@ -198,9 +194,7 @@ async def _fetch_pdf_content(dep: BrowserDep) -> tuple[str, str]:
     """Fetch raw PDF bytes as base64, falling back to viewer HTML on failure."""
     try:
         fetch_response = await dep.page.request.fetch(dep.page.url)
-        response_content = base64.b64encode(
-            await fetch_response.body()
-        ).decode("ascii")
+        response_content = base64.b64encode(await fetch_response.body()).decode("ascii")
     except Exception:
         logger.exception("Failed to fetch PDF bytes, falling back to viewer HTML")
         return "text/html", await dep.page.content()

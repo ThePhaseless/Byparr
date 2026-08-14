@@ -103,7 +103,7 @@ async def get_browser(
         context = await browser.new_context()
         page = await context.new_page()
         async with ClickSolver(
-            framework=FrameworkType.PLAYWRIGHT,
+            framework=FrameworkType.PATCHRIGHT,
             page=page,
             max_attempts=MAX_ATTEMPTS,
             attempt_delay=1,
