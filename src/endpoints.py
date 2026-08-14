@@ -105,9 +105,7 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
 
 
 async def setup_routes(request: LinkRequest, dep: BrowserDep) -> None:
-    """
-    Install request routes for media blocking.
-    """
+    """Install request routes for media blocking."""
     if request.block_media:
 
         async def block_media_route(route) -> None:
