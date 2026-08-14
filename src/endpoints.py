@@ -60,12 +60,6 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     timer = TimeoutTimer(duration=request.max_timeout)
     request.url = request.url.replace('"', "").strip()
 
-    try:
-        user_agent = await dep.page.evaluate("navigator.userAgent")
-    except Exception:
-        logger.warning("Could not determine User-Agent via page.evaluate")
-        user_agent = None
-
     await setup_routes(request, dep)
 
     try:
@@ -86,8 +80,9 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         page_html=page_html,
     )
 
-    if user_agent is None:
-        user_agent = page_request.request.headers.get("user-agent") if page_request else ""
+    user_agent = (
+        page_request.request.headers.get("user-agent") if page_request else ""
+    )
 
     return LinkResponse(
         message="Success",
