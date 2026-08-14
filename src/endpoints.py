@@ -28,18 +28,6 @@ router = APIRouter()
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
 
-# Headers to strip from the fulfilled response: CSP is removed for navigation
-# freedom, and content-encoding/content-length are stale once we request an
-# uncompressed body via accept-encoding: identity below.
-DROP_HEADERS = frozenset(
-    {
-        "content-security-policy",
-        "content-security-policy-report-only",
-        "content-encoding",
-        "content-length",
-    }
-)
-
 
 @router.get("/", include_in_schema=False)
 def read_root():
@@ -78,7 +66,7 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         logger.warning("Could not determine User-Agent via page.evaluate")
         user_agent = None
 
-    final_url = await setup_routes(request, dep)
+    await setup_routes(request, dep)
 
     try:
         challenge_detected, page_html, page_request, status = (
@@ -105,7 +93,7 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         message="Success",
         solution=Solution(
             user_agent=user_agent,
-            url=final_url if final_url is not None else dep.page.url,
+            url=dep.page.url,
             status=status,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
@@ -116,12 +104,9 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     )
 
 
-async def setup_routes(request: LinkRequest, dep: BrowserDep) -> str | None:
+async def setup_routes(request: LinkRequest, dep: BrowserDep) -> None:
     """
-    Install request routes for media blocking and CSP stripping.
-
-    Returns the final URL captured during navigation; callers read it after
-    the page settles.
+    Install request routes for media blocking.
     """
     if request.block_media:
 
@@ -132,34 +117,6 @@ async def setup_routes(request: LinkRequest, dep: BrowserDep) -> str | None:
                 await route.continue_()
 
         await dep.page.route("**/*", block_media_route)
-
-    final_url: str | None = None
-
-    async def strip_csp_route(route) -> None:
-        nonlocal final_url
-        if route.request.resource_type != "document":
-            await route.continue_()
-            return
-        # Request an uncompressed body via accept-encoding: identity. When
-        # route.fulfill re-serves the fetched response (by uid), it forwards
-        # the original compressed bytes; stripping content-encoding below
-        # would leave the browser reading compressed bytes as plain text.
-        response = await route.fetch(
-            headers={**route.request.headers, "accept-encoding": "identity"}
-        )
-        if route.request.frame == dep.page.main_frame:
-            final_url = response.url
-        await route.fulfill(
-            response=response,
-            headers={
-                key: value
-                for key, value in response.headers.items()
-                if key.lower() not in DROP_HEADERS
-            },
-        )
-
-    await dep.page.route("**/*", strip_csp_route)
-    return final_url
 
 
 async def _navigate_and_solve(
