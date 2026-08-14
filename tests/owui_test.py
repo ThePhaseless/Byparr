@@ -78,7 +78,8 @@ def fake_dep(*, html: str = ARTICLE_HTML) -> BrowserDepClass:
     page = AsyncMock()
     page.goto.return_value = MagicMock()
     page.content.return_value = html
-    page.evaluate.return_value = "line one\n\nline two"
+    page.locator = MagicMock()
+    page.locator.return_value.inner_text = AsyncMock(return_value="line one\n\nline two")
 
     def wait_for_load_state(state: str, **_kwargs: object) -> None:
         if state == "networkidle":
