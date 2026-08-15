@@ -12,6 +12,10 @@ from playwright_captcha import CaptchaType
 from playwright_captcha.solvers.click.cloudflare.utils.detection import (
     detect_cloudflare_challenge,
 )
+from playwright_captcha.utils.exceptions import (
+    CaptchaDetectionError,
+    CaptchaSolvingError,
+)
 
 from src.models import (
     HealthcheckResponse,
@@ -139,17 +143,30 @@ async def _navigate_and_solve(
 
 
 async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
-    """Attempt to solve a detected Cloudflare interstitial challenge."""
+    """
+    Attempt to solve a detected Cloudflare interstitial challenge.
+
+    Raises TimeoutError when the challenge outlives the attempt, so the caller
+    reports the same 408 whether the solver ran out of time or ran out of
+    attempts. The latter is what a challenge Byparr cannot clear from this
+    network looks like: the widget lives in an iframe whose content_frame() the
+    Firefox build refuses to hand over ("Permission denied to access property
+    docShell on cross-origin object"), so the solver never reaches the checkbox.
+    """
     logger.info("Challenge detected, attempting to solve...")
-    await wait_for(
-        dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
-            captcha_container=dep.page,
-            captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-            wait_checkbox_attempts=1,
-            wait_checkbox_delay=0.5,
-        ),
-        timeout=timer.remaining(),
-    )
+    try:
+        await wait_for(
+            dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
+                captcha_container=dep.page,
+                captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
+                wait_checkbox_attempts=1,
+                wait_checkbox_delay=0.5,
+            ),
+            timeout=timer.remaining(),
+        )
+    except (CaptchaDetectionError, CaptchaSolvingError) as e:
+        logger.warning(f"Solver gave up on the challenge: {e}")
+        raise TimeoutError(str(e)) from e
     logger.debug("Challenge solved successfully.")
 
 

@@ -103,7 +103,13 @@ async def get_browser(
         context = await browser.new_context()
         page = await context.new_page()
         async with ClickSolver(
-            framework=FrameworkType.PATCHRIGHT,
+            # Not PATCHRIGHT: that path skips the unlockShadowRoot init script
+            # and injects it over CDP instead, which Firefox has no session for
+            # ("CDP session is only available in Chromium"). Cloudflare builds
+            # its widget inside a closed shadow root, so without that script
+            # nothing -- not the solver, not page.locator -- can see the
+            # challenge iframe, and every solve attempt fails outright.
+            framework=FrameworkType.PLAYWRIGHT,
             page=page,
             max_attempts=MAX_ATTEMPTS,
             attempt_delay=1,

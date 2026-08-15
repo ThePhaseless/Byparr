@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,7 +9,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     version: str = "unknown"
 
-    max_attempts: int = sys.maxsize
+    # The solver retries whenever it cannot reach the challenge widget, and
+    # that failure is usually structural rather than transient -- an
+    # unreachable widget stays unreachable. sys.maxsize meant a single request
+    # burned its whole max_timeout on ~1300 identical failed attempts before
+    # reporting a 408. Give it a handful of tries, then let the caller know.
+    max_attempts: int = 5
 
     proxy_server: str | None = None
     proxy_username: str | None = None
