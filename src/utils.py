@@ -35,6 +35,24 @@ if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
 
 
+# Cloudflare embeds its challenge widget in an iframe carrying
+# allow="cross-origin-isolated". Firefox honours that by moving the iframe into
+# a cross-origin-isolated content process, where Juggler sees a frame with no
+# docShell and no URL, so content_frame() raises "Permission denied to access
+# property docShell on cross-origin object" and the solver never reaches the
+# checkbox.
+#
+# Setting browser.tabs.remote.useCrossOrigin{Opener,Embedder}Policy=false (as
+# upstream Playwright's Firefox does) undoes that, and the solver then clicks
+# the checkbox successfully -- but Cloudflare rejects the click anyway from
+# datacenter ranges, so it changed no outcome across eight sites measured.
+# Left off: real Firefox ships these policies on, and deviating from that is a
+# fingerprint signal not worth paying for an unproven gain.
+BROWSER_PREFS = {
+    "devtools.jsonview.enabled": False,
+}
+
+
 class TimeoutTimer(BaseModel):
     duration: int  # in seconds
     start_time: float = Field(default_factory=time.perf_counter)
@@ -96,7 +114,7 @@ async def get_browser(
         proxy=proxy_config,
         humanize=True,
         locale=BROWSER_LOCALE or "auto",
-        extra_prefs={"devtools.jsonview.enabled": False},
+        extra_prefs=BROWSER_PREFS,
     ) as browser_raw:
         # InvisiblePlaywright yields a Browser instance
         browser = cast("Browser", browser_raw)

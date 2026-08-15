@@ -1,12 +1,13 @@
 import base64
 import time
 import warnings
-from asyncio import wait_for
+from asyncio import sleep, wait_for
 from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from playwright.async_api import Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha import CaptchaType
 from playwright_captcha.solvers.click.cloudflare.utils.detection import (
@@ -31,6 +32,24 @@ warnings.filterwarnings("ignore", category=SyntaxWarning)
 router = APIRouter()
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
+
+# Markup only an unsolved challenge has. Two near misses to avoid:
+#
+#   script[src*="/cdn-cgi/challenge-platform/"] on its own also matches the jsd
+#   bot-scoring beacon Cloudflare serves from that path on ordinary pages, so it
+#   has to be narrowed to the challenge orchestrator (chl_page).
+#
+#   iframe[src*="challenges.cloudflare.com"] looks like the widget but outlives
+#   it: a cleared nowsecure.nl carries two of them with no challenge in sight.
+CHALLENGE_MARKERS = (
+    'script[src*="/cdn-cgi/challenge-platform/"][src*="chl_page"], '
+    "#challenge-error-text, #challenge-running, #challenge-stage"
+)
+
+# How long to let Cloudflare verify a click before trying again, and how often
+# to look. Verification took 5-15s in testing.
+CHALLENGE_SETTLE_SECONDS = 20.0
+CHALLENGE_POLL_SECONDS = 1.0
 
 
 @router.get("/", include_in_schema=False)
@@ -146,28 +165,78 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
     """
     Attempt to solve a detected Cloudflare interstitial challenge.
 
-    Raises TimeoutError when the challenge outlives the attempt, so the caller
-    reports the same 408 whether the solver ran out of time or ran out of
-    attempts. The latter is what a challenge Byparr cannot clear from this
-    network looks like: the widget lives in an iframe whose content_frame() the
-    Firefox build refuses to hand over ("Permission denied to access property
-    docShell on cross-origin object"), so the solver never reaches the checkbox.
+    The solver's own verdict is not trusted. It judges its click by waiting for
+    networkidle, which returns the moment the network happens to be quiet --
+    measured at 9ms after the click -- and then reports "challenge still
+    present". Cloudflare needs seconds: it replaces the checkbox with
+    "verifying you are human" before the page turns over. So try, then wait for
+    the challenge itself to go away, and only give up once the budget is gone.
+
+    That bounds what used to be unbounded. With max_attempts at sys.maxsize the
+    solver retried an unreachable widget ~1300 times per request and the caller
+    waited out the whole max_timeout for a 408 it was always going to get.
     """
     logger.info("Challenge detected, attempting to solve...")
+    while timer.remaining() > 0:
+        try:
+            await wait_for(
+                dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
+                    captcha_container=dep.page,
+                    captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
+                    wait_checkbox_attempts=1,
+                    wait_checkbox_delay=0.5,
+                ),
+                timeout=timer.remaining(),
+            )
+        except (CaptchaDetectionError, CaptchaSolvingError) as e:
+            # Both mean "not solved yet", not "cannot be solved": the widget is
+            # mid-verification and momentarily absent, or the click has landed
+            # and the verdict was taken too early.
+            logger.debug(f"Solver attempt inconclusive: {e}")
+
+        if await _challenge_cleared(dep, timer):
+            logger.info("Challenge cleared")
+            return
+
+    message = "Challenge still present when the request budget ran out"
+    raise TimeoutError(message)
+
+
+async def _challenge_cleared(dep: BrowserDep, timer: TimeoutTimer) -> bool:
+    """
+    Wait out Cloudflare's post-click verification, up to CHALLENGE_SETTLE_SECONDS.
+
+    Polls rather than waiting for a load event: Cloudflare swaps the widget for
+    a spinner in place and only navigates once it is satisfied, so there is no
+    single event to await.
+    """
+    deadline = min(CHALLENGE_SETTLE_SECONDS, timer.remaining())
+    waited = 0.0
+    while waited < deadline:
+        if not await _challenge_visible(dep.page):
+            return True
+        await sleep(CHALLENGE_POLL_SECONDS)
+        waited += CHALLENGE_POLL_SECONDS
+    return not await _challenge_visible(dep.page)
+
+
+async def _challenge_visible(page: Page) -> bool:
+    """
+    Report whether an unsolved challenge is still on the page.
+
+    Cloudflare serves two different scripts from /cdn-cgi/challenge-platform/:
+    the challenge orchestrator on an interstitial, and the jsd bot-scoring
+    beacon on ordinary pages once a visitor is cleared. detect_cloudflare_
+    challenge() matches both, so on its own it never reports success. Match the
+    orchestrator and the widget instead.
+    """
     try:
-        await wait_for(
-            dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
-                captcha_container=dep.page,
-                captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-                wait_checkbox_attempts=1,
-                wait_checkbox_delay=0.5,
-            ),
-            timeout=timer.remaining(),
-        )
-    except (CaptchaDetectionError, CaptchaSolvingError) as e:
-        logger.warning(f"Solver gave up on the challenge: {e}")
-        raise TimeoutError(str(e)) from e
-    logger.debug("Challenge solved successfully.")
+        return await page.locator(CHALLENGE_MARKERS).count() > 0
+    except Exception:
+        # A navigation tore down the execution context mid-check, which only
+        # happens once Cloudflare has moved us on.
+        logger.debug("Challenge lookup interrupted by a navigation")
+        return False
 
 
 async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:

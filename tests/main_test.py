@@ -1,4 +1,6 @@
 import base64
+import json
+import re
 from http import HTTPStatus
 from json import JSONDecodeError
 from unittest.mock import AsyncMock, MagicMock
@@ -7,33 +9,52 @@ import httpx2
 import pytest
 from fastapi import HTTPException
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright_captcha.utils.exceptions import CaptchaDetectionError
+from playwright_captcha.utils.exceptions import (
+    CaptchaDetectionError,
+    CaptchaSolvingError,
+)
 from starlette.testclient import TestClient
 
 from main import app
-from src.endpoints import read_item
+from src.endpoints import CHALLENGE_MARKERS, read_item
 from src.models import LinkRequest
 from src.utils import BrowserDepClass
 
 client = TestClient(app)
 
+# Real Firefox advertises 16 cipher suites; Playwright's HTTP client advertised
+# 52. A small margin absorbs Firefox version drift without letting 52 through.
+FIREFOX_CIPHER_SUITE_CEILING = 20
+
+# Sites Byparr clears from any network, datacenter ranges included. These carry
+# the hard assertion: if the bypass breaks, one of these goes red.
 test_websites = [
+    # Purpose-built Cloudflare challenge target. Serves a real interstitial and
+    # hands back a cf_clearance cookie once it is passed, so a pass here means
+    # the challenge was solved rather than never presented.
+    "https://nowsecure.nl/",
+    'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
+]
+
+# Cloudflare hands these its interactive checkbox challenge and then refuses the
+# click from datacenter ranges: the widget goes to "verifying you are human" and
+# comes back as a fresh unchecked box, indefinitely. Measured over four fresh
+# navigations and nine clicks, and reproduced from two unrelated hosting
+# providers on two architectures -- it is the visitor's IP being judged, not our
+# code. They still run rather than being skipped, so a real regression is
+# visible in the report and a pass is recorded as xpass, but the runner's luck
+# with Cloudflare cannot turn the build red.
+datacenter_hostile_websites = [
     "https://ext.to/",
     # "https://www.ygg.re/",
     "https://extratorrent.st/",
     "https://speed.cd/login",
-    'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
     "https://1337x.to/home/",
 ]
 
 
-@pytest.mark.parametrize("website", test_websites)
-def test_bypass(website: str):
-    """
-    Tests if the service can bypass cloudflare/DDOS-GUARD on given websites.
-
-    This test is skipped if the website is not reachable or does not have cloudflare/DDOS-GUARD.
-    """
+def _bypass(website: str) -> None:
+    """Ask Byparr for the page and require a clean answer."""
     test_request = httpx2.get(
         website,
     )
@@ -54,16 +75,23 @@ def test_bypass(website: str):
         json=LinkRequest.model_construct(url=website, cmd="request.get").model_dump(),
     )
 
-    if response.status_code == HTTPStatus.REQUEST_TIMEOUT:
-        # Cloudflare serves its interactive checkbox challenge to some networks
-        # and not others, and the widget lives in an iframe whose content_frame()
-        # this Firefox build will not hand over, so the solver cannot reach the
-        # checkbox to click it. Whether a given run sees that challenge is
-        # Cloudflare's call, not ours -- fail the run for our own regressions,
-        # not for the reputation of whatever IP the runner drew.
-        pytest.skip(f"Skipping {website} - challenge not solvable from this network")
-
     assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.parametrize("website", test_websites)
+def test_bypass(website: str):
+    """Tests if the service can bypass cloudflare/DDOS-GUARD on given websites."""
+    _bypass(website)
+
+
+@pytest.mark.xfail(
+    reason="Cloudflare refuses the checkbox click from datacenter IPs",
+    strict=False,
+)
+@pytest.mark.parametrize("website", datacenter_hostile_websites)
+def test_bypass_datacenter_hostile(website: str):
+    """Same check against sites Cloudflare guards hardest, outcome permitting."""
+    _bypass(website)
 
 
 def test_json_api():
@@ -92,6 +120,38 @@ def test_json_api():
     solution = response.json()["solution"]
     assert solution["userAgent"]
     assert '"ip"' in solution["response"]
+
+
+def test_tls_handshake_looks_like_firefox():
+    """
+    The handshake must be Firefox's, not the HTTP client's (#398).
+
+    route.fetch() re-issued navigations through Playwright's own HTTP stack, so
+    the ClientHello advertised 52 cipher suites where Firefox offers 16 -- a
+    fingerprint no amount of header spoofing hides. Unlike a Cloudflare verdict
+    this is deterministic, so it pins the regression that motivated this branch.
+    """
+    url = "https://www.howsmyssl.com/a/check"
+    if httpx2.get(url).status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
+        pytest.skip("Skipping TLS check - howsmyssl is down")
+
+    response = client.post(
+        "/v1",
+        json=LinkRequest.model_construct(url=url, cmd="request.get").model_dump(),
+    )
+    assert response.status_code == HTTPStatus.OK
+
+    body = response.json()["solution"]["response"]
+    report = json.loads(
+        re.sub(r"<[^>]+>", "", re.search(r"\{.*\}", body, re.DOTALL).group(0))
+    )
+    suites = len(report["given_cipher_suites"])
+
+    # Firefox offers 16; Playwright's client offered 52. Anything in between
+    # means the navigation is no longer going through the browser.
+    assert suites <= FIREFOX_CIPHER_SUITE_CEILING, (
+        f"{suites} cipher suites offered - the handshake is not Firefox's"
+    )
 
 
 def test_health_check():
@@ -147,12 +207,14 @@ def fake_dep(
     *,
     fail_states: set[str] | None = None,
     challenged: bool = False,
+    marker_counts: list[int] | None = None,
 ) -> BrowserDepClass:
     """
     Build a browser dependency triple backed by mocks.
 
-    `challenged` makes every selector match, which is how the detector reports
-    a Cloudflare challenge on the page.
+    `challenged` makes the detector report a Cloudflare challenge.
+    `marker_counts` drives the "is it still up?" check that runs after each
+    solve attempt: one entry per look, the last one repeating forever.
     """
     page = AsyncMock()
     page.url = "https://example.test/login"
@@ -164,9 +226,22 @@ def fake_dep(
     page.title.return_value = "Login"
     page.evaluate.return_value = "UnitTestBrowser/1.0"
     page.content.return_value = "<html><title>Login</title></html>"
-    locator = MagicMock()
-    locator.count = AsyncMock(return_value=1 if challenged else 0)
-    page.locator = MagicMock(return_value=locator)
+
+    remaining = list(marker_counts or [])
+
+    def count_for(selector: str) -> int:
+        """Answer the marker check from the script, everything else from `challenged`."""
+        if selector != CHALLENGE_MARKERS or not remaining:
+            return 1 if challenged else 0
+        return remaining.pop(0) if len(remaining) > 1 else remaining[0]
+
+    def locator(selector: str) -> MagicMock:
+        handle = MagicMock()
+        handle.count = AsyncMock(return_value=None)
+        handle.count.side_effect = lambda: count_for(selector)
+        return handle
+
+    page.locator = MagicMock(side_effect=locator)
 
     def wait_for_load_state(state: str, **_kwargs: object) -> None:
         """Fail the wait when asked for a configured state."""
@@ -209,22 +284,40 @@ async def test_domcontentloaded_timeout_returns_408():
 
 
 @pytest.mark.asyncio
-async def test_unreachable_challenge_widget_returns_408():
+async def test_challenge_that_clears_after_the_click_succeeds():
     """
-    A solver that runs out of attempts is a timeout, not a 500.
+    The solver's own "challenge still present" verdict must not end the request.
 
-    The solver raises CaptchaDetectionError once it has exhausted max_attempts
-    without reaching the challenge iframe. read_item only caught timeouts, so
-    that surfaced as an unhandled 500 the moment max_attempts stopped being
-    effectively infinite.
+    It judges its click by waiting for networkidle, which returns as soon as the
+    network happens to be quiet -- 9ms after the click, in practice -- while
+    Cloudflare is still showing "verifying you are human". Byparr has to wait
+    for the challenge markup itself to go away.
     """
-    dep = fake_dep(challenged=True)
+    dep = fake_dep(challenged=True, marker_counts=[1, 0])
+    dep.solver.solve_captcha.side_effect = CaptchaSolvingError(
+        "challenge still present or expected content not detected"
+    )
+
+    response = await read_item(
+        LinkRequest(url="https://example.test/login", max_timeout=5), dep
+    )
+
+    assert response.status == "ok"
+    assert response.solution.status == HTTPStatus.OK
+
+
+@pytest.mark.asyncio
+async def test_challenge_that_never_clears_returns_408():
+    """A challenge still up when the budget runs out is a timeout, not a 500."""
+    dep = fake_dep(challenged=True, marker_counts=[1])
     dep.solver.solve_captcha.side_effect = CaptchaDetectionError(
         "Cloudflare iframes not found"
     )
 
     with pytest.raises(HTTPException) as exc:
-        await read_item(LinkRequest(url="https://example.test/login"), dep)
+        await read_item(
+            LinkRequest(url="https://example.test/login", max_timeout=2), dep
+        )
 
     assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
 
