@@ -86,12 +86,14 @@ async def main() -> None:
     log(f"### {URL} budget={BUDGET}s")
     async for dep in get_browser():
         try:
-            log(f"  attachShadow patched: {not await dep.page.evaluate(
-                '() => /\\\\[native code\\\\]/.test('
-                'Element.prototype.attachShadow.toString())'
-            )}")
-        except Exception:  # noqa: BLE001
-            pass
+            native = await dep.page.evaluate(
+                "() => Element.prototype.attachShadow.toString()"
+            )
+            flagged = await dep.page.evaluate("() => '_shadowRootPatched' in window")
+            log(f"  attachShadow native: {'[native code]' in native}")
+            log(f"  _shadowRootPatched flag on window: {flagged}")
+        except Exception as exc:  # noqa: BLE001
+            log(f"  tamper probe failed: {str(exc)[:80]}")
 
         watcher = asyncio.create_task(watch(dep.page, BUDGET))
         started = time.perf_counter()
