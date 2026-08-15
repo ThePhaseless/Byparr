@@ -1,0 +1,82 @@
+name: Debug runner
+
+# Diagnostics for https://github.com/ThePhaseless/Byparr/pull/400 -- the bypass
+# tests time out only on GitHub runners. Path-filtered so it never fires on
+# normal PRs, and it touches no file the Docker workflow watches.
+
+on:
+  pull_request:
+    paths:
+      - "debug/**"
+      - ".github/workflows/debug.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: debug-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: Plain HTTP probe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Probe sites from the runner
+        run: bash debug/probe.sh
+
+  browser:
+    name: Browser diag (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: main
+            ref: main
+          - label: pr400
+            ref: refs/pull/400/head
+    steps:
+      - name: Checkout debug tooling
+        uses: actions/checkout@v7
+        with:
+          path: tools
+
+      - name: Checkout app code (${{ matrix.label }})
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.ref }}
+          path: app
+
+      - name: Graft diagnostics into the app tree
+        run: cp -r tools/debug app/debug
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build app image
+        uses: docker/build-push-action@v7
+        with:
+          context: app
+          target: app
+          load: true
+          tags: byparr-diag:${{ matrix.label }}
+          cache-from: type=gha,scope=amd64
+          build-args: |
+            GITHUB_BUILD=true
+
+      - name: Run browser diagnostics
+        run: |
+          mkdir -p out && chmod 777 out
+          docker run --rm \
+            -e DIAG_LABEL=${{ matrix.label }} \
+            -e LOG_LEVEL=debug \
+            -v "$PWD/out:/out" \
+            byparr-diag:${{ matrix.label }} \
+            bash -c "uv sync --group test && uv run python debug/browser_diag.py"
+
+      - name: Upload artifacts
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v5
+        with:
+          name: diag-${{ matrix.label }}
+          path: out/
