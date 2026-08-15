@@ -42,14 +42,21 @@ if len(logger.handlers) == 0:
 # property docShell on cross-origin object" and the solver never reaches the
 # checkbox.
 #
-# Setting browser.tabs.remote.useCrossOrigin{Opener,Embedder}Policy=false (as
-# upstream Playwright's Firefox does) undoes that, and the solver then clicks
-# the checkbox successfully -- but Cloudflare rejects the click anyway from
-# datacenter ranges, so it changed no outcome across eight sites measured.
-# Left off: real Firefox ships these policies on, and deviating from that is a
-# fingerprint signal not worth paying for an unproven gain.
+# Turning the two policies off (as upstream Playwright's Firefox does, and as
+# v2.1.0 did via camoufox's disable_coop=True) restores that access, and the
+# solver then clicks the checkbox successfully.
+#
+# It is not a demonstrated win: from a datacenter IP Cloudflare rejects the
+# click regardless -- measured across eight sites, nine clicks, and an
+# undetectable shadow-root patch -- so no outcome changed here. It is kept for
+# parity with v2, which users report worked on these sites, because reaching
+# the checkbox is a precondition for ever passing an interactive challenge and
+# Byparr mostly runs from residential addresses that Cloudflare treats far
+# better than CI does.
 BROWSER_PREFS = {
     "devtools.jsonview.enabled": False,
+    "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
+    "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
 }
 
 
