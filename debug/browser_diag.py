@@ -46,6 +46,32 @@ def snippet(html: str) -> str:
     return re.sub(r"\s+", " ", text).strip()[:400]
 
 
+async def challenge_evidence(page) -> dict:
+    """Separate a real challenge from Cloudflare's post-challenge telemetry script.
+
+    `detect_cloudflare_challenge(..., "interstitial")` only looks for a
+    `script[src*="/cdn-cgi/challenge-platform/"]` tag. Cloudflare also injects
+    that script (the "jsd" bot-detection beacon) into ordinary pages, so the
+    selector alone cannot tell the two apart. These counts can.
+    """
+    out: dict = {}
+    try:
+        out["cp_scripts"] = await page.locator(
+            'script[src*="/cdn-cgi/challenge-platform/"]'
+        ).count()
+        out["cp_script_srcs"] = await page.locator(
+            'script[src*="/cdn-cgi/challenge-platform/"]'
+        ).evaluate_all("els => els.map(e => e.getAttribute('src'))")
+        out["cf_iframes"] = await page.locator(
+            'iframe[src*="challenges.cloudflare.com"]'
+        ).count()
+        out["challenge_form"] = await page.locator("#challenge-form, #cf-chl-widget").count()
+        out["body_chars"] = len(await page.locator("body").inner_text())
+    except Exception as exc:  # noqa: BLE001
+        out["evidence_error"] = repr(exc)[:200]
+    return out
+
+
 async def probe(url: str) -> dict:
     """Drive one URL through goto -> detect -> solve, recording every stage."""
     name = slug(url)
@@ -87,6 +113,20 @@ async def probe(url: str) -> dict:
         rec["page_url"] = page.url
         rec["interstitial"] = await detect_cloudflare_challenge(page, "interstitial")
         rec["turnstile"] = await detect_cloudflare_challenge(page, "turnstile")
+        rec["evidence"] = await challenge_evidence(page)
+
+        # Watch the page settle: a real interstitial auto-resolves within seconds.
+        rec["timeline"] = []
+        for _ in range(6):
+            await asyncio.sleep(5)
+            rec["timeline"].append(
+                {
+                    "t": len(rec["timeline"]) * 5 + 5,
+                    "title": await page.title(),
+                    "detected": await detect_cloudflare_challenge(page, "interstitial"),
+                    **await challenge_evidence(page),
+                }
+            )
 
         html = await page.content()
         rec["content_len"] = len(html)

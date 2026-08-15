@@ -69,6 +69,7 @@ jobs:
           docker run --rm \
             -e DIAG_LABEL=${{ matrix.label }} \
             -e LOG_LEVEL=debug \
+            -e PYTHONPATH=/app \
             -v "$PWD/out:/out" \
             byparr-diag:${{ matrix.label }} \
             bash -c "uv sync --group test && uv run python debug/browser_diag.py"
