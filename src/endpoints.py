@@ -145,9 +145,19 @@ async def setup_routes(request: LinkRequest, dep: BrowserDep) -> str | None:
         # route.fulfill re-serves the fetched response (by uid), it forwards
         # the original compressed bytes; stripping content-encoding below
         # would leave the browser reading compressed bytes as plain text.
-        response = await route.fetch(
-            headers={**route.request.headers, "accept-encoding": "identity"}
-        )
+        #
+        # #402: if route.fetch raises (unreachable host, DNS failure), the
+        # exception escapes into Playwright's event-listener error handler
+        # — the route is never fulfilled nor continued, so the browser's
+        # navigation stalls for the full maxTimeout budget. Abort instead
+        # so page.goto surfaces the failure in milliseconds.
+        try:
+            response = await route.fetch(
+                headers={**route.request.headers, "accept-encoding": "identity"}
+            )
+        except Exception:
+            await route.abort()
+            return
         if route.request.frame == dep.page.main_frame:
             final_url = response.url
         await route.fulfill(
