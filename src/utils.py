@@ -46,13 +46,15 @@ if len(logger.handlers) == 0:
 # v2.1.0 did via camoufox's disable_coop=True) restores that access, and the
 # solver then clicks the checkbox successfully.
 #
-# It is not a demonstrated win: from a datacenter IP Cloudflare rejects the
-# click regardless -- measured across eight sites, nine clicks, and an
-# undetectable shadow-root patch -- so no outcome changed here. It is kept for
-# parity with v2, which users report worked on these sites, because reaching
-# the checkbox is a precondition for ever passing an interactive challenge and
-# Byparr mostly runs from residential addresses that Cloudflare treats far
-# better than CI does.
+# The COOP/COEP pair is not a demonstrated win: toggling it changed no outcome
+# on any site measured, from either a datacenter or a residential address. It is
+# kept for parity with v2.1.0, which clears the interactive challenge where this
+# stack does not, because reaching the checkbox is a precondition for ever
+# passing one.
+#
+# devtools.jsonview.enabled is load-bearing and must stay. Firefox renders
+# application/json in a viewer whose CSP blocks eval, so page.evaluate() dies
+# with "call to eval() blocked by CSP" and /v1 500s on every JSON API (#394).
 BROWSER_PREFS = {
     "devtools.jsonview.enabled": False,
     "browser.tabs.remote.useCrossOriginOpenerPolicy": False,

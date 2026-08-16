@@ -35,14 +35,29 @@ test_websites = [
     'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
 ]
 
-# Cloudflare hands these its interactive checkbox challenge and then refuses the
-# click from datacenter ranges: the widget goes to "verifying you are human" and
-# comes back as a fresh unchecked box, indefinitely. Measured over four fresh
-# navigations and nine clicks, and reproduced from two unrelated hosting
-# providers on two architectures -- it is the visitor's IP being judged, not our
-# code. They still run rather than being skipped, so a real regression is
-# visible in the report and a pass is recorded as xpass, but the runner's luck
-# with Cloudflare cannot turn the build red.
+# Cloudflare hands these its interactive checkbox challenge. The press lands on
+# the widget's visible pixels and Cloudflare declines it, returning a fresh
+# unchecked box indefinitely.
+#
+# This is our browser stack, not the visitor's address. Measured 2026-08-16 from
+# one datacenter IP within the same hour: byparr v2.1.0
+# (ghcr.io/thephaseless/byparr:2.1.0, camoufox) cleared ext.to in 18s,
+# speed.cd/login in 20s and extratorrent.st in 19s, each returning cf_clearance.
+# No configuration of the current invisible_playwright stack clears any of them:
+# tested with and without new_context(), with and without the shadow-root init
+# script, with and without the COOP/COEP prefs, and with both locator.click()
+# and a pixel press.
+#
+# Two candidate explanations were measured and eliminated. The JS fingerprint is
+# not it -- camoufox is the less coherent of the two (no WebGL at all, oscpu
+# leaking Linux under a Windows UA) and passes anyway. The TLS handshake is not
+# it either -- setting security.ssl3.ecdhe_ecdsa_aes_128_sha=True reproduces
+# camoufox's JA4 byte for byte (t13d1717h2_5b57614c22b0_3cbfd9057e0d) and the
+# challenge is still refused.
+#
+# They run rather than being skipped, so a real regression stays visible in the
+# report and a pass is recorded as xpass, but a Cloudflare verdict we do not yet
+# understand cannot turn the build red.
 datacenter_hostile_websites = [
     "https://ext.to/",
     # "https://www.ygg.re/",
@@ -84,7 +99,10 @@ def test_bypass(website: str):
 
 
 @pytest.mark.xfail(
-    reason="Cloudflare refuses the checkbox click from datacenter IPs",
+    reason=(
+        "Cloudflare's interactive challenge refuses the press on "
+        "invisible_playwright; v2.1.0's camoufox clears these from the same IP"
+    ),
     strict=False,
 )
 @pytest.mark.parametrize("website", datacenter_hostile_websites)
