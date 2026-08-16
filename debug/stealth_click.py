@@ -136,9 +136,19 @@ async def main() -> None:
             )
             await solver.__aenter__()
 
-        await page.goto(URL, timeout=60_000)
-        await page.wait_for_load_state("domcontentloaded", timeout=30_000)
+        goto_timeout = int(os.environ.get("GOTO_TIMEOUT", "120")) * 1000
+        try:
+            response = await page.goto(URL, timeout=goto_timeout)
+            log(f"  goto status: {response.status if response else None}")
+        except Exception as exc:  # noqa: BLE001
+            log(f"  goto FAILED: {type(exc).__name__}: {str(exc)[:150]}")
+            return
+        try:
+            await page.wait_for_load_state("domcontentloaded", timeout=60_000)
+        except Exception as exc:  # noqa: BLE001
+            log(f"  domcontentloaded wait failed: {str(exc)[:100]}")
         log(f"  on challenge page: {await page.evaluate(PROBE)}")
+        log(f"  title: {await page.title()!r}")
 
         # Wait for the checkbox to actually be presented, not merely for the
         # iframe to exist. Cloudflare cycles: the widget frame appears first

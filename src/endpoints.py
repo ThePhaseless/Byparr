@@ -1,7 +1,7 @@
 import base64
 import time
 import warnings
-from asyncio import sleep, wait_for
+from asyncio import sleep
 from http import HTTPStatus
 from typing import Annotated
 
@@ -9,13 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from playwright.async_api import Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright_captcha import CaptchaType
 from playwright_captcha.solvers.click.cloudflare.utils.detection import (
     detect_cloudflare_challenge,
-)
-from playwright_captcha.utils.exceptions import (
-    CaptchaDetectionError,
-    CaptchaSolvingError,
 )
 
 from src.models import (
@@ -46,10 +41,18 @@ CHALLENGE_MARKERS = (
     "#challenge-error-text, #challenge-running, #challenge-stage"
 )
 
-# How long to let Cloudflare verify a click before trying again, and how often
-# to look. Verification took 5-15s in testing.
-CHALLENGE_SETTLE_SECONDS = 20.0
+# The widget lives in an iframe served from here; the checkbox is an invisible
+# input inside it, so it is pressed by position rather than by locator. 30px in
+# from the widget's left edge is the middle of the box Cloudflare draws.
+CF_WIDGET_HOST = "challenges.cloudflare.com"
+CHECKBOX_SELECTOR = 'input[type="checkbox"]'
+CHECKBOX_OFFSET_X = 30
+
+# How often to look, and how long to leave a press alone before trying again.
+# Verification takes 5-15s, and pressing over the top of it just restarts the
+# cycle.
 CHALLENGE_POLL_SECONDS = 1.0
+PRESS_INTERVAL_SECONDS = 12.0
 
 
 @router.get("/", include_in_schema=False)
@@ -165,59 +168,102 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
     """
     Attempt to solve a detected Cloudflare interstitial challenge.
 
-    The solver's own verdict is not trusted. It judges its click by waiting for
-    networkidle, which returns the moment the network happens to be quiet --
-    measured at 9ms after the click -- and then reports "challenge still
-    present". Cloudflare needs seconds: it replaces the checkbox with
-    "verifying you are human" before the page turns over. So try, then wait for
-    the challenge itself to go away, and only give up once the budget is gone.
+    Handles both shapes Cloudflare serves: the non-interactive challenge, which
+    clears itself given a few seconds, and the interactive one, which needs the
+    checkbox pressed. Both are covered by the same loop -- watch for the
+    challenge markup to disappear, and press whenever a checkbox is on offer.
 
-    That bounds what used to be unbounded. With max_attempts at sys.maxsize the
-    solver retried an unreachable widget ~1300 times per request and the caller
-    waited out the whole max_timeout for a 408 it was always going to get.
+    playwright-captcha's solver is deliberately not used here. It clicks the
+    checkbox input directly, and that input is invisible, so the click reports
+    success while `checked` never flips. It also judges the result by waiting
+    for networkidle, which returned 9ms after the click while Cloudflare was
+    still verifying, so it reported failure on challenges that were about to
+    pass.
     """
     logger.info("Challenge detected, attempting to solve...")
+    last_press = -PRESS_INTERVAL_SECONDS
     while timer.remaining() > 0:
-        try:
-            await wait_for(
-                dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
-                    captcha_container=dep.page,
-                    captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-                    wait_checkbox_attempts=1,
-                    wait_checkbox_delay=0.5,
-                ),
-                timeout=timer.remaining(),
-            )
-        except (CaptchaDetectionError, CaptchaSolvingError) as e:
-            # Both mean "not solved yet", not "cannot be solved": the widget is
-            # mid-verification and momentarily absent, or the click has landed
-            # and the verdict was taken too early.
-            logger.debug(f"Solver attempt inconclusive: {e}")
-
-        if await _challenge_cleared(dep, timer):
+        if not await _challenge_visible(dep.page):
             logger.info("Challenge cleared")
             return
+
+        elapsed = timer.duration - timer.remaining()
+        if elapsed - last_press >= PRESS_INTERVAL_SECONDS and await _press_checkbox(
+            dep.page
+        ):
+            last_press = elapsed
+
+        await sleep(CHALLENGE_POLL_SECONDS)
 
     message = "Challenge still present when the request budget ran out"
     raise TimeoutError(message)
 
 
-async def _challenge_cleared(dep: BrowserDep, timer: TimeoutTimer) -> bool:
-    """
-    Wait out Cloudflare's post-click verification, up to CHALLENGE_SETTLE_SECONDS.
+def _cloudflare_frame(page: Page) -> object | None:
+    """Find the turnstile widget's frame; None while Cloudflare is between states."""
+    for frame in page.frames:
+        if CF_WIDGET_HOST in frame.url and not frame.is_detached():
+            return frame
+    return None
 
-    Polls rather than waiting for a load event: Cloudflare swaps the widget for
-    a spinner in place and only navigates once it is satisfied, so there is no
-    single event to await.
+
+async def _press_checkbox(page: Page) -> bool:
     """
-    deadline = min(CHALLENGE_SETTLE_SECONDS, timer.remaining())
-    waited = 0.0
-    while waited < deadline:
-        if not await _challenge_visible(dep.page):
-            return True
-        await sleep(CHALLENGE_POLL_SECONDS)
-        waited += CHALLENGE_POLL_SECONDS
-    return not await _challenge_visible(dep.page)
+    Press the checkbox, if one is currently on offer. True when a press happened.
+
+    Two things make this harder than locator.click():
+
+    Cloudflare cycles between "checking if you are human", where the widget
+    frame holds no input at all, and the state where the checkbox is offered.
+    Pressing during the first phase clicks nothing, so wait for the input to
+    exist before reaching for the mouse.
+
+    And the input is invisible -- it sits under a styled overlay. Playwright
+    reports a successful click on it and `checked` never flips, which is why
+    playwright-captcha's own click has never solved one of these. Pressing the
+    widget's visible pixels does work: measured against ext.to, this clears the
+    challenge and returns a cf_clearance cookie.
+    """
+    frame = _cloudflare_frame(page)
+    if frame is None:
+        return False
+    try:
+        checkbox = frame.locator(CHECKBOX_SELECTOR)
+        if not await checkbox.count():
+            return False
+        if await checkbox.first.is_checked():
+            # A press has already landed and Cloudflare is verifying it.
+            # Pressing over the top restarts that verification, which is how
+            # ext.to and speed.cd sat on "performing security verification" for
+            # a full 300s budget while being pressed a dozen times.
+            return False
+        element = await frame.frame_element()
+        box = await element.bounding_box()
+    except Exception:
+        # The widget is mid-swap; try again on the next poll.
+        return False
+    if not box:
+        return False
+
+    x = box["x"] + CHECKBOX_OFFSET_X
+    y = box["y"] + box["height"] / 2
+    try:
+        # Approach before pressing: a cursor that teleports onto the target is
+        # itself a signal.
+        await page.mouse.move(x - 180, y - 120)
+        await sleep(0.3)
+        await page.mouse.move(x - 45, y - 20, steps=18)
+        await sleep(0.2)
+        await page.mouse.move(x, y, steps=10)
+        await sleep(0.35)
+        await page.mouse.down()
+        await sleep(0.08)
+        await page.mouse.up()
+    except Exception as exc:
+        logger.debug(f"Checkbox press failed: {exc}")
+        return False
+    logger.info(f"Pressed the Cloudflare checkbox at ({x:.0f}, {y:.0f}) in {box}")
+    return True
 
 
 async def _challenge_visible(page: Page) -> bool:
