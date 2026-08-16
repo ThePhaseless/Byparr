@@ -9,14 +9,10 @@ import httpx2
 import pytest
 from fastapi import HTTPException
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright_captcha.utils.exceptions import (
-    CaptchaDetectionError,
-    CaptchaSolvingError,
-)
 from starlette.testclient import TestClient
 
 from main import app
-from src.endpoints import CHALLENGE_MARKERS, read_item
+from src.endpoints import CHALLENGE_MARKERS, CHECKBOX_OFFSET_X, read_item
 from src.models import LinkRequest
 from src.utils import BrowserDepClass
 
@@ -25,6 +21,9 @@ client = TestClient(app)
 # Real Firefox advertises 16 cipher suites; Playwright's HTTP client advertised
 # 52. A small margin absorbs Firefox version drift without letting 52 through.
 FIREFOX_CIPHER_SUITE_CEILING = 20
+
+# The turnstile iframe's geometry, as measured on a real challenge page.
+WIDGET_BOX = {"x": 512.0, "y": 304.0, "width": 300.0, "height": 65.0}
 
 # Sites Byparr clears from any network, datacenter ranges included. These carry
 # the hard assertion: if the bypass breaks, one of these goes red.
@@ -203,18 +202,40 @@ def test_max_timeout_normalization(payload: dict, expected: int):
     assert request.max_timeout == expected
 
 
+def fake_cloudflare_frame(*, checked: bool) -> MagicMock:
+    """Build a turnstile widget frame offering one checkbox in the given state."""
+    frame = MagicMock()
+    frame.url = (
+        "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/turnstile"
+    )
+    frame.is_detached = MagicMock(return_value=False)
+
+    checkbox = MagicMock()
+    checkbox.count = AsyncMock(return_value=1)
+    checkbox.first.is_checked = AsyncMock(return_value=checked)
+    frame.locator = MagicMock(return_value=checkbox)
+
+    element = AsyncMock()
+    element.bounding_box.return_value = WIDGET_BOX
+    frame.frame_element = AsyncMock(return_value=element)
+    return frame
+
+
 def fake_dep(
     *,
     fail_states: set[str] | None = None,
     challenged: bool = False,
     marker_counts: list[int] | None = None,
+    checkbox: str | None = None,
 ) -> BrowserDepClass:
     """
     Build a browser dependency triple backed by mocks.
 
     `challenged` makes the detector report a Cloudflare challenge.
-    `marker_counts` drives the "is it still up?" check that runs after each
-    solve attempt: one entry per look, the last one repeating forever.
+    `marker_counts` drives the "is it still up?" check that runs on each poll:
+    one entry per look, the last one repeating forever.
+    `checkbox` puts a widget frame on the page with the box "checked" or
+    "unchecked"; without it the page carries no widget at all.
     """
     page = AsyncMock()
     page.url = "https://example.test/login"
@@ -250,6 +271,11 @@ def fake_dep(
             raise PlaywrightTimeoutError(message)
 
     page.wait_for_load_state.side_effect = wait_for_load_state
+    page.frames = (
+        []
+        if checkbox is None
+        else [fake_cloudflare_frame(checked=checkbox == "checked")]
+    )
 
     context = AsyncMock()
     context.cookies.return_value = []
@@ -268,7 +294,7 @@ async def test_networkidle_timeout_after_domcontentloaded_returns_content():
     assert response.status == "ok"
     assert response.solution.status == HTTPStatus.OK
     assert response.solution.response == "<html><title>Login</title></html>"
-    dep.solver.solve_captcha.assert_not_called()
+    dep.page.mouse.down.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -284,19 +310,16 @@ async def test_domcontentloaded_timeout_returns_408():
 
 
 @pytest.mark.asyncio
-async def test_challenge_that_clears_after_the_click_succeeds():
+async def test_challenge_that_clears_is_reported_as_success():
     """
-    The solver's own "challenge still present" verdict must not end the request.
+    A challenge is over when its markup goes away, not when a solver says so.
 
-    It judges its click by waiting for networkidle, which returns as soon as the
-    network happens to be quiet -- 9ms after the click, in practice -- while
-    Cloudflare is still showing "verifying you are human". Byparr has to wait
-    for the challenge markup itself to go away.
+    playwright-captcha judged its own click by waiting for networkidle, which
+    returns as soon as the network happens to be quiet -- 9ms after the click,
+    in practice -- while Cloudflare is still showing "verifying you are human",
+    and then reported failure on challenges that were about to pass.
     """
     dep = fake_dep(challenged=True, marker_counts=[1, 0])
-    dep.solver.solve_captcha.side_effect = CaptchaSolvingError(
-        "challenge still present or expected content not detected"
-    )
 
     response = await read_item(
         LinkRequest(url="https://example.test/login", max_timeout=5), dep
@@ -307,12 +330,45 @@ async def test_challenge_that_clears_after_the_click_succeeds():
 
 
 @pytest.mark.asyncio
+async def test_unchecked_box_is_pressed_on_the_widgets_visible_pixels():
+    """
+    The press must land on the widget, not on the input.
+
+    The input is invisible -- it sits under a styled overlay -- so a click on it
+    reports success while `checked` never flips. Pressing the pixels Cloudflare
+    actually draws is what clears the challenge.
+    """
+    dep = fake_dep(challenged=True, marker_counts=[1, 1, 0], checkbox="unchecked")
+
+    await read_item(LinkRequest(url="https://example.test/login", max_timeout=5), dep)
+
+    dep.page.mouse.down.assert_called()
+    assert dep.page.mouse.move.call_args.args[:2] == (
+        WIDGET_BOX["x"] + CHECKBOX_OFFSET_X,
+        WIDGET_BOX["y"] + WIDGET_BOX["height"] / 2,
+    )
+
+
+@pytest.mark.asyncio
+async def test_checked_box_is_left_alone_while_cloudflare_verifies():
+    """
+    Pressing a box that is already checked restarts Cloudflare's verification.
+
+    ext.to and speed.cd sat on "performing security verification" for a full
+    300s budget while being pressed a dozen times, never getting far enough
+    into the check to finish it.
+    """
+    dep = fake_dep(challenged=True, marker_counts=[1, 1, 0], checkbox="checked")
+
+    await read_item(LinkRequest(url="https://example.test/login", max_timeout=5), dep)
+
+    dep.page.mouse.down.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_challenge_that_never_clears_returns_408():
     """A challenge still up when the budget runs out is a timeout, not a 500."""
     dep = fake_dep(challenged=True, marker_counts=[1])
-    dep.solver.solve_captcha.side_effect = CaptchaDetectionError(
-        "Cloudflare iframes not found"
-    )
 
     with pytest.raises(HTTPException) as exc:
         await read_item(
