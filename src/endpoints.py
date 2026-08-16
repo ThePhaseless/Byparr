@@ -28,29 +28,20 @@ router = APIRouter()
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
 
-# Markup only an unsolved challenge has. Two near misses to avoid:
-#
-#   script[src*="/cdn-cgi/challenge-platform/"] on its own also matches the jsd
-#   bot-scoring beacon Cloudflare serves from that path on ordinary pages, so it
-#   has to be narrowed to the challenge orchestrator (chl_page).
-#
-#   iframe[src*="challenges.cloudflare.com"] looks like the widget but outlives
-#   it: a cleared nowsecure.nl carries two of them with no challenge in sight.
+# Markup only an unsolved challenge has. chl_page is required: the bare
+# challenge-platform path also matches the jsd beacon served on cleared pages,
+# and the widget iframe outlives the challenge (a cleared nowsecure.nl has two).
 CHALLENGE_MARKERS = (
     'script[src*="/cdn-cgi/challenge-platform/"][src*="chl_page"], '
     "#challenge-error-text, #challenge-running, #challenge-stage"
 )
 
-# The widget lives in an iframe served from here; the checkbox is an invisible
-# input inside it, so it is pressed by position rather than by locator. 30px in
-# from the widget's left edge is the middle of the box Cloudflare draws.
+# 30px in from the widget's left edge is the middle of the box Cloudflare draws.
 CF_WIDGET_HOST = "challenges.cloudflare.com"
 CHECKBOX_SELECTOR = 'input[type="checkbox"]'
 CHECKBOX_OFFSET_X = 30
 
-# How often to look, and how long to leave a press alone before trying again.
-# Verification takes 5-15s, and pressing over the top of it just restarts the
-# cycle.
+# Verification takes 5-15s; pressing over the top of it restarts the cycle.
 CHALLENGE_POLL_SECONDS = 1.0
 PRESS_INTERVAL_SECONDS = 12.0
 
@@ -166,19 +157,11 @@ async def _navigate_and_solve(
 
 async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
     """
-    Attempt to solve a detected Cloudflare interstitial challenge.
+    Clear a Cloudflare challenge, whether or not it needs the checkbox pressed.
 
-    Handles both shapes Cloudflare serves: the non-interactive challenge, which
-    clears itself given a few seconds, and the interactive one, which needs the
-    checkbox pressed. Both are covered by the same loop -- watch for the
-    challenge markup to disappear, and press whenever a checkbox is on offer.
-
-    playwright-captcha's solver is deliberately not used here. It clicks the
-    checkbox input directly, and that input is invisible, so the click reports
-    success while `checked` never flips. It also judges the result by waiting
-    for networkidle, which returned 9ms after the click while Cloudflare was
-    still verifying, so it reported failure on challenges that were about to
-    pass.
+    playwright-captcha's solver is not used: it clicks the invisible input, so
+    the click reports success while `checked` never flips, and it judges the
+    result on networkidle, which returns while Cloudflare is still verifying.
     """
     logger.info("Challenge detected, attempting to solve...")
     last_press = -PRESS_INTERVAL_SECONDS
@@ -207,55 +190,34 @@ def _cloudflare_frame(page: Page) -> object | None:
     return None
 
 
-async def _press_point(page: Page) -> tuple[float, float] | None:
-    """
-    Where to press, or None when there is nothing to press right now.
-
-    Cloudflare cycles between "checking if you are human", where the widget
-    frame holds no input at all, and the state where the checkbox is offered,
-    so the input has to exist before reaching for the mouse. A box that is
-    already checked is skipped too: a press has landed and is being verified,
-    and pressing over the top restarts that verification -- which is how ext.to
-    and speed.cd stayed on "performing security verification" for a full 300s
-    budget while being pressed a dozen times.
-
-    The point is measured from the iframe rather than the input, because the
-    input is invisible: it sits under a styled overlay, so Playwright reports a
-    successful click on it while `checked` never flips. That is why
-    playwright-captcha's own click has never solved one of these.
-    """
-    frame = _cloudflare_frame(page)
-    if frame is None:
-        return None
-    try:
-        checkbox = frame.locator(CHECKBOX_SELECTOR)
-        if not await checkbox.count() or await checkbox.first.is_checked():
-            return None
-        element = await frame.frame_element()
-        box = await element.bounding_box()
-    except Exception:
-        # The widget is mid-swap; try again on the next poll.
-        return None
-    if not box:
-        return None
-    return box["x"] + CHECKBOX_OFFSET_X, box["y"] + box["height"] / 2
-
-
 async def _press_checkbox(page: Page) -> bool:
     """
     Press the widget's visible pixels. True when a press actually happened.
 
-    Measured against extratorrent.st and ext.to on a residential connection,
-    this clears the challenge and returns a cf_clearance cookie, where clicking
-    the input never did.
+    Cloudflare cycles through a state where the frame holds no input, and an
+    already-checked box means a press is being verified -- pressing again
+    restarts that. The point comes from the iframe, not the input, because the
+    input is invisible beneath a styled overlay.
     """
-    point = await _press_point(page)
-    if point is None:
+    frame = _cloudflare_frame(page)
+    if frame is None:
         return False
-    x, y = point
     try:
-        # Approach before pressing: a cursor that teleports onto the target is
-        # itself a signal.
+        checkbox = frame.locator(CHECKBOX_SELECTOR)
+        if not await checkbox.count() or await checkbox.first.is_checked():
+            return False
+        element = await frame.frame_element()
+        box = await element.bounding_box()
+    except Exception:
+        # The widget is mid-swap; try again on the next poll.
+        return False
+    if not box:
+        return False
+
+    x = box["x"] + CHECKBOX_OFFSET_X
+    y = box["y"] + box["height"] / 2
+    try:
+        # A cursor that teleports onto the target is itself a signal.
         await page.mouse.move(x - 180, y - 120)
         await sleep(0.3)
         await page.mouse.move(x - 45, y - 20, steps=18)
@@ -276,17 +238,14 @@ async def _challenge_visible(page: Page) -> bool:
     """
     Report whether an unsolved challenge is still on the page.
 
-    Cloudflare serves two different scripts from /cdn-cgi/challenge-platform/:
-    the challenge orchestrator on an interstitial, and the jsd bot-scoring
-    beacon on ordinary pages once a visitor is cleared. detect_cloudflare_
-    challenge() matches both, so on its own it never reports success. Match the
-    orchestrator and the widget instead.
+    detect_cloudflare_challenge() matches the jsd beacon served on cleared pages
+    too, so on its own it never reports success.
     """
     try:
         return await page.locator(CHALLENGE_MARKERS).count() > 0
     except Exception:
-        # A navigation tore down the execution context mid-check, which only
-        # happens once Cloudflare has moved us on.
+        # A navigation tore down the context mid-check; that only happens once
+        # Cloudflare has moved us on.
         logger.debug("Challenge lookup interrupted by a navigation")
         return False
 

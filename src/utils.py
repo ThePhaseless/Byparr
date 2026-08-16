@@ -35,26 +35,12 @@ if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
 
 
-# Cloudflare embeds its challenge widget in an iframe carrying
-# allow="cross-origin-isolated". Firefox honours that by moving the iframe into
-# a cross-origin-isolated content process, where Juggler sees a frame with no
-# docShell and no URL, so content_frame() raises "Permission denied to access
-# property docShell on cross-origin object" and the solver never reaches the
-# checkbox.
-#
-# Turning the two policies off (as upstream Playwright's Firefox does, and as
-# v2.1.0 did via camoufox's disable_coop=True) restores that access, and the
-# solver then clicks the checkbox successfully.
-#
-# The COOP/COEP pair is not a demonstrated win: toggling it changed no outcome
-# on any site measured, from either a datacenter or a residential address. It is
-# kept for parity with v2.1.0, which clears the interactive challenge where this
-# stack does not, because reaching the checkbox is a precondition for ever
-# passing one.
-#
-# devtools.jsonview.enabled is load-bearing and must stay. Firefox renders
-# application/json in a viewer whose CSP blocks eval, so page.evaluate() dies
-# with "call to eval() blocked by CSP" and /v1 500s on every JSON API (#394).
+# The widget's iframe carries allow="cross-origin-isolated", which Firefox
+# honours by moving it into an isolated process where Juggler sees no docShell.
+# With the two policies on, that frame never appears in page.frames at all;
+# turning them off (as camoufox's disable_coop=True did in v2.1.0) brings it
+# back. devtools.jsonview.enabled keeps page.evaluate() alive on JSON responses,
+# whose viewer CSP blocks eval (#394).
 BROWSER_PREFS = {
     "devtools.jsonview.enabled": False,
     "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
@@ -130,12 +116,9 @@ async def get_browser(
         context = await browser.new_context()
         page = await context.new_page()
         async with ClickSolver(
-            # Not PATCHRIGHT: that path skips the unlockShadowRoot init script
-            # and injects it over CDP instead, which Firefox has no session for
-            # ("CDP session is only available in Chromium"). Cloudflare builds
-            # its widget inside a closed shadow root, so without that script
-            # nothing -- not the solver, not page.locator -- can see the
-            # challenge iframe, and every solve attempt fails outright.
+            # PATCHRIGHT injects the shadow-root unlock over CDP, which Firefox
+            # has no session for, leaving Cloudflare's closed shadow root sealed
+            # and the challenge iframe invisible to every locator.
             framework=FrameworkType.PLAYWRIGHT,
             page=page,
             max_attempts=MAX_ATTEMPTS,

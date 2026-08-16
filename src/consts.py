@@ -9,11 +9,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     version: str = "unknown"
 
-    # The solver retries whenever it cannot reach the challenge widget, and
-    # that failure is usually structural rather than transient -- an
-    # unreachable widget stays unreachable. sys.maxsize meant a single request
-    # burned its whole max_timeout on ~1300 identical failed attempts before
-    # reporting a 408. Give it a handful of tries, then let the caller know.
+    # sys.maxsize burned a request's whole max_timeout on ~1300 failed solver
+    # attempts before returning 408. An unreachable widget stays unreachable.
     max_attempts: int = 5
 
     proxy_server: str | None = None

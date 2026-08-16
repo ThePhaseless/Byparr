@@ -35,29 +35,15 @@ test_websites = [
     'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
 ]
 
-# Cloudflare hands these its interactive checkbox challenge. The press lands on
-# the widget's visible pixels and Cloudflare declines it, returning a fresh
-# unchecked box indefinitely.
+# Cloudflare declines the press on these and re-serves a fresh unchecked box.
+# It is the browser stack, not the IP: from one datacenter IP, v2.1.0's camoufox
+# cleared ext.to, speed.cd and extratorrent.st in under 20s each, where no
+# configuration of invisible_playwright clears any of them. Neither the JS
+# fingerprint nor the TLS handshake explains it -- reproducing camoufox's JA4
+# exactly (t13d1717h2_5b57614c22b0) changed nothing.
 #
-# This is our browser stack, not the visitor's address. Measured 2026-08-16 from
-# one datacenter IP within the same hour: byparr v2.1.0
-# (ghcr.io/thephaseless/byparr:2.1.0, camoufox) cleared ext.to in 18s,
-# speed.cd/login in 20s and extratorrent.st in 19s, each returning cf_clearance.
-# No configuration of the current invisible_playwright stack clears any of them:
-# tested with and without new_context(), with and without the shadow-root init
-# script, with and without the COOP/COEP prefs, and with both locator.click()
-# and a pixel press.
-#
-# Two candidate explanations were measured and eliminated. The JS fingerprint is
-# not it -- camoufox is the less coherent of the two (no WebGL at all, oscpu
-# leaking Linux under a Windows UA) and passes anyway. The TLS handshake is not
-# it either -- setting security.ssl3.ecdhe_ecdsa_aes_128_sha=True reproduces
-# camoufox's JA4 byte for byte (t13d1717h2_5b57614c22b0_3cbfd9057e0d) and the
-# challenge is still refused.
-#
-# They run rather than being skipped, so a real regression stays visible in the
-# report and a pass is recorded as xpass, but a Cloudflare verdict we do not yet
-# understand cannot turn the build red.
+# They run rather than skip, so a regression still shows and a pass is an xpass,
+# but a verdict we cannot yet explain must not turn the build red.
 datacenter_hostile_websites = [
     "https://ext.to/",
     # "https://www.ygg.re/",
@@ -99,10 +85,7 @@ def test_bypass(website: str):
 
 
 @pytest.mark.xfail(
-    reason=(
-        "Cloudflare's interactive challenge refuses the press on "
-        "invisible_playwright; v2.1.0's camoufox clears these from the same IP"
-    ),
+    reason="Cloudflare declines the press on invisible_playwright; camoufox clears it",
     strict=False,
 )
 @pytest.mark.parametrize("website", datacenter_hostile_websites)
@@ -329,14 +312,7 @@ async def test_domcontentloaded_timeout_returns_408():
 
 @pytest.mark.asyncio
 async def test_challenge_that_clears_is_reported_as_success():
-    """
-    A challenge is over when its markup goes away, not when a solver says so.
-
-    playwright-captcha judged its own click by waiting for networkidle, which
-    returns as soon as the network happens to be quiet -- 9ms after the click,
-    in practice -- while Cloudflare is still showing "verifying you are human",
-    and then reported failure on challenges that were about to pass.
-    """
+    """A challenge is over when its markup goes, not when a solver says so."""
     dep = fake_dep(challenged=True, marker_counts=[1, 0])
 
     response = await read_item(
@@ -349,13 +325,7 @@ async def test_challenge_that_clears_is_reported_as_success():
 
 @pytest.mark.asyncio
 async def test_unchecked_box_is_pressed_on_the_widgets_visible_pixels():
-    """
-    The press must land on the widget, not on the input.
-
-    The input is invisible -- it sits under a styled overlay -- so a click on it
-    reports success while `checked` never flips. Pressing the pixels Cloudflare
-    actually draws is what clears the challenge.
-    """
+    """The press must land on the widget, not on the invisible input."""
     dep = fake_dep(challenged=True, marker_counts=[1, 1, 0], checkbox="unchecked")
 
     await read_item(LinkRequest(url="https://example.test/login", max_timeout=5), dep)
@@ -369,13 +339,7 @@ async def test_unchecked_box_is_pressed_on_the_widgets_visible_pixels():
 
 @pytest.mark.asyncio
 async def test_checked_box_is_left_alone_while_cloudflare_verifies():
-    """
-    Pressing a box that is already checked restarts Cloudflare's verification.
-
-    ext.to and speed.cd sat on "performing security verification" for a full
-    300s budget while being pressed a dozen times, never getting far enough
-    into the check to finish it.
-    """
+    """Pressing an already-checked box restarts Cloudflare's verification."""
     dep = fake_dep(challenged=True, marker_counts=[1, 1, 0], checkbox="checked")
 
     await read_item(LinkRequest(url="https://example.test/login", max_timeout=5), dep)
