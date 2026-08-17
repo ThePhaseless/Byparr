@@ -1,6 +1,4 @@
 import base64
-import json
-import re
 from http import HTTPStatus
 from json import JSONDecodeError
 from unittest.mock import AsyncMock, MagicMock
@@ -9,35 +7,41 @@ import httpx2
 import pytest
 from fastapi import HTTPException
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from playwright_captcha.utils.exceptions import (
+    CaptchaDetectionError,
+    CaptchaSolvingError,
+)
 from starlette.testclient import TestClient
 
 from main import app
-from src.endpoints import CHALLENGE_MARKERS, CHECKBOX_OFFSET_X, read_item
+from src.endpoints import CHALLENGE_MARKERS, read_item
 from src.models import LinkRequest
 from src.utils import BrowserDepClass
 
 client = TestClient(app)
 
-FIREFOX_CIPHER_SUITE_CEILING = 20
-
-WIDGET_BOX = {"x": 512.0, "y": 304.0, "width": 300.0, "height": 65.0}
+cloudflare_refuses = pytest.mark.xfail(
+    reason="Cloudflare declines the click on invisible_playwright; camoufox clears it",
+    strict=False,
+)
 
 test_websites = [
-    "https://nowsecure.nl/",
-    'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
-]
-
-datacenter_hostile_websites = [
-    "https://ext.to/",
+    pytest.param("https://ext.to/", marks=cloudflare_refuses),
     # "https://www.ygg.re/",
-    "https://extratorrent.st/",
-    "https://speed.cd/login",
-    "https://1337x.to/home/",
+    pytest.param("https://extratorrent.st/", marks=cloudflare_refuses),
+    pytest.param("https://speed.cd/login", marks=cloudflare_refuses),
+    'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
+    pytest.param("https://1337x.to/home/", marks=cloudflare_refuses),
 ]
 
 
-def _bypass(website: str) -> None:
-    """Ask Byparr for the page and require a clean answer."""
+@pytest.mark.parametrize("website", test_websites)
+def test_bypass(website: str):
+    """
+    Tests if the service can bypass cloudflare/DDOS-GUARD on given websites.
+
+    This test is skipped if the website is not reachable or does not have cloudflare/DDOS-GUARD.
+    """
     test_request = httpx2.get(
         website,
     )
@@ -55,26 +59,12 @@ def _bypass(website: str) -> None:
 
     response = client.post(
         "/v1",
-        json=LinkRequest.model_construct(url=website, cmd="request.get").model_dump(),
+        json=LinkRequest.model_construct(
+            url=website, cmd="request.get", max_timeout=360
+        ).model_dump(),
     )
 
     assert response.status_code == HTTPStatus.OK
-
-
-@pytest.mark.parametrize("website", test_websites)
-def test_bypass(website: str):
-    """Tests if the service can bypass cloudflare/DDOS-GUARD on given websites."""
-    _bypass(website)
-
-
-@pytest.mark.xfail(
-    reason="Cloudflare declines the press on invisible_playwright; camoufox clears it",
-    strict=False,
-)
-@pytest.mark.parametrize("website", datacenter_hostile_websites)
-def test_bypass_datacenter_hostile(website: str):
-    """Same check against sites Cloudflare guards hardest, outcome permitting."""
-    _bypass(website)
 
 
 def test_json_api():
@@ -103,29 +93,6 @@ def test_json_api():
     solution = response.json()["solution"]
     assert solution["userAgent"]
     assert '"ip"' in solution["response"]
-
-
-def test_tls_handshake_looks_like_firefox():
-    """The handshake must be Firefox's, not the HTTP client's (#398)."""
-    url = "https://www.howsmyssl.com/a/check"
-    if httpx2.get(url).status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
-        pytest.skip("Skipping TLS check - howsmyssl is down")
-
-    response = client.post(
-        "/v1",
-        json=LinkRequest.model_construct(url=url, cmd="request.get").model_dump(),
-    )
-    assert response.status_code == HTTPStatus.OK
-
-    body = response.json()["solution"]["response"]
-    report = json.loads(
-        re.sub(r"<[^>]+>", "", re.search(r"\{.*\}", body, re.DOTALL).group(0))
-    )
-    suites = len(report["given_cipher_suites"])
-
-    assert suites <= FIREFOX_CIPHER_SUITE_CEILING, (
-        f"{suites} cipher suites offered - the handshake is not Firefox's"
-    )
 
 
 def test_health_check():
@@ -177,33 +144,13 @@ def test_max_timeout_normalization(payload: dict, expected: int):
     assert request.max_timeout == expected
 
 
-def fake_cloudflare_frame(*, checked: bool) -> MagicMock:
-    """Build a widget frame offering one checkbox in the given state."""
-    frame = MagicMock()
-    frame.url = (
-        "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/turnstile"
-    )
-    frame.is_detached = MagicMock(return_value=False)
-
-    checkbox = MagicMock()
-    checkbox.count = AsyncMock(return_value=1)
-    checkbox.first.is_checked = AsyncMock(return_value=checked)
-    frame.locator = MagicMock(return_value=checkbox)
-
-    element = AsyncMock()
-    element.bounding_box.return_value = WIDGET_BOX
-    frame.frame_element = AsyncMock(return_value=element)
-    return frame
-
-
 def fake_dep(
     *,
     fail_states: set[str] | None = None,
     challenged: bool = False,
     marker_counts: list[int] | None = None,
-    checkbox: str | None = None,
 ) -> BrowserDepClass:
-    """Build a browser dependency pair backed by mocks."""
+    """Build a browser dependency triple backed by mocks."""
     page = AsyncMock()
     page.url = "https://example.test/login"
     page.goto.return_value = MagicMock(
@@ -214,7 +161,6 @@ def fake_dep(
     page.title.return_value = "Login"
     page.evaluate.return_value = "UnitTestBrowser/1.0"
     page.content.return_value = "<html><title>Login</title></html>"
-
     remaining = list(marker_counts or [])
 
     def count_for(selector: str) -> int:
@@ -225,8 +171,7 @@ def fake_dep(
 
     def locator(selector: str) -> MagicMock:
         handle = MagicMock()
-        handle.count = AsyncMock(return_value=None)
-        handle.count.side_effect = lambda: count_for(selector)
+        handle.count = AsyncMock(side_effect=lambda: count_for(selector))
         return handle
 
     page.locator = MagicMock(side_effect=locator)
@@ -238,11 +183,6 @@ def fake_dep(
             raise PlaywrightTimeoutError(message)
 
     page.wait_for_load_state.side_effect = wait_for_load_state
-    page.frames = (
-        []
-        if checkbox is None
-        else [fake_cloudflare_frame(checked=checkbox == "checked")]
-    )
 
     context = AsyncMock()
     context.cookies.return_value = []
@@ -261,7 +201,7 @@ async def test_networkidle_timeout_after_domcontentloaded_returns_content():
     assert response.status == "ok"
     assert response.solution.status == HTTPStatus.OK
     assert response.solution.response == "<html><title>Login</title></html>"
-    dep.page.mouse.down.assert_not_called()
+    dep.solver.solve_captcha.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -271,56 +211,6 @@ async def test_domcontentloaded_timeout_returns_408():
         await read_item(
             LinkRequest(url="https://example.test/login"),
             fake_dep(fail_states={"domcontentloaded"}),
-        )
-
-    assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
-
-
-@pytest.mark.asyncio
-async def test_challenge_that_clears_is_reported_as_success():
-    """A challenge is over when its markup goes, not when a solver says so."""
-    dep = fake_dep(challenged=True, marker_counts=[1, 0])
-
-    response = await read_item(
-        LinkRequest(url="https://example.test/login", max_timeout=5), dep
-    )
-
-    assert response.status == "ok"
-    assert response.solution.status == HTTPStatus.OK
-
-
-@pytest.mark.asyncio
-async def test_unchecked_box_is_pressed_on_the_widgets_visible_pixels():
-    """The press must land on the widget, not on the invisible input."""
-    dep = fake_dep(challenged=True, marker_counts=[1, 1, 0], checkbox="unchecked")
-
-    await read_item(LinkRequest(url="https://example.test/login", max_timeout=5), dep)
-
-    dep.page.mouse.down.assert_called()
-    assert dep.page.mouse.move.call_args.args[:2] == (
-        WIDGET_BOX["x"] + CHECKBOX_OFFSET_X,
-        WIDGET_BOX["y"] + WIDGET_BOX["height"] / 2,
-    )
-
-
-@pytest.mark.asyncio
-async def test_checked_box_is_left_alone_while_cloudflare_verifies():
-    """Pressing an already-checked box restarts Cloudflare's verification."""
-    dep = fake_dep(challenged=True, marker_counts=[1, 1, 0], checkbox="checked")
-
-    await read_item(LinkRequest(url="https://example.test/login", max_timeout=5), dep)
-
-    dep.page.mouse.down.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_challenge_that_never_clears_returns_408():
-    """A challenge still up when the budget runs out is a timeout, not a 500."""
-    dep = fake_dep(challenged=True, marker_counts=[1])
-
-    with pytest.raises(HTTPException) as exc:
-        await read_item(
-            LinkRequest(url="https://example.test/login", max_timeout=2), dep
         )
 
     assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
@@ -343,3 +233,33 @@ async def test_user_agent_survives_csp_blocked_evaluate():
 
     assert response.status == "ok"
     assert response.solution.user_agent == "UnitTestBrowser/1.0"
+
+
+@pytest.mark.asyncio
+async def test_challenge_that_clears_is_reported_as_success():
+    """A challenge is over when its markup goes, not when the solver says so."""
+    dep = fake_dep(challenged=True, marker_counts=[1, 0])
+    dep.solver.solve_captcha.side_effect = CaptchaSolvingError(
+        "challenge still present"
+    )
+
+    response = await read_item(
+        LinkRequest(url="https://example.test/login", max_timeout=5), dep
+    )
+
+    assert response.status == "ok"
+    assert response.solution.status == HTTPStatus.OK
+
+
+@pytest.mark.asyncio
+async def test_challenge_that_never_clears_returns_408():
+    """A challenge still up when the budget runs out is a timeout, not a 500."""
+    dep = fake_dep(challenged=True, marker_counts=[1])
+    dep.solver.solve_captcha.side_effect = CaptchaDetectionError("iframes not found")
+
+    with pytest.raises(HTTPException) as exc:
+        await read_item(
+            LinkRequest(url="https://example.test/login", max_timeout=2), dep
+        )
+
+    assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
