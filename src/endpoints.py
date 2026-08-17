@@ -28,20 +28,13 @@ router = APIRouter()
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
 
-# Markup only an unsolved challenge has. chl_page is required: the bare
-# challenge-platform path also matches the jsd beacon served on cleared pages,
-# and the widget iframe outlives the challenge (a cleared nowsecure.nl has two).
 CHALLENGE_MARKERS = (
     'script[src*="/cdn-cgi/challenge-platform/"][src*="chl_page"], '
     "#challenge-error-text, #challenge-running, #challenge-stage"
 )
-
-# 30px in from the widget's left edge is the middle of the box Cloudflare draws.
 CF_WIDGET_HOST = "challenges.cloudflare.com"
 CHECKBOX_SELECTOR = 'input[type="checkbox"]'
 CHECKBOX_OFFSET_X = 30
-
-# Verification takes 5-15s; pressing over the top of it restarts the cycle.
 CHALLENGE_POLL_SECONDS = 1.0
 PRESS_INTERVAL_SECONDS = 12.0
 
@@ -156,13 +149,7 @@ async def _navigate_and_solve(
 
 
 async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
-    """
-    Clear a Cloudflare challenge, whether or not it needs the checkbox pressed.
-
-    playwright-captcha's solver is not used: it clicks the invisible input, so
-    the click reports success while `checked` never flips, and it judges the
-    result on networkidle, which returns while Cloudflare is still verifying.
-    """
+    """Clear the challenge, pressing the checkbox whenever one is offered."""
     logger.info("Challenge detected, attempting to solve...")
     last_press = -PRESS_INTERVAL_SECONDS
     while timer.remaining() > 0:
@@ -182,34 +169,20 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
     raise TimeoutError(message)
 
 
-def _cloudflare_frame(page: Page) -> object | None:
-    """Find the turnstile widget's frame; None while Cloudflare is between states."""
-    for frame in page.frames:
-        if CF_WIDGET_HOST in frame.url and not frame.is_detached():
-            return frame
-    return None
-
-
 async def _press_checkbox(page: Page) -> bool:
-    """
-    Press the widget's visible pixels. True when a press actually happened.
-
-    Cloudflare cycles through a state where the frame holds no input, and an
-    already-checked box means a press is being verified -- pressing again
-    restarts that. The point comes from the iframe, not the input, because the
-    input is invisible beneath a styled overlay.
-    """
-    frame = _cloudflare_frame(page)
+    """Press the widget's visible pixels; True when a press happened."""
+    frame = next(
+        (f for f in page.frames if CF_WIDGET_HOST in f.url and not f.is_detached()),
+        None,
+    )
     if frame is None:
         return False
     try:
         checkbox = frame.locator(CHECKBOX_SELECTOR)
         if not await checkbox.count() or await checkbox.first.is_checked():
             return False
-        element = await frame.frame_element()
-        box = await element.bounding_box()
+        box = await (await frame.frame_element()).bounding_box()
     except Exception:
-        # The widget is mid-swap; try again on the next poll.
         return False
     if not box:
         return False
@@ -217,7 +190,6 @@ async def _press_checkbox(page: Page) -> bool:
     x = box["x"] + CHECKBOX_OFFSET_X
     y = box["y"] + box["height"] / 2
     try:
-        # A cursor that teleports onto the target is itself a signal.
         await page.mouse.move(x - 180, y - 120)
         await sleep(0.3)
         await page.mouse.move(x - 45, y - 20, steps=18)
@@ -235,18 +207,10 @@ async def _press_checkbox(page: Page) -> bool:
 
 
 async def _challenge_visible(page: Page) -> bool:
-    """
-    Report whether an unsolved challenge is still on the page.
-
-    detect_cloudflare_challenge() matches the jsd beacon served on cleared pages
-    too, so on its own it never reports success.
-    """
+    """Report whether an unsolved challenge is still on the page."""
     try:
         return await page.locator(CHALLENGE_MARKERS).count() > 0
     except Exception:
-        # A navigation tore down the context mid-check; that only happens once
-        # Cloudflare has moved us on.
-        logger.debug("Challenge lookup interrupted by a navigation")
         return False
 
 

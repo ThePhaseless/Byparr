@@ -35,19 +35,6 @@ if len(logger.handlers) == 0:
     logger.addHandler(logging.StreamHandler())
 
 
-# The widget's iframe carries allow="cross-origin-isolated", which Firefox
-# honours by moving it into an isolated process where Juggler sees no docShell.
-# With the two policies on, that frame never appears in page.frames at all;
-# turning them off (as camoufox's disable_coop=True did in v2.1.0) brings it
-# back. devtools.jsonview.enabled keeps page.evaluate() alive on JSON responses,
-# whose viewer CSP blocks eval (#394).
-BROWSER_PREFS = {
-    "devtools.jsonview.enabled": False,
-    "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
-    "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
-}
-
-
 class TimeoutTimer(BaseModel):
     duration: int  # in seconds
     start_time: float = Field(default_factory=time.perf_counter)
@@ -109,16 +96,17 @@ async def get_browser(
         proxy=proxy_config,
         humanize=True,
         locale=BROWSER_LOCALE or "auto",
-        extra_prefs=BROWSER_PREFS,
+        extra_prefs={
+            "devtools.jsonview.enabled": False,
+            "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
+            "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
+        },
     ) as browser_raw:
         # InvisiblePlaywright yields a Browser instance
         browser = cast("Browser", browser_raw)
         context = await browser.new_context()
         page = await context.new_page()
         async with ClickSolver(
-            # PATCHRIGHT injects the shadow-root unlock over CDP, which Firefox
-            # has no session for, leaving Cloudflare's closed shadow root sealed
-            # and the challenge iframe invisible to every locator.
             framework=FrameworkType.PLAYWRIGHT,
             page=page,
             max_attempts=MAX_ATTEMPTS,

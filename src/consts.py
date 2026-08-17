@@ -9,8 +9,6 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     version: str = "unknown"
 
-    # sys.maxsize burned a request's whole max_timeout on ~1300 failed solver
-    # attempts before returning 408. An unreachable widget stays unreachable.
     max_attempts: int = 5
 
     proxy_server: str | None = None

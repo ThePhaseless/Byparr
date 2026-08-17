@@ -18,32 +18,15 @@ from src.utils import BrowserDepClass
 
 client = TestClient(app)
 
-# Real Firefox advertises 16 cipher suites; Playwright's HTTP client advertised
-# 52. A small margin absorbs Firefox version drift without letting 52 through.
 FIREFOX_CIPHER_SUITE_CEILING = 20
 
-# The turnstile iframe's geometry, as measured on a real challenge page.
 WIDGET_BOX = {"x": 512.0, "y": 304.0, "width": 300.0, "height": 65.0}
 
-# Sites Byparr clears from any network, datacenter ranges included. These carry
-# the hard assertion: if the bypass breaks, one of these goes red.
 test_websites = [
-    # Purpose-built Cloudflare challenge target. Serves a real interstitial and
-    # hands back a cf_clearance cookie once it is passed, so a pass here means
-    # the challenge was solved rather than never presented.
     "https://nowsecure.nl/",
     'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
 ]
 
-# Cloudflare declines the press on these and re-serves a fresh unchecked box.
-# It is the browser stack, not the IP: from one datacenter IP, v2.1.0's camoufox
-# cleared ext.to, speed.cd and extratorrent.st in under 20s each, where no
-# configuration of invisible_playwright clears any of them. Neither the JS
-# fingerprint nor the TLS handshake explains it -- reproducing camoufox's JA4
-# exactly (t13d1717h2_5b57614c22b0) changed nothing.
-#
-# They run rather than skip, so a regression still shows and a pass is an xpass,
-# but a verdict we cannot yet explain must not turn the build red.
 datacenter_hostile_websites = [
     "https://ext.to/",
     # "https://www.ygg.re/",
@@ -123,14 +106,7 @@ def test_json_api():
 
 
 def test_tls_handshake_looks_like_firefox():
-    """
-    The handshake must be Firefox's, not the HTTP client's (#398).
-
-    route.fetch() re-issued navigations through Playwright's own HTTP stack, so
-    the ClientHello advertised 52 cipher suites where Firefox offers 16 -- a
-    fingerprint no amount of header spoofing hides. Unlike a Cloudflare verdict
-    this is deterministic, so it pins the regression that motivated this branch.
-    """
+    """The handshake must be Firefox's, not the HTTP client's (#398)."""
     url = "https://www.howsmyssl.com/a/check"
     if httpx2.get(url).status_code >= HTTPStatus.INTERNAL_SERVER_ERROR:
         pytest.skip("Skipping TLS check - howsmyssl is down")
@@ -147,8 +123,6 @@ def test_tls_handshake_looks_like_firefox():
     )
     suites = len(report["given_cipher_suites"])
 
-    # Firefox offers 16; Playwright's client offered 52. Anything in between
-    # means the navigation is no longer going through the browser.
     assert suites <= FIREFOX_CIPHER_SUITE_CEILING, (
         f"{suites} cipher suites offered - the handshake is not Firefox's"
     )
@@ -204,7 +178,7 @@ def test_max_timeout_normalization(payload: dict, expected: int):
 
 
 def fake_cloudflare_frame(*, checked: bool) -> MagicMock:
-    """Build a turnstile widget frame offering one checkbox in the given state."""
+    """Build a widget frame offering one checkbox in the given state."""
     frame = MagicMock()
     frame.url = (
         "https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/turnstile"
@@ -229,15 +203,7 @@ def fake_dep(
     marker_counts: list[int] | None = None,
     checkbox: str | None = None,
 ) -> BrowserDepClass:
-    """
-    Build a browser dependency triple backed by mocks.
-
-    `challenged` makes the detector report a Cloudflare challenge.
-    `marker_counts` drives the "is it still up?" check that runs on each poll:
-    one entry per look, the last one repeating forever.
-    `checkbox` puts a widget frame on the page with the box "checked" or
-    "unchecked"; without it the page carries no widget at all.
-    """
+    """Build a browser dependency pair backed by mocks."""
     page = AsyncMock()
     page.url = "https://example.test/login"
     page.goto.return_value = MagicMock(
@@ -252,7 +218,7 @@ def fake_dep(
     remaining = list(marker_counts or [])
 
     def count_for(selector: str) -> int:
-        """Answer the marker check from the script, everything else from `challenged`."""
+        """Answer the marker check from the script, else from `challenged`."""
         if selector != CHALLENGE_MARKERS or not remaining:
             return 1 if challenged else 0
         return remaining.pop(0) if len(remaining) > 1 else remaining[0]
