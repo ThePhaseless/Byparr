@@ -2,6 +2,7 @@ import base64
 import time
 import warnings
 from asyncio import wait_for
+from contextlib import suppress
 from http import HTTPStatus
 from typing import Annotated
 
@@ -37,7 +38,6 @@ CHALLENGE_MARKERS = (
     'script[src*="/cdn-cgi/challenge-platform/"][src*="chl_page"], '
     "#challenge-error-text, #challenge-running, #challenge-stage"
 )
-SOLVE_ATTEMPT_SECONDS = 15.0
 
 
 @router.get("/", include_in_schema=False)
@@ -153,7 +153,7 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
     """Attempt to solve a detected Cloudflare interstitial challenge."""
     logger.info("Challenge detected, attempting to solve...")
     while timer.remaining() > 0:
-        try:
+        with suppress(TimeoutError, CaptchaDetectionError, CaptchaSolvingError):
             await wait_for(
                 dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
                     captcha_container=dep.page,
@@ -161,10 +161,8 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
                     wait_checkbox_attempts=1,
                     wait_checkbox_delay=0.5,
                 ),
-                timeout=min(SOLVE_ATTEMPT_SECONDS, timer.remaining()),
+                timeout=min(15, timer.remaining()),
             )
-        except (TimeoutError, CaptchaDetectionError, CaptchaSolvingError) as e:
-            logger.debug(f"Solve attempt inconclusive: {e}")
 
         if not await _challenge_visible(dep.page):
             logger.debug("Challenge solved successfully.")
