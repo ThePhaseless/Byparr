@@ -106,10 +106,13 @@ async def get_browser(
         browser = cast("Browser", browser_raw)
         context = await browser.new_context()
         page = await context.new_page()
-        async with ClickSolver(
+        solver = ClickSolver(
             framework=FrameworkType.PLAYWRIGHT,
             page=page,
             max_attempts=MAX_ATTEMPTS,
             attempt_delay=1,
-        ) as solver:
+        )
+        try:
             yield BrowserDepClass(page, solver, context)
+        finally:
+            await solver.cleanup()

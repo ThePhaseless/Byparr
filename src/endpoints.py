@@ -1,21 +1,18 @@
 import base64
 import time
 import warnings
-from asyncio import wait_for
+from asyncio import sleep
 from contextlib import suppress
 from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from playwright.async_api import Error as PlaywrightError
+from playwright.async_api import Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright_captcha import CaptchaType
 from playwright_captcha.solvers.click.cloudflare.utils.detection import (
     detect_cloudflare_challenge,
-)
-from playwright_captcha.utils.exceptions import (
-    CaptchaDetectionError,
-    CaptchaSolvingError,
 )
 
 from src.models import (
@@ -143,29 +140,86 @@ async def _navigate_and_solve(
     return True, page_html, page_request, status
 
 
-async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
-    """Attempt to solve a detected Cloudflare interstitial challenge."""
-    logger.info("Challenge detected, attempting to solve...")
-    while timer.remaining() > 0:
-        with suppress(
-            TimeoutError,
-            PlaywrightTimeoutError,
-            CaptchaDetectionError,
-            CaptchaSolvingError,
-        ):
-            await wait_for(
-                dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
-                    captcha_container=dep.page,
-                    captcha_type=CaptchaType.CLOUDFLARE_INTERSTITIAL,
-                    wait_checkbox_attempts=1,
-                    wait_checkbox_delay=0.5,
-                ),
-                timeout=min(15, timer.remaining()),
-            )
+CHALLENGE_POLL_INTERVAL = 0.25
+CHALLENGE_CLICK_SETTLE = 1.5
+CHECKBOX_CLICK_COOLDOWN = 4
+TOKEN_READ_TIMEOUT = 1000
+CHECKBOX_INSET = 25
+TURNSTILE_INPUT = 'input[name="cf-turnstile-response"]'
+WIDGET_ANCESTOR_DEPTHS = (1, 2, 3, 4)
+WIDGET_MIN_WIDTH = 40
+WIDGET_MIN_HEIGHT = 20
 
-        if not await detect_cloudflare_challenge(dep.page, "interstitial"):
-            logger.debug("Challenge solved successfully.")
+
+async def _challenge_widget_box(page: Page) -> dict[str, float] | None:
+    """Measure the widget container with locators; running page scripts resets the challenge."""
+    for depth in WIDGET_ANCESTOR_DEPTHS:
+        widget = page.locator(f"{TURNSTILE_INPUT} >> xpath=ancestor::div[{depth}]")
+        with suppress(PlaywrightError, PlaywrightTimeoutError):
+            if await widget.count() == 0:
+                continue
+            box = await widget.first.bounding_box()
+            if (
+                box
+                and box["width"] > WIDGET_MIN_WIDTH
+                and box["height"] > WIDGET_MIN_HEIGHT
+            ):
+                return box
+    return None
+
+
+async def _click_challenge_checkbox(page: Page) -> bool:
+    """Click the checkbox through its container, leaving its closed shadow root alone."""
+    box = await _challenge_widget_box(page)
+    if box is None:
+        return False
+    await page.mouse.move(box["x"] + CHECKBOX_INSET, box["y"] + box["height"] / 2)
+    await page.mouse.down()
+    await page.mouse.up()
+    return True
+
+
+async def _checkbox_already_answered(page: Page) -> bool:
+    """Report whether Turnstile has already filled in its response token."""
+    token = page.locator(TURNSTILE_INPUT)
+    with suppress(PlaywrightError, PlaywrightTimeoutError):
+        if await token.count() > 0:
+            return bool(await token.first.input_value(timeout=TOKEN_READ_TIMEOUT))
+    return False
+
+
+async def _challenge_is_gone(page: Page) -> bool:
+    """Confirm the interstitial is really gone and not just between navigations."""
+    if await detect_cloudflare_challenge(page, "interstitial"):
+        return False
+    await sleep(CHALLENGE_POLL_INTERVAL)
+    return not await detect_cloudflare_challenge(page, "interstitial")
+
+
+async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
+    """Wait out the interstitial, clicking its checkbox whenever one is offered."""
+    logger.info("Challenge detected, waiting for it to clear...")
+    clicks = 0
+    next_click = 0.0
+    while True:
+        if await _challenge_is_gone(dep.page):
+            logger.debug("Challenge cleared.")
+            if clicks:
+                await sleep(min(CHALLENGE_CLICK_SETTLE, timer.remaining()))
             return
+
+        if time.perf_counter() >= next_click:
+            with suppress(PlaywrightError, PlaywrightTimeoutError):
+                if not await _checkbox_already_answered(
+                    dep.page
+                ) and await _click_challenge_checkbox(dep.page):
+                    clicks += 1
+                    next_click = time.perf_counter() + CHECKBOX_CLICK_COOLDOWN
+                    logger.info("Clicked the challenge checkbox (attempt %d).", clicks)
+
+        if timer.remaining() <= 0:
+            break
+        await sleep(CHALLENGE_POLL_INTERVAL)
 
     message = "Challenge still present when the request budget ran out"
     raise TimeoutError(message)

@@ -23,18 +23,13 @@ from src.utils import BrowserDepClass
 
 client = TestClient(app)
 
-cloudflare_refuses = pytest.mark.xfail(
-    reason="Cloudflare rejects the interactive challenge click",
-    strict=False,
-)
-
 test_websites = [
-    pytest.param("https://ext.to/", marks=cloudflare_refuses),
+    "https://ext.to/",
     # "https://www.ygg.re/",
-    pytest.param("https://extratorrent.st/", marks=cloudflare_refuses),
-    pytest.param("https://speed.cd/login", marks=cloudflare_refuses),
+    "https://extratorrent.st/",
+    "https://speed.cd/login",
     'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
-    pytest.param("https://1337x.to/home/", marks=cloudflare_refuses),
+    "https://1337x.to/home/",
 ]
 
 
@@ -175,6 +170,8 @@ def fake_dep(
     def locator(selector: str) -> MagicMock:
         handle = MagicMock()
         handle.count = AsyncMock(side_effect=lambda: count_for(selector))
+        handle.first.bounding_box = AsyncMock(return_value=None)
+        handle.first.input_value = AsyncMock(return_value="")
         return handle
 
     page.locator = MagicMock(side_effect=locator)
@@ -259,6 +256,19 @@ async def test_challenge_that_never_clears_returns_408():
     """A challenge still up when the budget runs out is a timeout, not a 500."""
     dep = fake_dep(challenged=True, marker_counts=[1])
     dep.solver.solve_captcha.side_effect = CaptchaDetectionError("iframes not found")
+
+    with pytest.raises(HTTPException) as exc:
+        await read_item(
+            LinkRequest(url="https://example.test/login", max_timeout=2), dep
+        )
+
+    assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
+
+
+@pytest.mark.asyncio
+async def test_marker_vanishing_mid_navigation_is_not_a_solved_challenge():
+    """The marker drops out between challenge rounds; one clear read proves nothing."""
+    dep = fake_dep(challenged=True, marker_counts=[1, 0, 1])
 
     with pytest.raises(HTTPException) as exc:
         await read_item(
