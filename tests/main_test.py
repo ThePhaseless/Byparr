@@ -24,7 +24,7 @@ from src.utils import BrowserDepClass
 client = TestClient(app)
 
 cloudflare_refuses = pytest.mark.xfail(
-    reason="Cloudflare declines the click on invisible_playwright; camoufox clears it",
+    reason="Cloudflare rejects the interactive challenge click",
     strict=False,
 )
 
