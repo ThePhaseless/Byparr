@@ -7,6 +7,9 @@ import httpx2
 import pytest
 from fastapi import HTTPException
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from playwright_captcha.solvers.click.cloudflare.utils.detection import (
+    CF_INTERSTITIAL_INDICATORS_SELECTORS,
+)
 from playwright_captcha.utils.exceptions import (
     CaptchaDetectionError,
     CaptchaSolvingError,
@@ -14,7 +17,7 @@ from playwright_captcha.utils.exceptions import (
 from starlette.testclient import TestClient
 
 from main import app
-from src.endpoints import CHALLENGE_MARKERS, read_item
+from src.endpoints import read_item
 from src.models import LinkRequest
 from src.utils import BrowserDepClass
 
@@ -165,7 +168,7 @@ def fake_dep(
 
     def count_for(selector: str) -> int:
         """Answer the marker check from the script, else from `challenged`."""
-        if selector != CHALLENGE_MARKERS or not remaining:
+        if selector not in CF_INTERSTITIAL_INDICATORS_SELECTORS or not remaining:
             return 1 if challenged else 0
         return remaining.pop(0) if len(remaining) > 1 else remaining[0]
 

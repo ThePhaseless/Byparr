@@ -8,7 +8,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from playwright.async_api import Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha import CaptchaType
 from playwright_captcha.solvers.click.cloudflare.utils.detection import (
@@ -33,11 +32,6 @@ warnings.filterwarnings("ignore", category=SyntaxWarning)
 router = APIRouter()
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
-
-CHALLENGE_MARKERS = (
-    'script[src*="/cdn-cgi/challenge-platform/"][src*="chl_page"], '
-    "#challenge-error-text, #challenge-running, #challenge-stage"
-)
 
 
 @router.get("/", include_in_schema=False)
@@ -153,7 +147,12 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
     """Attempt to solve a detected Cloudflare interstitial challenge."""
     logger.info("Challenge detected, attempting to solve...")
     while timer.remaining() > 0:
-        with suppress(TimeoutError, CaptchaDetectionError, CaptchaSolvingError):
+        with suppress(
+            TimeoutError,
+            PlaywrightTimeoutError,
+            CaptchaDetectionError,
+            CaptchaSolvingError,
+        ):
             await wait_for(
                 dep.solver.solve_captcha(  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
                     captcha_container=dep.page,
@@ -164,20 +163,12 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
                 timeout=min(15, timer.remaining()),
             )
 
-        if not await _challenge_visible(dep.page):
+        if not await detect_cloudflare_challenge(dep.page, "interstitial"):
             logger.debug("Challenge solved successfully.")
             return
 
     message = "Challenge still present when the request budget ran out"
     raise TimeoutError(message)
-
-
-async def _challenge_visible(page: Page) -> bool:
-    """Report whether an unsolved challenge is still on the page."""
-    try:
-        return await page.locator(CHALLENGE_MARKERS).count() > 0
-    except Exception:
-        return False
 
 
 async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:
