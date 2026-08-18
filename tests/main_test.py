@@ -7,15 +7,13 @@ import httpx2
 import pytest
 from fastapi import HTTPException
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright_captcha.solvers.click.cloudflare.utils.detection import (
-    CF_INTERSTITIAL_INDICATORS_SELECTORS,
-)
 from starlette.testclient import TestClient
 
 from main import app
-from src.endpoints import _remaining_ms, read_item
+from src.challenge import CF_INTERSTITIAL_INDICATORS_SELECTORS
+from src.endpoints import read_item
 from src.models import LinkRequest
-from src.utils import BrowserDepClass, TimeoutTimer
+from src.utils import BrowserDepClass, TimeoutTimer, remaining_ms
 
 client = TestClient(app)
 
@@ -218,12 +216,27 @@ async def test_domcontentloaded_timeout_returns_408():
     assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
 
 
+@pytest.mark.asyncio
+async def test_status_is_always_ok_like_flaresolverr():
+    """FlareSolverr hardcodes 200 because Selenium cannot report the real code."""
+    dep = fake_dep()
+    dep.page.goto.return_value = MagicMock(
+        status=HTTPStatus.FORBIDDEN,
+        headers={"content-type": "text/html"},
+        request=MagicMock(headers={"user-agent": "UnitTestBrowser/1.0"}),
+    )
+
+    response = await read_item(LinkRequest(url="https://example.test/login"), dep)
+
+    assert response.solution.status == HTTPStatus.OK
+
+
 def test_exhausted_budget_never_disables_playwright_timeouts():
     """Playwright reads timeout=0 as no timeout at all, so the floor must hold."""
     spent = TimeoutTimer(duration=0)
 
     assert spent.remaining() == 0
-    assert _remaining_ms(spent) > 0
+    assert remaining_ms(spent) > 0
 
 
 @pytest.mark.asyncio

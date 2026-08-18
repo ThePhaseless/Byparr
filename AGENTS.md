@@ -3,7 +3,7 @@
 ## Project overview
 
 - FastAPI service that mimics FlareSolverr-style API for bypassing anti-bot pages using invisible_playwright.
-- Entry point: main app in main.py; routes and request flow defined in src/endpoints.py and src/models.py.
+- Entry point: main app in main.py; routes and request flow in src/endpoints.py, challenge handling in src/challenge.py, response bodies in src/content.py, models in src/models.py.
 - Browser lifecycle is owned by get_browser() in src/utils.py, which yields a page and context for each request.
 
 ## Architecture and data flow

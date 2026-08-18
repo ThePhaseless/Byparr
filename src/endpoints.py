@@ -1,27 +1,27 @@
-import base64
 import time
 import warnings
-from asyncio import sleep
-from contextlib import suppress
 from http import HTTPStatus
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from playwright.async_api import Error as PlaywrightError
-from playwright.async_api import FloatRect, Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright_captcha.solvers.click.cloudflare.utils.detection import (
-    detect_cloudflare_challenge,
-)
 
+from src.challenge import challenge_present, solve_challenge
+from src.content import build_response_content
 from src.models import (
     HealthcheckResponse,
     LinkRequest,
     LinkResponse,
     Solution,
 )
-from src.utils import BrowserDepClass, TimeoutTimer, get_browser, logger
+from src.utils import (
+    BrowserDepClass,
+    TimeoutTimer,
+    get_browser,
+    logger,
+    remaining_ms,
+)
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
@@ -65,7 +65,7 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     await setup_routes(request, dep)
 
     try:
-        challenge_detected, page_html, page_request, status = await _navigate_and_solve(
+        challenge_detected, page_html, page_request = await _navigate_and_solve(
             dep, request, timer
         )
     except (TimeoutError, PlaywrightTimeoutError) as e:
@@ -77,7 +77,7 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
 
     cookies = await dep.context.cookies()
     content_type, response_content = await build_response_content(
-        dep,
+        dep.page,
         request,
         page_request,
         challenge_detected=challenge_detected,
@@ -93,7 +93,7 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         solution=Solution(
             user_agent=user_agent,
             url=dep.page.url,
-            status=status,
+            status=HTTPStatus.OK,
             cookies=cookies,
             headers=page_request.headers if page_request else {},
             response=response_content,
@@ -120,170 +120,29 @@ async def _navigate_and_solve(
     dep: BrowserDep,
     request: LinkRequest,
     timer: TimeoutTimer,
-) -> tuple[bool, str | None, object, HTTPStatus]:
+) -> tuple[bool, str | None, object]:
     """Navigate to the URL, then solve a challenge or wait for network idle."""
     page_html: str | None = None
-    page_request = await dep.page.goto(request.url, timeout=_remaining_ms(timer))
-    status = page_request.status if page_request else HTTPStatus.OK
+    page_request = await dep.page.goto(request.url, timeout=remaining_ms(timer))
     await dep.page.wait_for_load_state(
-        state="domcontentloaded", timeout=_remaining_ms(timer)
+        state="domcontentloaded", timeout=remaining_ms(timer)
     )
 
-    if not await detect_cloudflare_challenge(dep.page, "interstitial"):
+    if not await challenge_present(dep.page):
         page_html = await dep.page.content()
         await _wait_for_networkidle(dep, timer)
-        return False, page_html, page_request, status
+        return False, page_html, page_request
 
-    await _solve_challenge(dep, timer)
+    await solve_challenge(dep.page, timer)
     await _wait_for_networkidle(dep, timer)
-    status = HTTPStatus.OK
-    return True, page_html, page_request, status
-
-
-MIN_WAIT_MS = 1.0
-
-
-def _remaining_ms(timer: TimeoutTimer) -> float:
-    """Milliseconds left, never 0 - Playwright reads that as no timeout at all."""
-    return max(MIN_WAIT_MS, timer.remaining() * 1000)
-
-
-CHALLENGE_POLL_INTERVAL = 0.25
-CHALLENGE_CLICK_SETTLE = 1.5
-CHECKBOX_CLICK_COOLDOWN = 4
-TOKEN_READ_TIMEOUT = 1000
-BOX_READ_TIMEOUT = 1000
-CHECKBOX_PROBE_INTERVAL = 0.5
-CHECKBOX_INSET = 25
-TURNSTILE_INPUT = 'input[name="cf-turnstile-response"]'
-WIDGET_ANCESTOR_DEPTHS = (1, 2, 3, 4)
-WIDGET_MIN_WIDTH = 40
-WIDGET_MIN_HEIGHT = 20
-WIDGET_MAX_HEIGHT = 120
-
-
-async def _challenge_widget_box(page: Page) -> FloatRect | None:
-    """Measure the widget container with locators; running page scripts resets the challenge."""
-    for depth in WIDGET_ANCESTOR_DEPTHS:
-        widget = page.locator(f"{TURNSTILE_INPUT} >> xpath=ancestor::div[{depth}]")
-        with suppress(PlaywrightError, PlaywrightTimeoutError):
-            if await widget.count() == 0:
-                continue
-            await widget.first.scroll_into_view_if_needed(timeout=BOX_READ_TIMEOUT)
-            box = await widget.first.bounding_box(timeout=BOX_READ_TIMEOUT)
-            if (
-                box
-                and box["width"] > WIDGET_MIN_WIDTH
-                and WIDGET_MIN_HEIGHT < box["height"] < WIDGET_MAX_HEIGHT
-            ):
-                return box
-    return None
-
-
-async def _click_challenge_checkbox(page: Page) -> bool:
-    """Click the checkbox through its container, leaving its closed shadow root alone."""
-    box = await _challenge_widget_box(page)
-    if box is None:
-        return False
-    await page.mouse.move(box["x"] + CHECKBOX_INSET, box["y"] + box["height"] / 2)
-    try:
-        await page.mouse.down()
-    finally:
-        await page.mouse.up()
-    return True
-
-
-async def _checkbox_already_answered(page: Page) -> bool:
-    """Report whether Turnstile has already filled in its response token."""
-    token = page.locator(TURNSTILE_INPUT)
-    with suppress(PlaywrightError, PlaywrightTimeoutError):
-        if await token.count() > 0:
-            return bool(await token.first.input_value(timeout=TOKEN_READ_TIMEOUT))
-    return False
-
-
-async def _challenge_is_gone(page: Page) -> bool:
-    """Confirm the interstitial is really gone and not just between navigations."""
-    if await detect_cloudflare_challenge(page, "interstitial"):
-        return False
-    await sleep(CHALLENGE_POLL_INTERVAL)
-    return not await detect_cloudflare_challenge(page, "interstitial")
-
-
-async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
-    """Wait out the interstitial, clicking its checkbox whenever one is offered."""
-    logger.info("Challenge detected, waiting for it to clear...")
-    clicks = 0
-    next_click = 0.0
-    while True:
-        if await _challenge_is_gone(dep.page):
-            logger.debug("Challenge cleared.")
-            if clicks:
-                await sleep(min(CHALLENGE_CLICK_SETTLE, timer.remaining()))
-            return
-
-        if time.perf_counter() >= next_click:
-            landed = False
-            with suppress(PlaywrightError, PlaywrightTimeoutError):
-                landed = not await _checkbox_already_answered(
-                    dep.page
-                ) and await _click_challenge_checkbox(dep.page)
-            if landed:
-                clicks += 1
-                logger.info("Clicked the challenge checkbox (attempt %d).", clicks)
-            next_click = time.perf_counter() + (
-                CHECKBOX_CLICK_COOLDOWN if landed else CHECKBOX_PROBE_INTERVAL
-            )
-
-        if timer.remaining() <= 0:
-            break
-        await sleep(CHALLENGE_POLL_INTERVAL)
-
-    message = "Challenge still present when the request budget ran out"
-    raise TimeoutError(message)
+    return True, page_html, page_request
 
 
 async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:
     """Wait for network idle, tolerating post-DOM-load stalls."""
     try:
-        await dep.page.wait_for_load_state("networkidle", timeout=_remaining_ms(timer))
+        await dep.page.wait_for_load_state("networkidle", timeout=remaining_ms(timer))
     except PlaywrightTimeoutError:
         logger.info(
             "networkidle timed out after domcontentloaded; continuing with loaded page"
         )
-
-
-async def build_response_content(
-    dep: BrowserDep,
-    request: LinkRequest,
-    page_request: object,
-    *,
-    challenge_detected: bool,
-    page_html: str | None,
-) -> tuple[str, str]:
-    """Build (content_type, response_content) from the settled page."""
-    if request.return_only_cookies:
-        return "text/html", ""
-
-    if page_request and page_request.headers.get("content-type", "").startswith(
-        "application/pdf"
-    ):
-        return await _fetch_pdf_content(dep)
-
-    response_content = (
-        page_html
-        if page_html is not None and not challenge_detected
-        else await dep.page.content()
-    )
-    return "text/html", response_content
-
-
-async def _fetch_pdf_content(dep: BrowserDep) -> tuple[str, str]:
-    """Fetch raw PDF bytes as base64, falling back to viewer HTML on failure."""
-    try:
-        fetch_response = await dep.page.request.fetch(dep.page.url)
-        response_content = base64.b64encode(await fetch_response.body()).decode("ascii")
-    except Exception:
-        logger.exception("Failed to fetch PDF bytes, falling back to viewer HTML")
-        return "text/html", await dep.page.content()
-    return "application/pdf", response_content

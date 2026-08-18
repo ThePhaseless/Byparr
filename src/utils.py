@@ -39,6 +39,14 @@ class TimeoutTimer(BaseModel):
         return max(0, self.duration - (time.perf_counter() - self.start_time))
 
 
+MIN_WAIT_MS = 1.0
+
+
+def remaining_ms(timer: TimeoutTimer) -> float:
+    """Milliseconds left, never 0 - Playwright reads that as no timeout at all."""
+    return max(MIN_WAIT_MS, timer.remaining() * 1000)
+
+
 class BrowserDepClass(NamedTuple):
     page: Page
     context: BrowserContext
