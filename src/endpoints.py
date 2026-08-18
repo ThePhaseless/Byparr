@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from src.challenge import challenge_present, solve_challenge
@@ -73,6 +74,12 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         raise HTTPException(
             status_code=408,
             detail="Timed out while loading the page or solving the challenge",
+        ) from e
+    except PlaywrightError as e:
+        logger.error("Could not reach the target: %s", e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not reach the target: {e}",
         ) from e
 
     cookies = await dep.context.cookies()

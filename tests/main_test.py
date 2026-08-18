@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx2
 import pytest
 from fastapi import HTTPException
+from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from starlette.testclient import TestClient
 
@@ -211,6 +212,18 @@ async def test_domcontentloaded_timeout_returns_408():
         )
 
     assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
+
+
+@pytest.mark.asyncio
+async def test_unreachable_host_is_a_502_not_a_500():
+    """An upstream we cannot reach is a gateway failure, never a Byparr crash."""
+    dep = fake_dep()
+    dep.page.goto.side_effect = PlaywrightError("Page.goto: NS_ERROR_UNKNOWN_HOST")
+
+    with pytest.raises(HTTPException) as exc:
+        await read_item(LinkRequest(url="https://nope.invalid/"), dep)
+
+    assert exc.value.status_code == HTTPStatus.BAD_GATEWAY
 
 
 @pytest.mark.asyncio
