@@ -6,16 +6,11 @@ from typing import Annotated, NamedTuple, cast
 from fastapi import Header
 from invisible_playwright.async_api import InvisiblePlaywright
 from playwright.async_api import Browser, BrowserContext, Page
-from playwright_captcha import (
-    ClickSolver,
-    FrameworkType,
-)
 from pydantic import BaseModel, Field
 
 from src.consts import (
     BROWSER_LOCALE,
     LOG_LEVEL,
-    MAX_ATTEMPTS,
     PROXY_PASSWORD,
     PROXY_SERVER,
     PROXY_USERNAME,
@@ -44,9 +39,16 @@ class TimeoutTimer(BaseModel):
         return max(0, self.duration - (time.perf_counter() - self.start_time))
 
 
+MIN_WAIT_MS = 1.0
+
+
+def remaining_ms(timer: TimeoutTimer) -> float:
+    """Milliseconds left, never 0 - Playwright reads that as no timeout at all."""
+    return max(MIN_WAIT_MS, timer.remaining() * 1000)
+
+
 class BrowserDepClass(NamedTuple):
     page: Page
-    solver: ClickSolver
     context: BrowserContext
 
 
@@ -96,16 +98,14 @@ async def get_browser(
         proxy=proxy_config,
         humanize=True,
         locale=BROWSER_LOCALE or "auto",
-        extra_prefs={"devtools.jsonview.enabled": False},
+        extra_prefs={
+            "devtools.jsonview.enabled": False,
+            "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
+            "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
+        },
     ) as browser_raw:
         # InvisiblePlaywright yields a Browser instance
         browser = cast("Browser", browser_raw)
         context = await browser.new_context()
         page = await context.new_page()
-        async with ClickSolver(
-            framework=FrameworkType.PLAYWRIGHT,
-            page=page,
-            max_attempts=MAX_ATTEMPTS,
-            attempt_delay=1,
-        ) as solver:
-            yield BrowserDepClass(page, solver, context)
+        yield BrowserDepClass(page, context)

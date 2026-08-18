@@ -43,7 +43,7 @@ async def _extract_content(page: Page) -> str:
     article = trafilatura.extract(await page.content())
     if article:
         return article
-    result = await page.evaluate("() => document.body ? document.body.innerText : ''")
+    result = await page.locator("body").inner_text()
     return "\n".join(line.strip() for line in result.splitlines() if line.strip())
 
 

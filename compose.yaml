@@ -2,6 +2,8 @@ services:
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     restart: unless-stopped
+    # environment:
+    #   LOG_LEVEL: debug
     build:
       context: .
       dockerfile: Dockerfile

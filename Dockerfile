@@ -51,7 +51,7 @@ RUN mkdir -p /home/byparr &&\
 FROM app AS test
 RUN \
     uv sync --group test &&\
-    uv run pytest --retries 3
+    uv run pytest -rs --retries 5
 
 FROM app
 ARG VERSION

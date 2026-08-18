@@ -6,13 +6,15 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx2
 import pytest
 from fastapi import HTTPException
+from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from starlette.testclient import TestClient
 
 from main import app
+from src.challenge import CF_INTERSTITIAL_INDICATORS_SELECTORS
 from src.endpoints import read_item
 from src.models import LinkRequest
-from src.utils import BrowserDepClass
+from src.utils import BrowserDepClass, TimeoutTimer, remaining_ms
 
 client = TestClient(app)
 
@@ -50,17 +52,20 @@ def test_bypass(website: str):
 
     response = client.post(
         "/v1",
-        json=LinkRequest.model_construct(url=website, cmd="request.get").model_dump(),
+        json=LinkRequest.model_construct(
+            url=website, cmd="request.get", max_timeout=60
+        ).model_dump(),
     )
 
-    if response.status_code == HTTPStatus.REQUEST_TIMEOUT:
-        pytest.skip(f"Skipping {website} - timed out (upstream issue)")
-
     assert response.status_code == HTTPStatus.OK
+    solution = response.json()["solution"]
+    assert "_cf_chl_opt" not in solution["response"]
+    assert "__cf_chl" not in solution["url"]
 
 
 def test_json_api():
-    """JSON APIs must return 200, not crash on the UA evaluate.
+    """
+    JSON APIs must return 200, not crash on the UA evaluate.
 
     Firefox renders application/json in a built-in viewer whose CSP blocks
     Playwright's eval-based evaluate() (issue #394). The browser must be
@@ -110,7 +115,9 @@ def test_pdf_handling():
     assert response.status_code == HTTPStatus.OK
     solution = response.json()["solution"]
     if solution.get("contentType") != "application/pdf":
-        pytest.skip("Skipping PDF test - PDF bytes could not be fetched (upstream issue)")
+        pytest.skip(
+            "Skipping PDF test - PDF bytes could not be fetched (upstream issue)"
+        )
     assert solution["response"]  # non-empty base64
 
     decoded = base64.b64decode(solution["response"])
@@ -134,21 +141,40 @@ def test_max_timeout_normalization(payload: dict, expected: int):
     assert request.max_timeout == expected
 
 
-def fake_dep(*, fail_states: set[str] | None = None) -> BrowserDepClass:
-    """Build a browser dependency triple backed by mocks."""
+def fake_dep(
+    *,
+    fail_states: set[str] | None = None,
+    challenged: bool = False,
+    marker_counts: list[int] | None = None,
+    widget_box: dict[str, float] | None = None,
+    user_agent: str | None = "UnitTestBrowser/1.0",
+) -> BrowserDepClass:
+    """Build a browser dependency pair backed by mocks."""
     page = AsyncMock()
     page.url = "https://example.test/login"
     page.goto.return_value = MagicMock(
         status=HTTPStatus.OK,
         headers={"content-type": "text/html"},
-        request=MagicMock(headers={"user-agent": "UnitTestBrowser/1.0"}),
+        request=MagicMock(headers={"user-agent": user_agent} if user_agent else {}),
     )
     page.title.return_value = "Login"
-    page.evaluate.return_value = "UnitTestBrowser/1.0"
     page.content.return_value = "<html><title>Login</title></html>"
-    locator = MagicMock()
-    locator.count = AsyncMock(return_value=0)
-    page.locator = MagicMock(return_value=locator)
+    remaining = list(marker_counts or [])
+
+    def count_for(selector: str) -> int:
+        """Answer the marker check from the script, else from `challenged`."""
+        if selector not in CF_INTERSTITIAL_INDICATORS_SELECTORS or not remaining:
+            return 1 if challenged else 0
+        return remaining.pop(0) if len(remaining) > 1 else remaining[0]
+
+    def locator(selector: str) -> MagicMock:
+        handle = MagicMock()
+        handle.count = AsyncMock(side_effect=lambda: count_for(selector))
+        handle.first.bounding_box = AsyncMock(return_value=widget_box)
+        handle.first.input_value = AsyncMock(return_value="")
+        return handle
+
+    page.locator = MagicMock(side_effect=locator)
 
     def wait_for_load_state(state: str, **_kwargs: object) -> None:
         """Fail the wait when asked for a configured state."""
@@ -160,7 +186,7 @@ def fake_dep(*, fail_states: set[str] | None = None) -> BrowserDepClass:
 
     context = AsyncMock()
     context.cookies.return_value = []
-    return BrowserDepClass(page=page, solver=AsyncMock(), context=context)
+    return BrowserDepClass(page=page, context=context)
 
 
 @pytest.mark.asyncio
@@ -173,9 +199,7 @@ async def test_networkidle_timeout_after_domcontentloaded_returns_content():
     )
 
     assert response.status == "ok"
-    assert response.solution.status == HTTPStatus.OK
     assert response.solution.response == "<html><title>Login</title></html>"
-    dep.solver.solve_captcha.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -191,19 +215,109 @@ async def test_domcontentloaded_timeout_returns_408():
 
 
 @pytest.mark.asyncio
-async def test_user_agent_survives_csp_blocked_evaluate():
-    """UA comes from request headers when page CSP blocks evaluate (#394).
-
-    No CSP configuration (header, meta tag, or internal viewer document) may
-    turn /v1 into a 500.
-    """
+async def test_unreachable_host_is_a_502_not_a_500():
+    """An upstream we cannot reach is a gateway failure, never a Byparr crash."""
     dep = fake_dep()
-    dep.page.evaluate.side_effect = Exception("call to eval() blocked by CSP")
+    dep.page.goto.side_effect = PlaywrightError("Page.goto: NS_ERROR_UNKNOWN_HOST")
 
+    with pytest.raises(HTTPException) as exc:
+        await read_item(LinkRequest(url="https://nope.invalid/"), dep)
+
+    assert exc.value.status_code == HTTPStatus.BAD_GATEWAY
+
+
+@pytest.mark.asyncio
+async def test_status_is_always_ok_like_flaresolverr():
+    """FlareSolverr hardcodes 200 because Selenium cannot report the real code."""
+    dep = fake_dep()
+    dep.page.goto.return_value = MagicMock(
+        status=HTTPStatus.FORBIDDEN,
+        headers={"content-type": "text/html"},
+        request=MagicMock(headers={"user-agent": "UnitTestBrowser/1.0"}),
+    )
+
+    response = await read_item(LinkRequest(url="https://example.test/login"), dep)
+
+    assert response.solution.status == HTTPStatus.OK
+
+
+def test_exhausted_budget_never_disables_playwright_timeouts():
+    """Playwright reads timeout=0 as no timeout at all, so the floor must hold."""
+    spent = TimeoutTimer(duration=0)
+
+    assert spent.remaining() == 0
+    assert remaining_ms(spent) > 0
+
+
+@pytest.mark.asyncio
+async def test_missing_user_agent_header_is_not_a_500():
+    """A request without a user-agent header degrades to empty, never a 500 (#394)."""
     response = await read_item(
         LinkRequest(url="https://example.test/login"),
-        dep,
+        fake_dep(user_agent=None),
     )
 
     assert response.status == "ok"
-    assert response.solution.user_agent == "UnitTestBrowser/1.0"
+    assert response.solution.user_agent == ""
+
+
+@pytest.mark.asyncio
+async def test_checkbox_is_clicked_while_the_challenge_is_up():
+    """A measurable widget gets a humanised press, not a raw synthetic click."""
+    dep = fake_dep(
+        challenged=True,
+        marker_counts=[1, 1, 0],
+        widget_box={"x": 100.0, "y": 200.0, "width": 300.0, "height": 60.0},
+    )
+
+    response = await read_item(
+        LinkRequest(url="https://example.test/login", max_timeout=5), dep
+    )
+
+    assert response.status == "ok"
+    dep.page.mouse.move.assert_awaited_once_with(125.0, 230.0)
+    dep.page.mouse.down.assert_awaited_once()
+    dep.page.mouse.up.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_challenge_that_clears_on_its_own_is_never_clicked():
+    """A challenge is over when its markup goes, and until then we keep our hands off."""
+    dep = fake_dep(
+        challenged=True,
+        marker_counts=[1, 0],
+        widget_box={"x": 100.0, "y": 200.0, "width": 300.0, "height": 60.0},
+    )
+
+    response = await read_item(
+        LinkRequest(url="https://example.test/login", max_timeout=5), dep
+    )
+
+    assert response.status == "ok"
+    dep.page.mouse.down.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_challenge_that_never_clears_returns_408():
+    """A challenge still up when the budget runs out is a timeout, not a 500."""
+    dep = fake_dep(challenged=True, marker_counts=[1])
+
+    with pytest.raises(HTTPException) as exc:
+        await read_item(
+            LinkRequest(url="https://example.test/login", max_timeout=2), dep
+        )
+
+    assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
+
+
+@pytest.mark.asyncio
+async def test_marker_vanishing_mid_navigation_is_not_a_solved_challenge():
+    """The marker drops out between challenge rounds; one clear read proves nothing."""
+    dep = fake_dep(challenged=True, marker_counts=[1, 0, 1])
+
+    with pytest.raises(HTTPException) as exc:
+        await read_item(
+            LinkRequest(url="https://example.test/login", max_timeout=2), dep
+        )
+
+    assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
