@@ -1,5 +1,4 @@
 import logging
-import sys
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,8 +8,6 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
     version: str = "unknown"
-
-    max_attempts: int = sys.maxsize
 
     proxy_server: str | None = None
     proxy_username: str | None = None
@@ -29,8 +26,6 @@ settings = Settings()
 
 LOG_LEVEL = logging.getLevelNamesMapping()[settings.log_level.upper()]
 VERSION = settings.version.removeprefix("v")
-
-MAX_ATTEMPTS = settings.max_attempts
 
 PROXY_SERVER = settings.proxy_server
 PROXY_USERNAME = settings.proxy_username

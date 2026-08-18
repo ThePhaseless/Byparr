@@ -13,9 +13,9 @@ from playwright_captcha.solvers.click.cloudflare.utils.detection import (
 from starlette.testclient import TestClient
 
 from main import app
-from src.endpoints import read_item
+from src.endpoints import _remaining_ms, read_item
 from src.models import LinkRequest
-from src.utils import BrowserDepClass
+from src.utils import BrowserDepClass, TimeoutTimer
 
 client = TestClient(app)
 
@@ -65,7 +65,8 @@ def test_bypass(website: str):
 
 
 def test_json_api():
-    """JSON APIs must return 200, not crash on the UA evaluate.
+    """
+    JSON APIs must return 200, not crash on the UA evaluate.
 
     Firefox renders application/json in a built-in viewer whose CSP blocks
     Playwright's eval-based evaluate() (issue #394). The browser must be
@@ -171,6 +172,7 @@ def fake_dep(
     def locator(selector: str) -> MagicMock:
         handle = MagicMock()
         handle.count = AsyncMock(side_effect=lambda: count_for(selector))
+        handle.first.scroll_into_view_if_needed = AsyncMock(return_value=None)
         handle.first.bounding_box = AsyncMock(return_value=widget_box)
         handle.first.input_value = AsyncMock(return_value="")
         return handle
@@ -214,6 +216,14 @@ async def test_domcontentloaded_timeout_returns_408():
         )
 
     assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
+
+
+def test_exhausted_budget_never_disables_playwright_timeouts():
+    """Playwright reads timeout=0 as no timeout at all, so the floor must hold."""
+    spent = TimeoutTimer(duration=0)
+
+    assert spent.remaining() == 0
+    assert _remaining_ms(spent) > 0
 
 
 @pytest.mark.asyncio

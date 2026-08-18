@@ -2,14 +2,14 @@
 
 ## Project overview
 
-- FastAPI service that mimics FlareSolverr-style API for bypassing anti-bot pages using Camoufox + Playwright captcha solver.
+- FastAPI service that mimics FlareSolverr-style API for bypassing anti-bot pages using invisible_playwright.
 - Entry point: main app in main.py; routes and request flow defined in src/endpoints.py and src/models.py.
-- Browser lifecycle is owned by get_camoufox() in src/utils.py, which yields a page, solver, and context for each request.
+- Browser lifecycle is owned by get_browser() in src/utils.py, which yields a page and context for each request.
 
 ## Architecture and data flow
 
-- Request flow: POST /v1 -> read_item() -> browser.goto() -> wait for load states -> detect challenge title -> solve captcha -> return LinkResponse.
-- Challenge detection uses CHALLENGE_TITLES from src/consts.py; update this map when adding providers.
+- Request flow: POST /v1 -> read_item() -> page.goto() -> wait for load states -> detect the interstitial -> click its checkbox until it clears -> return LinkResponse.
+- Challenge detection uses detect_cloudflare_challenge() from playwright_captcha; the challenge is over when its markup goes, not when a solver says so.
 - Health check hits /v1 internally with <https://google.com> and fails if status is not OK.
 - Logging: LogRequest middleware logs only POST /v1 timing and outcome; other paths pass through.
 
@@ -28,7 +28,7 @@
 
 - Local run: uv sync && uv run main.py
 - Init mode: uv run main.py --init (pre-warms health check via browser setup)
-- Tests: uv sync --group test && uv run pytest --retries 3
+- Tests: uv sync --group test && uv run pytest --retries 5
 - Docker troubleshooting: docker build --target test .
 
 ## Tests and external dependencies

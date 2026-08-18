@@ -123,10 +123,10 @@ async def _navigate_and_solve(
 ) -> tuple[bool, str | None, object, HTTPStatus]:
     """Navigate to the URL, then solve a challenge or wait for network idle."""
     page_html: str | None = None
-    page_request = await dep.page.goto(request.url, timeout=timer.remaining() * 1000)
+    page_request = await dep.page.goto(request.url, timeout=_remaining_ms(timer))
     status = page_request.status if page_request else HTTPStatus.OK
     await dep.page.wait_for_load_state(
-        state="domcontentloaded", timeout=timer.remaining() * 1000
+        state="domcontentloaded", timeout=_remaining_ms(timer)
     )
 
     if not await detect_cloudflare_challenge(dep.page, "interstitial"):
@@ -135,8 +135,17 @@ async def _navigate_and_solve(
         return False, page_html, page_request, status
 
     await _solve_challenge(dep, timer)
+    await _wait_for_networkidle(dep, timer)
     status = HTTPStatus.OK
     return True, page_html, page_request, status
+
+
+MIN_WAIT_MS = 1.0
+
+
+def _remaining_ms(timer: TimeoutTimer) -> float:
+    """Milliseconds left, never 0 - Playwright reads that as no timeout at all."""
+    return max(MIN_WAIT_MS, timer.remaining() * 1000)
 
 
 CHALLENGE_POLL_INTERVAL = 0.25
@@ -150,6 +159,7 @@ TURNSTILE_INPUT = 'input[name="cf-turnstile-response"]'
 WIDGET_ANCESTOR_DEPTHS = (1, 2, 3, 4)
 WIDGET_MIN_WIDTH = 40
 WIDGET_MIN_HEIGHT = 20
+WIDGET_MAX_HEIGHT = 120
 
 
 async def _challenge_widget_box(page: Page) -> FloatRect | None:
@@ -159,11 +169,12 @@ async def _challenge_widget_box(page: Page) -> FloatRect | None:
         with suppress(PlaywrightError, PlaywrightTimeoutError):
             if await widget.count() == 0:
                 continue
+            await widget.first.scroll_into_view_if_needed(timeout=BOX_READ_TIMEOUT)
             box = await widget.first.bounding_box(timeout=BOX_READ_TIMEOUT)
             if (
                 box
                 and box["width"] > WIDGET_MIN_WIDTH
-                and box["height"] > WIDGET_MIN_HEIGHT
+                and WIDGET_MIN_HEIGHT < box["height"] < WIDGET_MAX_HEIGHT
             ):
                 return box
     return None
@@ -235,9 +246,7 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
 async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:
     """Wait for network idle, tolerating post-DOM-load stalls."""
     try:
-        await dep.page.wait_for_load_state(
-            "networkidle", timeout=timer.remaining() * 1000
-        )
+        await dep.page.wait_for_load_state("networkidle", timeout=_remaining_ms(timer))
     except PlaywrightTimeoutError:
         logger.info(
             "networkidle timed out after domcontentloaded; continuing with loaded page"
