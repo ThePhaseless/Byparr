@@ -44,7 +44,6 @@ async def widget_box(page: Page) -> FloatRect | None:
         with suppress(PlaywrightError, PlaywrightTimeoutError):
             if await widget.count() == 0:
                 continue
-            await widget.first.scroll_into_view_if_needed(timeout=BOX_READ_TIMEOUT)
             box = await widget.first.bounding_box(timeout=BOX_READ_TIMEOUT)
             if (
                 box

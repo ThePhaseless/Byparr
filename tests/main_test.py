@@ -169,7 +169,6 @@ def fake_dep(
     def locator(selector: str) -> MagicMock:
         handle = MagicMock()
         handle.count = AsyncMock(side_effect=lambda: count_for(selector))
-        handle.first.scroll_into_view_if_needed = AsyncMock(return_value=None)
         handle.first.bounding_box = AsyncMock(return_value=widget_box)
         handle.first.input_value = AsyncMock(return_value="")
         return handle
