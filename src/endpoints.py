@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from playwright.async_api import Error as PlaywrightError
-from playwright.async_api import Page
+from playwright.async_api import FloatRect, Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha.solvers.click.cloudflare.utils.detection import (
     detect_cloudflare_challenge,
@@ -84,7 +84,9 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         page_html=page_html,
     )
 
-    user_agent = page_request.request.headers.get("user-agent") if page_request else ""
+    user_agent = (
+        page_request.request.headers.get("user-agent") or "" if page_request else ""
+    )
 
     return LinkResponse(
         message="Success",
@@ -127,10 +129,7 @@ async def _navigate_and_solve(
         state="domcontentloaded", timeout=timer.remaining() * 1000
     )
 
-    challenge_active = await detect_cloudflare_challenge(
-        dep.page, "interstitial"
-    ) or await detect_cloudflare_challenge(dep.page, "turnstile")
-    if not challenge_active:
+    if not await detect_cloudflare_challenge(dep.page, "interstitial"):
         page_html = await dep.page.content()
         await _wait_for_networkidle(dep, timer)
         return False, page_html, page_request, status
@@ -144,6 +143,8 @@ CHALLENGE_POLL_INTERVAL = 0.25
 CHALLENGE_CLICK_SETTLE = 1.5
 CHECKBOX_CLICK_COOLDOWN = 4
 TOKEN_READ_TIMEOUT = 1000
+BOX_READ_TIMEOUT = 1000
+CHECKBOX_PROBE_INTERVAL = 0.5
 CHECKBOX_INSET = 25
 TURNSTILE_INPUT = 'input[name="cf-turnstile-response"]'
 WIDGET_ANCESTOR_DEPTHS = (1, 2, 3, 4)
@@ -151,14 +152,14 @@ WIDGET_MIN_WIDTH = 40
 WIDGET_MIN_HEIGHT = 20
 
 
-async def _challenge_widget_box(page: Page) -> dict[str, float] | None:
+async def _challenge_widget_box(page: Page) -> FloatRect | None:
     """Measure the widget container with locators; running page scripts resets the challenge."""
     for depth in WIDGET_ANCESTOR_DEPTHS:
         widget = page.locator(f"{TURNSTILE_INPUT} >> xpath=ancestor::div[{depth}]")
         with suppress(PlaywrightError, PlaywrightTimeoutError):
             if await widget.count() == 0:
                 continue
-            box = await widget.first.bounding_box()
+            box = await widget.first.bounding_box(timeout=BOX_READ_TIMEOUT)
             if (
                 box
                 and box["width"] > WIDGET_MIN_WIDTH
@@ -174,8 +175,10 @@ async def _click_challenge_checkbox(page: Page) -> bool:
     if box is None:
         return False
     await page.mouse.move(box["x"] + CHECKBOX_INSET, box["y"] + box["height"] / 2)
-    await page.mouse.down()
-    await page.mouse.up()
+    try:
+        await page.mouse.down()
+    finally:
+        await page.mouse.up()
     return True
 
 
@@ -209,13 +212,17 @@ async def _solve_challenge(dep: BrowserDep, timer: TimeoutTimer) -> None:
             return
 
         if time.perf_counter() >= next_click:
+            landed = False
             with suppress(PlaywrightError, PlaywrightTimeoutError):
-                if not await _checkbox_already_answered(
+                landed = not await _checkbox_already_answered(
                     dep.page
-                ) and await _click_challenge_checkbox(dep.page):
-                    clicks += 1
-                    next_click = time.perf_counter() + CHECKBOX_CLICK_COOLDOWN
-                    logger.info("Clicked the challenge checkbox (attempt %d).", clicks)
+                ) and await _click_challenge_checkbox(dep.page)
+            if landed:
+                clicks += 1
+                logger.info("Clicked the challenge checkbox (attempt %d).", clicks)
+            next_click = time.perf_counter() + (
+                CHECKBOX_CLICK_COOLDOWN if landed else CHECKBOX_PROBE_INTERVAL
+            )
 
         if timer.remaining() <= 0:
             break

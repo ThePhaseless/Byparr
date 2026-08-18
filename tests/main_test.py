@@ -54,7 +54,7 @@ def test_bypass(website: str):
     response = client.post(
         "/v1",
         json=LinkRequest.model_construct(
-            url=website, cmd="request.get", max_timeout=360
+            url=website, cmd="request.get", max_timeout=60
         ).model_dump(),
     )
 
@@ -146,6 +146,8 @@ def fake_dep(
     fail_states: set[str] | None = None,
     challenged: bool = False,
     marker_counts: list[int] | None = None,
+    widget_box: dict[str, float] | None = None,
+    user_agent: str | None = "UnitTestBrowser/1.0",
 ) -> BrowserDepClass:
     """Build a browser dependency pair backed by mocks."""
     page = AsyncMock()
@@ -153,7 +155,7 @@ def fake_dep(
     page.goto.return_value = MagicMock(
         status=HTTPStatus.OK,
         headers={"content-type": "text/html"},
-        request=MagicMock(headers={"user-agent": "UnitTestBrowser/1.0"}),
+        request=MagicMock(headers={"user-agent": user_agent} if user_agent else {}),
     )
     page.title.return_value = "Login"
     page.evaluate.return_value = "UnitTestBrowser/1.0"
@@ -169,7 +171,7 @@ def fake_dep(
     def locator(selector: str) -> MagicMock:
         handle = MagicMock()
         handle.count = AsyncMock(side_effect=lambda: count_for(selector))
-        handle.first.bounding_box = AsyncMock(return_value=None)
+        handle.first.bounding_box = AsyncMock(return_value=widget_box)
         handle.first.input_value = AsyncMock(return_value="")
         return handle
 
@@ -215,22 +217,34 @@ async def test_domcontentloaded_timeout_returns_408():
 
 
 @pytest.mark.asyncio
-async def test_user_agent_survives_csp_blocked_evaluate():
-    """UA comes from request headers when page CSP blocks evaluate (#394).
-
-    No CSP configuration (header, meta tag, or internal viewer document) may
-    turn /v1 into a 500.
-    """
-    dep = fake_dep()
-    dep.page.evaluate.side_effect = Exception("call to eval() blocked by CSP")
-
+async def test_missing_user_agent_header_is_not_a_500():
+    """A request without a user-agent header degrades to empty, never a 500 (#394)."""
     response = await read_item(
         LinkRequest(url="https://example.test/login"),
-        dep,
+        fake_dep(user_agent=None),
     )
 
     assert response.status == "ok"
-    assert response.solution.user_agent == "UnitTestBrowser/1.0"
+    assert response.solution.user_agent == ""
+
+
+@pytest.mark.asyncio
+async def test_checkbox_is_clicked_while_the_challenge_is_up():
+    """A measurable widget gets a humanised press, not a raw synthetic click."""
+    dep = fake_dep(
+        challenged=True,
+        marker_counts=[1, 1, 0],
+        widget_box={"x": 100.0, "y": 200.0, "width": 300.0, "height": 60.0},
+    )
+
+    response = await read_item(
+        LinkRequest(url="https://example.test/login", max_timeout=5), dep
+    )
+
+    assert response.solution.status == HTTPStatus.OK
+    dep.page.mouse.move.assert_awaited_once_with(125.0, 230.0)
+    dep.page.mouse.down.assert_awaited_once()
+    dep.page.mouse.up.assert_awaited_once()
 
 
 @pytest.mark.asyncio
