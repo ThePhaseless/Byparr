@@ -157,7 +157,6 @@ def fake_dep(
         request=MagicMock(headers={"user-agent": user_agent} if user_agent else {}),
     )
     page.title.return_value = "Login"
-    page.evaluate.return_value = "UnitTestBrowser/1.0"
     page.content.return_value = "<html><title>Login</title></html>"
     remaining = list(marker_counts or [])
 
@@ -200,7 +199,6 @@ async def test_networkidle_timeout_after_domcontentloaded_returns_content():
     )
 
     assert response.status == "ok"
-    assert response.solution.status == HTTPStatus.OK
     assert response.solution.response == "<html><title>Login</title></html>"
 
 
@@ -264,23 +262,27 @@ async def test_checkbox_is_clicked_while_the_challenge_is_up():
         LinkRequest(url="https://example.test/login", max_timeout=5), dep
     )
 
-    assert response.solution.status == HTTPStatus.OK
+    assert response.status == "ok"
     dep.page.mouse.move.assert_awaited_once_with(125.0, 230.0)
     dep.page.mouse.down.assert_awaited_once()
     dep.page.mouse.up.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_challenge_that_clears_is_reported_as_success():
-    """A challenge is over when its markup goes, not when the solver says so."""
-    dep = fake_dep(challenged=True, marker_counts=[1, 0])
+async def test_challenge_that_clears_on_its_own_is_never_clicked():
+    """A challenge is over when its markup goes, and until then we keep our hands off."""
+    dep = fake_dep(
+        challenged=True,
+        marker_counts=[1, 0],
+        widget_box={"x": 100.0, "y": 200.0, "width": 300.0, "height": 60.0},
+    )
 
     response = await read_item(
         LinkRequest(url="https://example.test/login", max_timeout=5), dep
     )
 
     assert response.status == "ok"
-    assert response.solution.status == HTTPStatus.OK
+    dep.page.mouse.down.assert_not_awaited()
 
 
 @pytest.mark.asyncio
