@@ -6,16 +6,11 @@ from typing import Annotated, NamedTuple, cast
 from fastapi import Header
 from invisible_playwright.async_api import InvisiblePlaywright
 from playwright.async_api import Browser, BrowserContext, Page
-from playwright_captcha import (
-    ClickSolver,
-    FrameworkType,
-)
 from pydantic import BaseModel, Field
 
 from src.consts import (
     BROWSER_LOCALE,
     LOG_LEVEL,
-    MAX_ATTEMPTS,
     PROXY_PASSWORD,
     PROXY_SERVER,
     PROXY_USERNAME,
@@ -46,7 +41,6 @@ class TimeoutTimer(BaseModel):
 
 class BrowserDepClass(NamedTuple):
     page: Page
-    solver: ClickSolver
     context: BrowserContext
 
 
@@ -106,13 +100,4 @@ async def get_browser(
         browser = cast("Browser", browser_raw)
         context = await browser.new_context()
         page = await context.new_page()
-        solver = ClickSolver(
-            framework=FrameworkType.PLAYWRIGHT,
-            page=page,
-            max_attempts=MAX_ATTEMPTS,
-            attempt_delay=1,
-        )
-        try:
-            yield BrowserDepClass(page, solver, context)
-        finally:
-            await solver.cleanup()
+        yield BrowserDepClass(page, context)

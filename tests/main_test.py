@@ -10,10 +10,6 @@ from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha.solvers.click.cloudflare.utils.detection import (
     CF_INTERSTITIAL_INDICATORS_SELECTORS,
 )
-from playwright_captcha.utils.exceptions import (
-    CaptchaDetectionError,
-    CaptchaSolvingError,
-)
 from starlette.testclient import TestClient
 
 from main import app
@@ -63,6 +59,9 @@ def test_bypass(website: str):
     )
 
     assert response.status_code == HTTPStatus.OK
+    solution = response.json()["solution"]
+    assert "_cf_chl_opt" not in solution["response"]
+    assert "__cf_chl" not in solution["url"]
 
 
 def test_json_api():
@@ -148,7 +147,7 @@ def fake_dep(
     challenged: bool = False,
     marker_counts: list[int] | None = None,
 ) -> BrowserDepClass:
-    """Build a browser dependency triple backed by mocks."""
+    """Build a browser dependency pair backed by mocks."""
     page = AsyncMock()
     page.url = "https://example.test/login"
     page.goto.return_value = MagicMock(
@@ -186,7 +185,7 @@ def fake_dep(
 
     context = AsyncMock()
     context.cookies.return_value = []
-    return BrowserDepClass(page=page, solver=AsyncMock(), context=context)
+    return BrowserDepClass(page=page, context=context)
 
 
 @pytest.mark.asyncio
@@ -201,7 +200,6 @@ async def test_networkidle_timeout_after_domcontentloaded_returns_content():
     assert response.status == "ok"
     assert response.solution.status == HTTPStatus.OK
     assert response.solution.response == "<html><title>Login</title></html>"
-    dep.solver.solve_captcha.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -239,9 +237,6 @@ async def test_user_agent_survives_csp_blocked_evaluate():
 async def test_challenge_that_clears_is_reported_as_success():
     """A challenge is over when its markup goes, not when the solver says so."""
     dep = fake_dep(challenged=True, marker_counts=[1, 0])
-    dep.solver.solve_captcha.side_effect = CaptchaSolvingError(
-        "challenge still present"
-    )
 
     response = await read_item(
         LinkRequest(url="https://example.test/login", max_timeout=5), dep
@@ -255,7 +250,6 @@ async def test_challenge_that_clears_is_reported_as_success():
 async def test_challenge_that_never_clears_returns_408():
     """A challenge still up when the budget runs out is a timeout, not a 500."""
     dep = fake_dep(challenged=True, marker_counts=[1])
-    dep.solver.solve_captcha.side_effect = CaptchaDetectionError("iframes not found")
 
     with pytest.raises(HTTPException) as exc:
         await read_item(
