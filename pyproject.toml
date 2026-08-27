@@ -20,7 +20,7 @@ urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 [dependency-groups]
 
 test = [
-    "httpx2==2.10.*",
+    "httpx2==2.12.*",
     "pytest==9.1.*",
     "pytest-asyncio==1.4.*",
     "pytest-retry==1.7.*",
