@@ -82,7 +82,15 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
             detail=f"Could not reach the target: {e}",
         ) from e
 
-    cookies = await dep.context.cookies()
+    # Scope the cookies to the page that was asked for. An unscoped call returns every
+    # cookie in the browser context, including ones set by third-party frames and ads,
+    # and a single malformed third-party value makes a client discard the whole jar,
+    # cf_clearance with it. Selenium, which FlareSolverr uses, only ever returned the
+    # cookies for the current document, so clients are built for the scoped shape.
+    cookie_urls = [request.url]
+    if dep.page.url and dep.page.url not in cookie_urls:
+        cookie_urls.append(dep.page.url)
+    cookies = await dep.context.cookies(cookie_urls)
     content_type, response_content = await build_response_content(
         dep.page,
         request,
