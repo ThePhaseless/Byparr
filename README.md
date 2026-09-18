@@ -1,4 +1,4 @@
-# Byparr
+# Byparr [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/ThePhaseless)
 
 <p align="center">
    <img src="icon/logo-byparr.svg" alt="Byparr logo" width="120" />
