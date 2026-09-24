@@ -141,6 +141,233 @@ def test_max_timeout_normalization(payload: dict, expected: int):
     assert request.max_timeout == expected
 
 
+def test_post_data_uses_flaresolverr_alias():
+    """FlareSolverr clients send the body as the camelCase `postData` string."""
+    request = LinkRequest.model_validate(
+        {
+            "url": "https://example.com",
+            "cmd": "request.post",
+            "postData": "key1=value1&key2=value2",
+        }
+    )
+
+    assert request.cmd == "request.post"
+    assert request.post_data == "key1=value1&key2=value2"
+
+
+def test_defaults_keep_plain_get():
+    """A request without postData or headers must behave exactly like before."""
+    request = LinkRequest(url="https://example.com")
+
+    assert request.cmd == "request.get"
+    assert request.post_data is None
+    assert request.headers is None
+
+
+def fake_route(
+    *,
+    url: str = "https://example.test/login",
+    resource_type: str = "document",
+    navigation: bool = True,
+    main_frame: bool = True,
+) -> MagicMock:
+    """Build a route double for the handler installed by setup_routes."""
+    route = MagicMock()
+    route.continue_ = AsyncMock()
+    route.abort = AsyncMock()
+    route.request = MagicMock()
+    route.request.url = url
+    route.request.resource_type = resource_type
+    route.request.is_navigation_request.return_value = navigation
+    route.request.frame.parent_frame = None if main_frame else MagicMock()
+    return route
+
+
+def route_handler(dep: BrowserDepClass):
+    """Return the handler setup_routes registered on the page."""
+    pattern, handler = dep.page.route.await_args.args
+    assert pattern == "**/*"
+    return handler
+
+
+@pytest.mark.asyncio
+async def test_post_cmd_overrides_the_navigation_to_post():
+    """request.post must reach the network as a POST with a form content type."""
+    dep = fake_dep()
+    await read_item(
+        LinkRequest(
+            url="https://example.test/login",
+            cmd="request.post",
+            post_data="user=byparr&pass=secret",
+        ),
+        dep,
+    )
+
+    route = fake_route()
+    await route_handler(dep)(route)
+
+    route.continue_.assert_awaited_once_with(
+        method="POST",
+        post_data="user=byparr&pass=secret",
+        headers={"content-type": "application/x-www-form-urlencoded"},
+    )
+    route.abort.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_caller_content_type_is_not_overwritten():
+    """An explicit content-type header wins over the form default."""
+    dep = fake_dep()
+    await read_item(
+        LinkRequest(
+            url="https://example.test/api",
+            cmd="request.post",
+            post_data='{"a":1}',
+            headers={"content-type": "application/json"},
+        ),
+        dep,
+    )
+
+    route = fake_route()
+    await route_handler(dep)(route)
+
+    route.continue_.assert_awaited_once_with(
+        method="POST",
+        post_data='{"a":1}',
+        headers={"content-type": "application/json"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_with_custom_headers_keeps_its_method():
+    """Extra headers must not silently turn a GET into a POST."""
+    dep = fake_dep()
+    await read_item(
+        LinkRequest(
+            url="https://example.test/login",
+            headers={"accept-language": "de-DE"},
+        ),
+        dep,
+    )
+
+    route = fake_route()
+    await route_handler(dep)(route)
+
+    route.continue_.assert_awaited_once_with(headers={"accept-language": "de-DE"})
+
+
+@pytest.mark.asyncio
+async def test_plain_get_registers_no_route_at_all():
+    """Without media blocking, postData or headers the request stays untouched."""
+    dep = fake_dep()
+    await read_item(LinkRequest(url="https://example.test/login"), dep)
+
+    assert dep.page.route.await_count == 0
+
+
+@pytest.mark.asyncio
+async def test_challenge_reload_reissues_the_post():
+    """After the interstitial clears, reloading the URL must POST again."""
+    dep = fake_dep()
+    await read_item(
+        LinkRequest(
+            url="https://example.test/login",
+            cmd="request.post",
+            post_data="a=b",
+        ),
+        dep,
+    )
+    handler = route_handler(dep)
+
+    first = fake_route()
+    await handler(first)
+    reload = fake_route()
+    await handler(reload)
+
+    reload.continue_.assert_awaited_once_with(
+        method="POST",
+        post_data="a=b",
+        headers={"content-type": "application/x-www-form-urlencoded"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_redirects_subresources_and_iframes_pass_through():
+    """Only main-frame navigations to the target URL get the POST override."""
+    dep = fake_dep()
+    await read_item(
+        LinkRequest(
+            url="https://example.test/login",
+            cmd="request.post",
+            post_data="a=b",
+        ),
+        dep,
+    )
+    handler = route_handler(dep)
+
+    # The initial navigation to the target consumes the first-navigation
+    # fallback; everything after it is only a POST when the URL matches.
+    await handler(fake_route())
+    redirect = fake_route(url="https://other.test/landing")
+    await handler(redirect)
+    subresource = fake_route(url="https://example.test/app.js", resource_type="script")
+    await handler(subresource)
+    iframe = fake_route(main_frame=False)
+    await handler(iframe)
+
+    for passed in (redirect, subresource, iframe):
+        passed.continue_.assert_awaited_once_with()
+        passed.abort.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_media_blocking_survives_the_combined_handler():
+    """block_media must still abort media while the POST override exists."""
+    dep = fake_dep()
+    await read_item(
+        LinkRequest(
+            url="https://example.test/login",
+            cmd="request.post",
+            post_data="a=b",
+            block_media=True,
+        ),
+        dep,
+    )
+    handler = route_handler(dep)
+
+    image = fake_route(url="https://example.test/cat.png", resource_type="image")
+    await handler(image)
+    document = fake_route()
+    await handler(document)
+
+    image.abort.assert_awaited_once()
+    image.continue_.assert_not_awaited()
+    document.continue_.assert_awaited_once_with(
+        method="POST",
+        post_data="a=b",
+        headers={"content-type": "application/x-www-form-urlencoded"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_media_blocking_alone_still_works_for_gets():
+    """A GET with only block_media registered keeps its old behavior."""
+    dep = fake_dep()
+    await read_item(
+        LinkRequest(url="https://example.test/login", block_media=True),
+        dep,
+    )
+    handler = route_handler(dep)
+
+    image = fake_route(url="https://example.test/cat.png", resource_type="image")
+    await handler(image)
+    document = fake_route()
+    await handler(document)
+
+    image.abort.assert_awaited_once()
+    document.continue_.assert_awaited_once_with()
+
+
 def fake_dep(
     *,
     fail_states: set[str] | None = None,

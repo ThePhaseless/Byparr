@@ -2,10 +2,12 @@ import time
 import warnings
 from http import HTTPStatus
 from typing import Annotated
+from urllib.parse import unquote
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from playwright.async_api import Error as PlaywrightError
+from playwright.async_api import Route
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from src.challenge import challenge_present, solve_challenge
@@ -110,17 +112,72 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     )
 
 
+POST_CONTENT_TYPE = "application/x-www-form-urlencoded"
+MEDIA_RESOURCE_TYPES = ("image", "media", "font")
+
+
+def _urls_match(first: str, second: str) -> bool:
+    """Compare navigation URLs, ignoring fragments and percent-encoding."""
+    return unquote(first.split("#", 1)[0]) == unquote(second.split("#", 1)[0])
+
+
+def _navigation_headers(request: LinkRequest) -> dict[str, str] | None:
+    """Merge caller headers, defaulting post_data to form encoding."""
+    headers = dict(request.headers or {})
+    if request.post_data is not None and not any(
+        key.lower() == "content-type" for key in headers
+    ):
+        headers["content-type"] = POST_CONTENT_TYPE
+    return headers or None
+
+
 async def setup_routes(request: LinkRequest, dep: BrowserDep) -> None:
-    """Install request routes for media blocking."""
-    if request.block_media:
+    """
+    Install one route handler covering media blocking and POST navigation.
 
-        async def block_media_route(route) -> None:
-            if route.request.resource_type in ("image", "media", "font"):
-                await route.abort()
-            else:
-                await route.continue_()
+    A single handler keeps media blocking and the method override from
+    fighting over Playwright's reverse registration order. The POST override
+    applies to every main-frame navigation to the target URL, so a challenge
+    reload after solving re-issues the POST with the cleared cookies.
+    """
+    wants_post = request.cmd == "request.post"
+    if not (request.block_media or wants_post or request.headers):
+        return
 
-        await dep.page.route("**/*", block_media_route)
+    first_navigation = True
+
+    async def handle_route(route: Route) -> None:
+        nonlocal first_navigation
+        if request.block_media and route.request.resource_type in MEDIA_RESOURCE_TYPES:
+            await route.abort()
+            return
+
+        if route.request.is_navigation_request() and (
+            route.request.frame.parent_frame is None
+        ):
+            # The URL check re-applies the POST after a challenge reload; the
+            # first-navigation fallback covers browser URL normalization.
+            matches_target = _urls_match(route.request.url, request.url)
+            if first_navigation:
+                first_navigation = False
+                matches_target = True
+
+            if matches_target:
+                if wants_post:
+                    await route.continue_(
+                        method="POST",
+                        post_data=request.post_data,
+                        headers=_navigation_headers(request),
+                    )
+                    return
+                headers = _navigation_headers(request)
+                if headers:
+                    await route.continue_(headers=headers)
+                    return
+
+        await route.continue_()
+
+    await dep.page.route("**/*", handle_route)
 
 
 async def _navigate_and_solve(

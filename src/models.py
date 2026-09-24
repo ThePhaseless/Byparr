@@ -18,9 +18,31 @@ class LinkRequest(BaseModel):
 
     cmd: str = Field(
         default="request.get",
-        description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
+        description=(
+            "Type of request. `request.get` and `request.post` are supported; "
+            "any other value is treated as a GET. This string is purely for "
+            "compatibility with FlareSolverr."
+        ),
     )
     url: str = Field(pattern=r"^https?://", default="https://")
+    post_data: str | None = Field(
+        default=None,
+        alias="postData",
+        description=(
+            "Raw request body for `request.post`, typically an "
+            "application/x-www-form-urlencoded string such as "
+            "'a=b&c=d'. Sent as application/x-www-form-urlencoded unless the "
+            "headers field sets another content-type."
+        ),
+    )
+    headers: dict[str, str] | None = Field(
+        default=None,
+        description=(
+            "Optional headers to apply to the navigation request. A caller-supplied "
+            "content-type wins over the default for post_data; forbidden headers "
+            "(Cookie, Host, Content-Length, ...) are ignored by the browser."
+        ),
+    )
     max_timeout: int = Field(
         default=60,
         alias="maxTimeout",
