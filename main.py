@@ -14,8 +14,10 @@ from src.middlewares import LogRequest
 from src.owui import router as owui_router
 from src.utils import get_browser, logger
 
+LOG_LEVEL_NAME = logging.getLevelName(LOG_LEVEL).lower()
+
 logger.info("Using version %s", VERSION)
-logger.info("Log level set to %s", logging.getLevelName(LOG_LEVEL))
+logger.info("Log level set to %s", LOG_LEVEL_NAME)
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
 app.add_middleware(GZipMiddleware)
@@ -40,4 +42,4 @@ if __name__ == "__main__":
         loop.run_until_complete(init())
         logger.info("Initialization complete.")
     else:
-        uvicorn.run(app, host=HOST, port=PORT)
+        uvicorn.run(app, host=HOST, port=PORT, log_level=LOG_LEVEL_NAME)
