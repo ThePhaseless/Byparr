@@ -49,6 +49,17 @@ Recently I've partnered with a _new in town_ proxy service - ProxyBase - to offe
 docker compose up -d
 ```
 
+> [!WARNING]
+> Byparr performs a *lot* of R/W operations on your disk. Each Playwright request spins up a new instance with an associated cache and SQLite database. To reduce disk wear, we recommend eliminating unnecessary requests, such as health checks, and allocating temp storage in RAM by adding the following snippet to your Docker Compose configuration:
+>
+> ```yaml
+> mem_limit: 3g
+> shm_size: "1gb"
+> tmpfs:
+>   - /tmp:exec,mode=1777,size=1G
+>   - /cache:mode=1777,size=512M
+>```
+
 ### Docker install
 
 1. Pull and run the image:

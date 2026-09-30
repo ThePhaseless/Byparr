@@ -7,6 +7,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Uncomment below to offload disk operations to RAM and reduce disk wear:
+    # mem_limit: 3g
+    # shm_size: "1gb"
+    # tmpfs:
+    #   - /tmp:exec,mode=1777,size=1G
+    #   - /cache:mode=1777,size=512M
     # Uncomment below to use byparr outside of internal network
     # ports:
     #   - "8191:8191"
