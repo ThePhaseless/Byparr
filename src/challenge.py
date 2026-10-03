@@ -1,6 +1,7 @@
 import time
 from asyncio import sleep
 from contextlib import suppress
+from importlib import import_module
 
 from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import FloatRect, Page
@@ -30,6 +31,32 @@ WIDGET_ANCESTOR_DEPTHS = (1, 2, 3, 4)
 WIDGET_MIN_WIDTH = 40
 WIDGET_MIN_HEIGHT = 20
 WIDGET_MAX_HEIGHT = 120
+DRIVER_ERROR_MODULES = (
+    "invisible_playwright.async_api",
+    "invisible_playwright._pw.async_api",
+)
+
+
+def _driver_errors() -> tuple[type[BaseException], ...]:
+    """Collect the driver's error classes; invisible_playwright forks its own."""
+    errors: list[type[BaseException]] = [PlaywrightError, PlaywrightTimeoutError]
+    for module_name in DRIVER_ERROR_MODULES:
+        try:
+            module = import_module(module_name)
+        except ImportError:
+            continue
+        for attribute in ("Error", "TimeoutError"):
+            error = getattr(module, attribute, None)
+            if (
+                isinstance(error, type)
+                and issubclass(error, BaseException)
+                and error not in errors
+            ):
+                errors.append(error)
+    return tuple(errors)
+
+
+DRIVER_ERRORS = _driver_errors()
 
 
 async def challenge_present(page: Page) -> bool:
@@ -41,7 +68,7 @@ async def widget_box(page: Page) -> FloatRect | None:
     """Measure the widget container with locators; running page scripts resets the challenge."""
     for depth in WIDGET_ANCESTOR_DEPTHS:
         widget = page.locator(f"{TURNSTILE_INPUT} >> xpath=ancestor::div[{depth}]")
-        with suppress(PlaywrightError, PlaywrightTimeoutError):
+        with suppress(*DRIVER_ERRORS):
             if await widget.count() == 0:
                 continue
             box = await widget.first.bounding_box(timeout=BOX_READ_TIMEOUT)
@@ -70,7 +97,7 @@ async def click_checkbox(page: Page) -> bool:
 async def checkbox_already_answered(page: Page) -> bool:
     """Report whether Turnstile has already filled in its response token."""
     token = page.locator(TURNSTILE_INPUT)
-    with suppress(PlaywrightError, PlaywrightTimeoutError):
+    with suppress(*DRIVER_ERRORS):
         if await token.count() > 0:
             return bool(await token.first.input_value(timeout=TOKEN_READ_TIMEOUT))
     return False
@@ -98,7 +125,7 @@ async def solve_challenge(page: Page, timer: TimeoutTimer) -> None:
 
         if time.perf_counter() >= next_click:
             landed = False
-            with suppress(PlaywrightError, PlaywrightTimeoutError):
+            with suppress(*DRIVER_ERRORS):
                 landed = not await checkbox_already_answered(
                     page
                 ) and await click_checkbox(page)
