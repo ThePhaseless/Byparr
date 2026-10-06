@@ -25,6 +25,7 @@ test_websites = [
     "https://speed.cd/login",
     'https://www.yggtorrent.top/engine/search?do=search&order=desc&sort=publish_date&name="UNESCAPED"+"DOUBLEQUOTES"&category=2145',
     "https://1337x.to/home/",
+    "http://1337x.to/home/",
 ]
 
 
