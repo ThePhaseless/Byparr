@@ -50,10 +50,9 @@ docker compose up -d
 ```
 
 > [!WARNING]
-> Byparr performs a *lot* of R/W operations on your disk. Each Playwright request spins up a new instance with an associated cache and SQLite database. To reduce disk wear, we recommend eliminating unnecessary requests, such as health checks, and allocating temp storage in RAM by adding the following snippet to your Docker Compose configuration:
+> Byparr performs a *lot* of R/W operations on your disk. To reduce disk wear, it is recommended to allocate temp storage in RAM by adding the following snippet to your Docker Compose configuration:
 >
 > ```yaml
-> mem_limit: 3g
 > shm_size: "1gb"
 > tmpfs:
 >   - /tmp:exec,mode=1777,size=1G
