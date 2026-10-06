@@ -102,6 +102,7 @@ async def get_browser(
             "devtools.jsonview.enabled": False,
             "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
             "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
+            "dom.security.https_first": False,
         },
     ) as browser_raw:
         # InvisiblePlaywright yields a Browser instance
