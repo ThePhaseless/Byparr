@@ -49,6 +49,16 @@ Recently I've partnered with a _new in town_ proxy service - ProxyBase - to offe
 docker compose up -d
 ```
 
+> [!WARNING]
+> Byparr performs a *lot* of R/W operations on your disk. To reduce disk wear, it is recommended to allocate temp storage in RAM by adding the following snippet to your Docker Compose configuration:
+>
+> ```yaml
+> shm_size: "1gb"
+> tmpfs:
+>   - /tmp:exec,mode=1777,size=1G
+>   - /cache:mode=1777,size=512M
+>```
+
 ### Docker install
 
 1. Pull and run the image:
