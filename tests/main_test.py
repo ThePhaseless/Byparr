@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx2
 import pytest
 from fastapi import HTTPException
+from invisible_playwright.async_api import Error as InvisiblePlaywrightError
 from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from starlette.testclient import TestClient
@@ -201,6 +202,39 @@ async def test_networkidle_timeout_after_domcontentloaded_returns_content():
 
     assert response.status == "ok"
     assert response.solution.response == "<html><title>Login</title></html>"
+
+
+@pytest.mark.asyncio
+async def test_html_is_read_after_a_js_redirect_lands():
+    """A non-Cloudflare guard that redirects during the idle wait must not leak (#418)."""
+    dep = fake_dep()
+    dep.page.content.return_value = "<html><title>Checking</title></html>"
+    load_state = dep.page.wait_for_load_state.side_effect
+
+    def redirect_while_idling(state: str, **kwargs: object) -> None:
+        load_state(state, **kwargs)
+        if state == "networkidle":
+            dep.page.content.return_value = "<html><title>Article</title></html>"
+
+    dep.page.wait_for_load_state.side_effect = redirect_while_idling
+
+    response = await read_item(LinkRequest(url="https://example.test/login"), dep)
+
+    assert response.solution.response == "<html><title>Article</title></html>"
+
+
+@pytest.mark.asyncio
+async def test_html_read_racing_a_navigation_is_retried():
+    """A read that loses its document to a navigation reads the new one instead."""
+    dep = fake_dep()
+    dep.page.content.side_effect = [
+        InvisiblePlaywrightError("Failed to find execution context with id = id-5"),
+        "<html><title>Article</title></html>",
+    ]
+
+    response = await read_item(LinkRequest(url="https://example.test/login"), dep)
+
+    assert response.solution.response == "<html><title>Article</title></html>"
 
 
 @pytest.mark.asyncio
