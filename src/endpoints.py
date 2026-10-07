@@ -82,7 +82,10 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
             detail=f"Could not reach the target: {e}",
         ) from e
 
-    cookies = await dep.context.cookies()
+    cookie_urls = [request.url]
+    if dep.page.url and dep.page.url not in cookie_urls:
+        cookie_urls.append(dep.page.url)
+    cookies = await dep.context.cookies(cookie_urls)
     content_type, response_content = await build_response_content(
         dep.page,
         request,
