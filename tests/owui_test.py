@@ -99,7 +99,7 @@ async def test_networkidle_timeout_still_extracts_content():
         LoadRequest(urls=["https://example.test"]), None, fake_dep()
     )
     assert results[0].page_content == (
-        "Example TitleThis is the main article body with enough words for "
+        "Example Title\nThis is the main article body with enough words for "
         "trafilatura to consider it real content rather than boilerplate."
     )
 
