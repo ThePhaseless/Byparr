@@ -105,7 +105,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = "==0.142.*" },
-    { name = "invisible-playwright", specifier = ">=0.6.1" },
+    { name = "invisible-playwright", specifier = ">=0.15.0" },
     { name = "playwright", specifier = "==1.63.*" },
     { name = "playwright-captcha", specifier = "==0.1.*" },
     { name = "pydantic", specifier = "==2.*" },
