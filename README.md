@@ -18,12 +18,21 @@
 | `PROXY_PASSWORD`     | None      | Password for proxy authentication.                                                                                                                                |
 | `OWUI_API_KEY`       | None      | Bearer token for `/load` endpoint authentication. Must match `EXTERNAL_WEB_LOADER_API_KEY` in Open WebUI.                                                         |
 | `BROWSER_LOCALE`     | None      | Override the browser's language with a [BCP-47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) tag, e.g. `en-US`, `de-DE`, `fr-FR`. When unset, the locale is derived from the egress country. |
+| `BROWSER_TIMEZONE`   | None      | Override the browser's timezone with an [IANA](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) name, e.g. `Europe/Berlin`, `Asia/Shanghai`. When unset, the timezone is derived from the egress IP. |
 
 #### Browser language
 
 Set `BROWSER_LOCALE` to a [BCP-47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) language tag like `en-US`, `de-DE`, `fr-FR`, `pl-PL`, or `zh-CN` to fix the browser's language and `Accept-Language` header. When unset, Byparr derives the locale from the egress country (e.g. a French proxy → `fr-FR`), keeping the browser language consistent with the exit IP.
 
 Valid tags are maintained in the [IANA Language Subtag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry). For a friendlier list, see [List of ISO 639-1 codes](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (language) combined with an [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) region code for the full tag, e.g. `pt-BR`.
+
+#### Browser timezone
+
+Set `BROWSER_TIMEZONE` to an [IANA timezone name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) like `Europe/Berlin` or `Asia/Shanghai` to fix the browser's timezone. An explicit value is used as is, also behind a proxy.
+
+When either `BROWSER_TIMEZONE` or `BROWSER_LOCALE` is unset, Byparr looks up its public IP through `api.ipify.org`, `icanhazip.com` or `checkip.amazonaws.com` and maps it to a timezone and language with a GeoIP database downloaded from GitHub. Without a proxy this happens once, on the first request, and the result is reused until Byparr restarts (restart it if its public IP moves to another country). If that lookup fails, the host timezone (`TZ`, otherwise `/etc/localtime`, otherwise UTC) and `en-US` are used, and the lookup is retried after 10 minutes. With a proxy (`PROXY_SERVER` or the `X-Proxy-Server` header) it runs for every request, through the proxy.
+
+If those hosts are slow or blocked on your network, set both `BROWSER_TIMEZONE` and `BROWSER_LOCALE`: the lookup is then skipped entirely and no request is made before the browser starts.
 
 ## Proxy Recommendation
 
