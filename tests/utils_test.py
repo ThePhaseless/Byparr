@@ -24,28 +24,6 @@ def fresh_geo_cache(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(utils, "_geo_lock", asyncio.Lock())
 
 
-def test_host_timezone_prefers_tz_env(monkeypatch: pytest.MonkeyPatch):
-    """TZ wins over /etc/localtime, with or without the leading colon."""
-    monkeypatch.setenv("TZ", ":Asia/Shanghai")
-    assert utils.host_timezone() == "Asia/Shanghai"
-
-
-def test_host_timezone_reads_localtime_symlink(monkeypatch: pytest.MonkeyPatch):
-    """Without TZ the zone comes from where /etc/localtime points."""
-    monkeypatch.delenv("TZ", raising=False)
-    with patch(
-        "src.utils.os.path.realpath", return_value="/usr/share/zoneinfo/Europe/Warsaw"
-    ):
-        assert utils.host_timezone() == "Europe/Warsaw"
-
-
-def test_host_timezone_defaults_to_utc(monkeypatch: pytest.MonkeyPatch):
-    """No TZ and no zoneinfo link is what the Docker image has: UTC."""
-    monkeypatch.delenv("TZ", raising=False)
-    with patch("src.utils.os.path.realpath", return_value="/etc/localtime"):
-        assert utils.host_timezone() == "UTC"
-
-
 @pytest.mark.asyncio
 async def test_egress_lookup_runs_once_per_process():
     """Concurrent first requests and every later one share a single lookup."""
@@ -62,8 +40,10 @@ async def test_failed_lookup_uses_host_timezone_then_retries(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """A failed lookup is not repaid per request, but is retried later."""
-    monkeypatch.setenv("TZ", "Asia/Shanghai")
-    with patch("src.utils.prepare_session_geo", return_value=FAILED) as lookup:
+    with (
+        patch("src.utils.get_localzone_name", return_value="Asia/Shanghai"),
+        patch("src.utils.prepare_session_geo", return_value=FAILED) as lookup,
+    ):
         geo = await utils.get_browser_geo()
         assert (geo.timezone, geo.locale) == ("Asia/Shanghai", "en-US")
         await utils.get_browser_geo()
@@ -72,6 +52,18 @@ async def test_failed_lookup_uses_host_timezone_then_retries(
         monkeypatch.setattr(utils, "_geo", geo._replace(expires_at=0))
         await utils.get_browser_geo()
         assert lookup.call_count == 2  # noqa: PLR2004
+
+
+@pytest.mark.asyncio
+async def test_failed_lookup_without_a_host_zone_uses_utc():
+    """No zone from the host either is what the Docker image has: UTC."""
+    with (
+        patch("src.utils.get_localzone_name", return_value=None),
+        patch("src.utils.prepare_session_geo", return_value=FAILED),
+    ):
+        geo = await utils.get_browser_geo()
+
+    assert geo.timezone == "UTC"
 
 
 @pytest.mark.asyncio

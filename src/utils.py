@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import math
-import os
 import time
 from collections.abc import AsyncGenerator
 from typing import Annotated, NamedTuple, cast
@@ -11,6 +10,7 @@ from invisible_core import prepare_session_geo
 from invisible_playwright.async_api import InvisiblePlaywright
 from playwright.async_api import Browser, BrowserContext, Page
 from pydantic import BaseModel, Field
+from tzlocal import get_localzone_name
 
 from src.consts import (
     BROWSER_LOCALE,
@@ -70,14 +70,6 @@ _geo_lock = asyncio.Lock()
 _geo: BrowserGeo | None = None
 
 
-def host_timezone() -> str:
-    """IANA zone of the host, the one the browser falls back to."""
-    if tz := os.environ.get("TZ", "").removeprefix(":"):
-        return tz
-    _, found, zone = os.path.realpath("/etc/localtime").partition("/zoneinfo/")
-    return zone if found else "UTC"
-
-
 def resolve_browser_geo() -> BrowserGeo:
     """Resolve the timezone and locale of a session without a proxy."""
     geo = prepare_session_geo(BROWSER_TIMEZONE or "", None, BROWSER_LOCALE or "auto")
@@ -85,7 +77,7 @@ def resolve_browser_geo() -> BrowserGeo:
     if geo.timezone:
         logger.info("Browser timezone %s, locale %s", geo.timezone, locale)
         return BrowserGeo(geo.timezone, locale)
-    timezone = host_timezone()
+    timezone = get_localzone_name() or "UTC"
     logger.warning(
         "Could not resolve the timezone from the egress IP, using %s and locale %s "
         "for %d seconds. Set BROWSER_TIMEZONE and BROWSER_LOCALE to skip the lookup.",
