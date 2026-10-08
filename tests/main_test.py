@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx2
 import pytest
 from fastapi import HTTPException
-from playwright.async_api import Error as PlaywrightError
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from invisible_playwright.async_api import Error as PlaywrightError
+from invisible_playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from starlette.testclient import TestClient
 
 from main import app
@@ -148,6 +148,7 @@ def fake_dep(
     challenged: bool = False,
     marker_counts: list[int] | None = None,
     widget_box: dict[str, float] | None = None,
+    widget_error: Exception | None = None,
     user_agent: str | None = "UnitTestBrowser/1.0",
 ) -> BrowserDepClass:
     """Build a browser dependency pair backed by mocks."""
@@ -171,7 +172,9 @@ def fake_dep(
     def locator(selector: str) -> MagicMock:
         handle = MagicMock()
         handle.count = AsyncMock(side_effect=lambda: count_for(selector))
-        handle.first.bounding_box = AsyncMock(return_value=widget_box)
+        handle.first.bounding_box = AsyncMock(
+            return_value=widget_box, side_effect=widget_error
+        )
         handle.first.input_value = AsyncMock(return_value="")
         return handle
 
@@ -288,6 +291,25 @@ async def test_challenge_that_clears_on_its_own_is_never_clicked():
         challenged=True,
         marker_counts=[1, 0],
         widget_box={"x": 100.0, "y": 200.0, "width": 300.0, "height": 60.0},
+    )
+
+    response = await read_item(
+        LinkRequest(url="https://example.test/login", max_timeout=5), dep
+    )
+
+    assert response.status == "ok"
+    dep.page.mouse.down.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_slow_widget_read_does_not_abort_the_solve():
+    """One widget read outlasting its short timeout is retried, never a 500 (#419)."""
+    dep = fake_dep(
+        challenged=True,
+        marker_counts=[1, 1, 1, 0],
+        widget_error=PlaywrightTimeoutError(
+            "Locator.bounding_box: Timeout 1000ms exceeded."
+        ),
     )
 
     response = await read_item(
