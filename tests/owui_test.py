@@ -2,7 +2,7 @@ from http import HTTPStatus
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from invisible_playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from starlette.testclient import TestClient
 
 from main import app

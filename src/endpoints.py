@@ -5,8 +5,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from playwright.async_api import Error as PlaywrightError
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from invisible_playwright.async_api import Error as PlaywrightError
+from invisible_playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from src.challenge import challenge_present, solve_challenge
 from src.content import build_response_content

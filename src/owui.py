@@ -7,8 +7,8 @@ from typing import Annotated
 
 import trafilatura
 from fastapi import APIRouter, Depends, Header, HTTPException
+from invisible_playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import Page
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from pydantic import BaseModel
 
 from src.consts import OWUI_API_KEY
