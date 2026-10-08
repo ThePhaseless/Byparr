@@ -15,6 +15,7 @@ dependencies = [
     "pydantic==2.*",
     "pydantic-settings==2.*",
     "trafilatura==2.3.*",
+    "tzlocal==5.*",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 [dependency-groups]

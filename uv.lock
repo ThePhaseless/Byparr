@@ -86,6 +86,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "trafilatura" },
+    { name = "tzlocal" },
 ]
 
 [package.dev-dependencies]
@@ -111,6 +112,7 @@ requires-dist = [
     { name = "pydantic", specifier = "==2.*" },
     { name = "pydantic-settings", specifier = "==2.*" },
     { name = "trafilatura", specifier = "==2.3.*" },
+    { name = "tzlocal", specifier = "==5.*" },
 ]
 
 [package.metadata.requires-dev]
