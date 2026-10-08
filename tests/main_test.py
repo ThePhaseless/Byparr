@@ -207,6 +207,25 @@ async def test_networkidle_timeout_after_domcontentloaded_returns_content():
 
 
 @pytest.mark.asyncio
+async def test_html_is_read_after_a_js_redirect_lands():
+    """A non-Cloudflare guard that redirects during the idle wait must not leak (#418)."""
+    dep = fake_dep()
+    dep.page.content.return_value = "<html><title>Checking</title></html>"
+    load_state = dep.page.wait_for_load_state.side_effect
+
+    def redirect_while_idling(state: str, **kwargs: object) -> None:
+        load_state(state, **kwargs)
+        if state == "networkidle":
+            dep.page.content.return_value = "<html><title>Article</title></html>"
+
+    dep.page.wait_for_load_state.side_effect = redirect_while_idling
+
+    response = await read_item(LinkRequest(url="https://example.test/login"), dep)
+
+    assert response.solution.response == "<html><title>Article</title></html>"
+
+
+@pytest.mark.asyncio
 async def test_domcontentloaded_timeout_returns_408():
     """Fatal timeouts during initial page load still return a controlled 408."""
     with pytest.raises(HTTPException) as exc:
