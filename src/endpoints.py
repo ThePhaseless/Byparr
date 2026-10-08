@@ -88,7 +88,6 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         dep.page,
         request,
         page_request,
-        timer,
     )
 
     user_agent = (

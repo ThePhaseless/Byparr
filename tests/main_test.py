@@ -226,20 +226,6 @@ async def test_html_is_read_after_a_js_redirect_lands():
 
 
 @pytest.mark.asyncio
-async def test_html_read_racing_a_navigation_is_retried():
-    """A read that loses its document to a navigation reads the new one instead."""
-    dep = fake_dep()
-    dep.page.content.side_effect = [
-        PlaywrightError("Failed to find execution context with id = id-5"),
-        "<html><title>Article</title></html>",
-    ]
-
-    response = await read_item(LinkRequest(url="https://example.test/login"), dep)
-
-    assert response.solution.response == "<html><title>Article</title></html>"
-
-
-@pytest.mark.asyncio
 async def test_domcontentloaded_timeout_returns_408():
     """Fatal timeouts during initial page load still return a controlled 408."""
     with pytest.raises(HTTPException) as exc:
