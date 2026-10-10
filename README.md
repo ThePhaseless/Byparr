@@ -130,6 +130,24 @@ services:
 
 `shm_size: 512mb` is usually enough; `stdin_open` and `tty` are only needed if your orchestrator runs the container without a TTY.
 
+#### Solved in Byparr, rejected in Prowlarr/Jackett (IPv6)
+
+Cloudflare ties the `cf_clearance` cookie to the IP address that solved the challenge. If IPv6 is enabled on only some of your containers or networks, Byparr can solve the challenge over one address family while Prowlarr or Jackett sends the next request over the other. Cloudflare then rejects the cookie, and the indexer fails validation or keeps getting challenged even though Byparr reports success.
+
+Byparr and the app that calls it must reach the site from the same public IP. Disable IPv6 for both containers, for example in `compose.yaml`:
+
+```yaml
+services:
+  byparr:
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+  prowlarr:
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+```
+
+If you defined your own Docker network with `enable_ipv6: true`, set it to `false` instead, or disable IPv6 on the host.
+
 ### Local troubleshooting
 
 1. Download [uv](https://docs.astral.sh/uv/getting-started/installation/)
