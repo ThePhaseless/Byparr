@@ -28,7 +28,7 @@ test = [
     "pytest-xdist==3.8.*",
     "setuptools>=80.9.0",
 ]
-dev = ["deptry==0.25.*", "ruff==0.16.*"]
+dev = ["deptry==0.25.*", "ruff==0.17.*"]
 [tool.deptry.per_rule_ignores]
 DEP002 = ["pyautogui"]
 [tool.ruff.lint]
