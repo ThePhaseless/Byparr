@@ -1,4 +1,5 @@
 import base64
+import time
 from http import HTTPStatus
 from json import JSONDecodeError
 from unittest.mock import AsyncMock, MagicMock
@@ -363,3 +364,23 @@ async def test_marker_vanishing_mid_navigation_is_not_a_solved_challenge():
         )
 
     assert exc.value.status_code == HTTPStatus.REQUEST_TIMEOUT
+
+
+@pytest.mark.asyncio
+async def test_wait_in_seconds(logs: pytest.LogCaptureFixture) -> None:
+    wait = 20
+    start = time.monotonic()
+    await read_item(
+        LinkRequest(url="https://example.test/login", wait_in_seconds=wait), fake_dep()
+    )
+    assert time.monotonic() - start >= wait
+    assert any(f"Waiting {wait} seconds" in msg for msg in logs.messages)
+
+
+@pytest.mark.asyncio
+async def test_zero_wait_in_seconds_is_not_logged(
+    logs: pytest.LogCaptureFixture,
+) -> None:
+    await read_item(LinkRequest(url="https://example.test/login"), fake_dep())
+    for msg in logs.messages:
+        assert "seconds before returning the response" not in msg
