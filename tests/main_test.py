@@ -367,20 +367,20 @@ async def test_marker_vanishing_mid_navigation_is_not_a_solved_challenge():
 
 
 @pytest.mark.asyncio
-async def test_wait_in_seconds(logs: pytest.LogCaptureFixture) -> None:
+async def test_wait_in_seconds(caplog: pytest.LogCaptureFixture) -> None:
     wait = 20
     start = time.monotonic()
     await read_item(
         LinkRequest(url="https://example.test/login", wait_in_seconds=wait), fake_dep()
     )
     assert time.monotonic() - start >= wait
-    assert any(f"Waiting {wait} seconds" in msg for msg in logs.messages)
+    assert any(f"Waiting {wait} seconds" in msg for msg in caplog.messages)
 
 
 @pytest.mark.asyncio
 async def test_zero_wait_in_seconds_is_not_logged(
-    logs: pytest.LogCaptureFixture,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     await read_item(LinkRequest(url="https://example.test/login"), fake_dep())
-    for msg in logs.messages:
+    for msg in caplog.messages:
         assert "seconds before returning the response" not in msg
