@@ -8,7 +8,8 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 
-from src.consts import HOST, LOG_LEVEL, PORT, VERSION
+from src.concurrency_advisor import concurrency_advisor
+from src.consts import HOST, LOG_LEVEL, MAX_CONCURRENCY, PORT, VERSION
 from src.endpoints import health_check, router
 from src.middlewares import LogRequest
 from src.owui import router as owui_router
@@ -16,6 +17,14 @@ from src.utils import get_browser, logger
 
 logger.info("Using version %s", VERSION)
 logger.info("Log level set to %s", logging.getLevelName(LOG_LEVEL))
+logger.info(
+    "Concurrency configured: %d simultaneous sessions. Estimated memory: ~%d MB (~%.1f GB).",
+    MAX_CONCURRENCY,
+    concurrency_advisor.get_memory_estimate_mb(MAX_CONCURRENCY),
+    concurrency_advisor.get_memory_estimate_gb(MAX_CONCURRENCY),
+)
+if MAX_CONCURRENCY >= 8:
+    logger.warning(concurrency_advisor.generate_memory_warning(MAX_CONCURRENCY))
 
 app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL)
 app.add_middleware(GZipMiddleware)

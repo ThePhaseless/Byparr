@@ -10,7 +10,6 @@ from playwright.async_api import Browser, BrowserContext, Page
 
 from src.consts import (
     BROWSER_LOCALE,
-    DISABLE_HTTP3,
     MAX_CONCURRENCY,
     PROXY_PASSWORD,
     PROXY_SERVER,
@@ -20,14 +19,16 @@ from src.consts import (
 
 class BrowserDepClass(NamedTuple):
     """Encapsulates the page and browser context allocated for a request."""
+
     page: Page
     context: BrowserContext
+    http3_enabled: bool = True
 
 
 class BrowserManager:
     """
     Manages browser lifecycle, configuration, and concurrency limits.
-    Ensures safe parallel execution and prevents resource exhaustion.
+    Maintains full HTTP/3 support by default and supports selective HTTP/2 fallback.
     """
 
     def __init__(self, max_concurrency: int = MAX_CONCURRENCY) -> None:
@@ -54,15 +55,18 @@ class BrowserManager:
             }
         return None
 
-    def _build_extra_prefs(self) -> dict[str, Any]:
+    def _build_extra_prefs(self, disable_http3: bool = False) -> dict[str, Any]:
         prefs: dict[str, Any] = {
             "devtools.jsonview.enabled": False,
             "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
             "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
         }
-        if DISABLE_HTTP3:
-            # Prevents NS_ERROR_NET_HTTP3_PROTOCOL_ERROR on Cloudflare targets
+        if disable_http3:
+            # Fallback to HTTP/2 and HTTP/1.1
             prefs["network.http.http3.enable"] = False
+        else:
+            # Retain HTTP/3 enabled by default for modern sites
+            prefs["network.http.http3.enable"] = True
         return prefs
 
     async def acquire_browser(
@@ -70,6 +74,7 @@ class BrowserManager:
         header_server: str | None = None,
         header_username: str | None = None,
         header_password: str | None = None,
+        disable_http3: bool = False,
     ) -> AsyncGenerator[BrowserDepClass, None]:
         """
         Acquires an isolated browser instance within the concurrency limit.
@@ -77,7 +82,7 @@ class BrowserManager:
         proxy_config = self._resolve_proxy_config(
             header_server, header_username, header_password
         )
-        extra_prefs = self._build_extra_prefs()
+        extra_prefs = self._build_extra_prefs(disable_http3=disable_http3)
 
         async with self._semaphore:
             async with InvisiblePlaywright(
@@ -91,7 +96,9 @@ class BrowserManager:
                 context = await browser.new_context()
                 page = await context.new_page()
                 try:
-                    yield BrowserDepClass(page=page, context=context)
+                    yield BrowserDepClass(
+                        page=page, context=context, http3_enabled=not disable_http3
+                    )
                 finally:
                     try:
                         await page.close()
@@ -132,5 +139,6 @@ async def get_browser(
         header_server=x_proxy_server,
         header_username=x_proxy_username,
         header_password=x_proxy_password,
+        disable_http3=False,
     ):
         yield dep

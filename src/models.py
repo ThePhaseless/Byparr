@@ -55,6 +55,9 @@ class HealthcheckResponse(BaseModel):
     msg: str = "Byparr is working!"
     version: str = consts.VERSION
     user_agent: str
+    max_concurrency: int = consts.MAX_CONCURRENCY
+    estimated_memory_mb: int = consts.MAX_CONCURRENCY * 250
+    memory_warning: str = ""
 
 
 class Solution(BaseModel):
@@ -76,6 +79,8 @@ class LinkResponse(BaseModel):
     start_timestamp: int
     end_timestamp: int = Field(default_factory=lambda: int(time.time() * 1000))
     version: str = consts.VERSION
+    concurrency_limit: int = consts.MAX_CONCURRENCY
+    concurrency_warning: str | None = None
 
     @classmethod
     def invalid(cls, url: str) -> LinkResponse:
