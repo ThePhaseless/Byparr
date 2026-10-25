@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import pytest
 
+from src.browser_manager import BrowserManager
 from src.concurrency_advisor import ConcurrencyAdvisor
+from src.dynamic_semaphore import DynamicSemaphore
 from src.protocol_fallback import ProtocolFallbackManager
 
 
@@ -56,3 +59,45 @@ def test_concurrency_advisor_divergence_evaluation():
     limit, msg = advisor.evaluate_divergence(6)
     assert limit == 6
     assert "Concorrência alinhada" in msg
+
+
+@pytest.mark.asyncio
+async def test_dynamic_semaphore_lifecycle_and_resizing():
+    sem = DynamicSemaphore(capacity=2)
+    assert sem.capacity == 2
+    assert sem.active_count == 0
+
+    # Acquire permits
+    await sem.acquire()
+    assert sem.active_count == 1
+    await sem.acquire()
+    assert sem.active_count == 2
+
+    # Dynamically expand capacity
+    sem.set_capacity(5)
+    assert sem.capacity == 5
+
+    # Should allow acquiring 3 more without blocking
+    await sem.acquire()
+    assert sem.active_count == 3
+
+    # Release
+    await sem.release()
+    await sem.release()
+    await sem.release()
+    assert sem.active_count == 0
+
+    # Context manager test
+    async with sem:
+        assert sem.active_count == 1
+    assert sem.active_count == 0
+
+
+def test_browser_manager_runtime_update():
+    bm = BrowserManager(max_concurrency=4)
+    assert bm.max_concurrency == 4
+
+    updated = bm.update_concurrency(12)
+    assert updated == 12
+    assert bm.max_concurrency == 12
+    assert bm._semaphore.capacity == 12

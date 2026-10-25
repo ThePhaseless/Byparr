@@ -22,9 +22,11 @@ except ImportError:
 from src.browser_manager import BrowserDepClass, browser_manager, get_browser
 from src.challenge import challenge_present, solve_challenge
 from src.concurrency_advisor import concurrency_advisor
-from src.consts import MAX_CONCURRENCY
+from src.consts import AUTO_SYNC_CONCURRENCY, MAX_CONCURRENCY
 from src.content import build_response_content
 from src.models import (
+    ConcurrencyConfigRequest,
+    ConcurrencyConfigResponse,
     HealthcheckResponse,
     LinkRequest,
     LinkResponse,
@@ -44,21 +46,43 @@ router = APIRouter()
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
 
 TIMEOUT_EXCEPTIONS = tuple(
-    exc
-    for exc in (TimeoutError, PlaywrightTimeoutError, IPPlaywrightTimeoutError)
-    if exc is not None
+    exc for exc in (PlaywrightTimeoutError, IPPlaywrightTimeoutError) if exc is not None
 )
-
 PLAYWRIGHT_EXCEPTIONS = tuple(
     exc for exc in (PlaywrightError, IPPlaywrightError) if exc is not None
 )
 
 
-@router.get("/", include_in_schema=False)
-def read_root():
-    """Redirect to /docs."""
+@router.get("/")
+def index() -> RedirectResponse:
+    """Redirect to swagger docs."""
     logger.debug("Redirecting to /docs")
     return RedirectResponse(url="/docs", status_code=301)
+
+
+@router.get("/config")
+async def get_config() -> ConcurrencyConfigResponse:
+    """Returns current concurrency configuration and estimated memory footprint."""
+    current_limit = browser_manager.max_concurrency
+    return ConcurrencyConfigResponse(
+        max_concurrency=current_limit,
+        estimated_memory_mb=concurrency_advisor.get_memory_estimate_mb(current_limit),
+        memory_warning=concurrency_advisor.generate_memory_warning(current_limit),
+        auto_sync=AUTO_SYNC_CONCURRENCY,
+    )
+
+
+@router.post("/config")
+async def set_config(config: ConcurrencyConfigRequest) -> ConcurrencyConfigResponse:
+    """Updates maximum concurrency dynamically at runtime."""
+    new_limit = browser_manager.update_concurrency(config.max_concurrency)
+    concurrency_advisor.byparr_concurrency = new_limit
+    return ConcurrencyConfigResponse(
+        max_concurrency=new_limit,
+        estimated_memory_mb=concurrency_advisor.get_memory_estimate_mb(new_limit),
+        memory_warning=concurrency_advisor.generate_memory_warning(new_limit),
+        auto_sync=AUTO_SYNC_CONCURRENCY,
+    )
 
 
 @router.get("/health")
@@ -75,12 +99,13 @@ async def health_check(sb: BrowserDep):
             detail="Health check failed",
         )
 
-    mem_warning = concurrency_advisor.generate_memory_warning(MAX_CONCURRENCY)
+    current_concurrency = browser_manager.max_concurrency
+    mem_warning = concurrency_advisor.generate_memory_warning(current_concurrency)
 
     return HealthcheckResponse(
         user_agent=health_check_request.solution.user_agent,
-        max_concurrency=MAX_CONCURRENCY,
-        estimated_memory_mb=concurrency_advisor.get_memory_estimate_mb(MAX_CONCURRENCY),
+        max_concurrency=current_concurrency,
+        estimated_memory_mb=concurrency_advisor.get_memory_estimate_mb(current_concurrency),
         memory_warning=mem_warning,
     )
 
@@ -106,6 +131,16 @@ async def read_item(
     timer = TimeoutTimer(duration=request.max_timeout)
     request.url = request.url.replace('"', "").strip()
 
+    # Auto-Sync: automatically adjust Byparr concurrency if requested by Jackett
+    if AUTO_SYNC_CONCURRENCY and x_jackett_concurrency is not None:
+        if 1 <= x_jackett_concurrency <= 64 and x_jackett_concurrency != browser_manager.max_concurrency:
+            browser_manager.update_concurrency(x_jackett_concurrency)
+            concurrency_advisor.byparr_concurrency = x_jackett_concurrency
+            logger.info(
+                "Auto-Sync: Concurrency dynamically synchronized to %d sessions matching Jackett.",
+                x_jackett_concurrency,
+            )
+
     # Evaluate concurrency divergence between Jackett and Byparr
     effective_limit, divergence_msg = concurrency_advisor.evaluate_divergence(
         x_jackett_concurrency
@@ -113,10 +148,11 @@ async def read_item(
     if divergence_msg:
         logger.info("[Concurrency Check] %s", divergence_msg)
 
+    current_limit = browser_manager.max_concurrency
     if response is not None:
-        response.headers["X-Byparr-Concurrency"] = str(MAX_CONCURRENCY)
+        response.headers["X-Byparr-Concurrency"] = str(current_limit)
         response.headers["X-Byparr-Memory-Estimate-MB"] = str(
-            concurrency_advisor.get_memory_estimate_mb(MAX_CONCURRENCY)
+            concurrency_advisor.get_memory_estimate_mb(current_limit)
         )
         if divergence_msg:
             response.headers["X-Concurrency-Divergence"] = divergence_msg
@@ -203,6 +239,7 @@ async def _execute_request_flow(
         ) from e
 
     cookies = await dep.context.cookies()
+    headers = await page_request.all_headers() if page_request else {}
     content_type, response_content = await build_response_content(
         dep.page,
         request,
@@ -211,20 +248,14 @@ async def _execute_request_flow(
         page_html=page_html,
     )
 
-    user_agent = (
-        page_request.request.headers.get("user-agent") or "" if page_request else ""
-    )
-
     return LinkResponse(
-        message="Success",
         solution=Solution(
-            user_agent=user_agent,
             url=dep.page.url,
-            status=HTTPStatus.OK,
+            status=page_request.status if page_request else 200,
             cookies=cookies,
-            headers=page_request.headers if page_request else {},
+            user_agent=await dep.page.evaluate("navigator.userAgent"),
+            headers=headers,
             response=response_content,
-            content_type=content_type,
         ),
         start_timestamp=start_time,
         concurrency_limit=effective_limit,
@@ -236,7 +267,7 @@ async def setup_routes(request: LinkRequest, dep: BrowserDepClass) -> None:
     """Install request routes for media blocking."""
     if request.block_media:
 
-        async def block_media_route(route) -> None:
+        async def block_media_route(route):
             if route.request.resource_type in ("image", "media", "font"):
                 await route.abort()
             else:
@@ -273,5 +304,5 @@ async def _wait_for_networkidle(dep: BrowserDepClass, timer: TimeoutTimer) -> No
         await dep.page.wait_for_load_state("networkidle", timeout=remaining_ms(timer))
     except TIMEOUT_EXCEPTIONS:
         logger.info(
-            "networkidle timed out after domcontentloaded; continuing with loaded page"
+            "Network idle not reached within timeout, continuing with current page state."
         )

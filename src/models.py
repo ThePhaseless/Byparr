@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-from http.client import INTERNAL_SERVER_ERROR
 from typing import Any
 
 from playwright.sync_api import Cookie
@@ -14,26 +13,16 @@ MS_PER_SECOND = 1000
 
 
 class LinkRequest(BaseModel):
-    model_config = {"populate_by_name": True}
-
-    cmd: str = Field(
-        default="request.get",
-        description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
-    )
-    url: str = Field(pattern=r"^https?://", default="https://")
-    max_timeout: int = Field(
-        default=60,
-        alias="maxTimeout",
-        description=(
-            "Maximum timeout for resolving the anti-bot challenge. Values below 1000 "
-            "are treated as seconds; values of 1000 or more as milliseconds, matching "
-            "FlareSolverr's maxTimeout parameter."
-        ),
-    )
+    model_config = {"alias_generator": to_camel, "populate_by_name": True}
+    cmd: str = "request.get"
+    url: str
+    max_timeout: int = Field(default=60, alias="maxTimeout")
+    cookies: list[Cookie] = []
+    post_data: str | None = Field(default=None, alias="postData")
     block_media: bool = Field(
         default=consts.BLOCK_MEDIA,
         alias="blockMedia",
-        description="Block image, media, and font resources from loading.",
+        description="Block media (images, fonts, stylesheets) for faster scraping.",
     )
     return_only_cookies: bool = Field(
         default=consts.RETURN_ONLY_COOKIES,
@@ -60,6 +49,19 @@ class HealthcheckResponse(BaseModel):
     memory_warning: str = ""
 
 
+class ConcurrencyConfigRequest(BaseModel):
+    model_config = {"alias_generator": to_camel, "populate_by_name": True}
+    max_concurrency: int = Field(ge=1, le=64, description="Target concurrent browser sessions (1-64)")
+
+
+class ConcurrencyConfigResponse(BaseModel):
+    model_config = {"alias_generator": to_camel, "populate_by_name": True}
+    max_concurrency: int
+    estimated_memory_mb: int
+    memory_warning: str
+    auto_sync: bool
+
+
 class Solution(BaseModel):
     model_config = {"alias_generator": to_camel, "populate_by_name": True}
     url: str
@@ -68,13 +70,12 @@ class Solution(BaseModel):
     user_agent: str = ""
     headers: dict[str, Any] = {}
     response: str = ""
-    content_type: str = Field(default="text/html", alias="contentType")
 
 
 class LinkResponse(BaseModel):
     model_config = {"alias_generator": to_camel, "populate_by_name": True}
     status: str = "ok"
-    message: str
+    message: str = ""
     solution: Solution
     start_timestamp: int
     end_timestamp: int = Field(default_factory=lambda: int(time.time() * 1000))
@@ -84,14 +85,12 @@ class LinkResponse(BaseModel):
 
     @classmethod
     def invalid(cls, url: str) -> LinkResponse:
-        """
-        Return an invalid LinkResponse with default error values.
-
-        This method is used to generate a response indicating an invalid request.
-        """
         return cls(
             status="error",
-            message="Invalid request",
-            solution=Solution(url=url, status=INTERNAL_SERVER_ERROR),
+            message="Error: URL is not valid.",
+            solution=Solution(
+                url=url,
+                status=400,
+            ),
             start_timestamp=int(time.time() * 1000),
         )

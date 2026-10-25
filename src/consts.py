@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     browser_locale: str | None = None
 
     max_concurrency: int = 5
+    auto_sync_concurrency: bool = True
     disable_http3: bool = True
 
 
@@ -44,4 +45,5 @@ OWUI_API_KEY = settings.owui_api_key
 BROWSER_LOCALE = settings.browser_locale
 
 MAX_CONCURRENCY = settings.max_concurrency
+AUTO_SYNC_CONCURRENCY = settings.auto_sync_concurrency
 DISABLE_HTTP3 = settings.disable_http3

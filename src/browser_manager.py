@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncGenerator
 from typing import Annotated, Any, NamedTuple, cast
 
@@ -15,6 +14,7 @@ from src.consts import (
     PROXY_SERVER,
     PROXY_USERNAME,
 )
+from src.dynamic_semaphore import DynamicSemaphore
 
 
 class BrowserDepClass(NamedTuple):
@@ -27,13 +27,19 @@ class BrowserDepClass(NamedTuple):
 
 class BrowserManager:
     """
-    Manages browser lifecycle, configuration, and concurrency limits.
-    Maintains full HTTP/3 support by default and supports selective HTTP/2 fallback.
+    Manages browser lifecycle, configuration, and dynamic concurrency limits.
+    Supports dynamic runtime resizing and selective HTTP/2 fallback.
     """
 
     def __init__(self, max_concurrency: int = MAX_CONCURRENCY) -> None:
         self.max_concurrency = max_concurrency
-        self._semaphore = asyncio.Semaphore(max_concurrency)
+        self._semaphore = DynamicSemaphore(max_concurrency)
+
+    def update_concurrency(self, new_limit: int) -> int:
+        """Dynamically update maximum concurrency at runtime."""
+        new_capacity = self._semaphore.set_capacity(new_limit)
+        self.max_concurrency = new_capacity
+        return new_capacity
 
     def _resolve_proxy_config(
         self,
