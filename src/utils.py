@@ -1,20 +1,15 @@
 import logging
 import time
-from collections.abc import AsyncGenerator
-from typing import Annotated, NamedTuple, cast
 
-from fastapi import Header
-from invisible_playwright.async_api import InvisiblePlaywright
-from playwright.async_api import Browser, BrowserContext, Page
 from pydantic import BaseModel, Field
 
-from src.consts import (
-    BROWSER_LOCALE,
-    LOG_LEVEL,
-    PROXY_PASSWORD,
-    PROXY_SERVER,
-    PROXY_USERNAME,
+from src.browser_manager import (
+    BrowserDepClass,
+    BrowserManager,
+    browser_manager,
+    get_browser,
 )
+from src.consts import LOG_LEVEL
 
 solver_logger = logging.getLogger("playwright_captcha")
 solver_logger.handlers.clear()
@@ -47,65 +42,13 @@ def remaining_ms(timer: TimeoutTimer) -> float:
     return max(MIN_WAIT_MS, timer.remaining() * 1000)
 
 
-class BrowserDepClass(NamedTuple):
-    page: Page
-    context: BrowserContext
-
-
-async def get_browser(
-    x_proxy_server: Annotated[
-        str | None,
-        Header(
-            alias="X-Proxy-Server",
-            description="Override proxy server for this request in protocol://host:port format.",
-        ),
-    ] = None,
-    x_proxy_username: Annotated[
-        str | None,
-        Header(
-            alias="X-Proxy-Username",
-        ),
-    ] = None,
-    x_proxy_password: Annotated[
-        str | None,
-        Header(
-            alias="X-Proxy-Password",
-        ),
-    ] = None,
-) -> AsyncGenerator[BrowserDepClass]:
-    """Get InvisiblePlaywright browser instance."""
-    header_server = x_proxy_server
-    header_username = x_proxy_username
-    header_password = x_proxy_password
-
-    proxy_config = None
-
-    if header_server:
-        proxy_config = {
-            "server": header_server,
-            "username": header_username,
-            "password": header_password,
-        }
-    elif PROXY_SERVER:
-        proxy_config = {
-            "server": PROXY_SERVER,
-            "username": PROXY_USERNAME,
-            "password": PROXY_PASSWORD,
-        }
-
-    async with InvisiblePlaywright(
-        headless=True,
-        proxy=proxy_config,
-        humanize=True,
-        locale=BROWSER_LOCALE or "auto",
-        extra_prefs={
-            "devtools.jsonview.enabled": False,
-            "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
-            "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
-        },
-    ) as browser_raw:
-        # InvisiblePlaywright yields a Browser instance
-        browser = cast("Browser", browser_raw)
-        context = await browser.new_context()
-        page = await context.new_page()
-        yield BrowserDepClass(page, context)
+__all__ = [
+    "BrowserDepClass",
+    "BrowserManager",
+    "TimeoutTimer",
+    "browser_manager",
+    "get_browser",
+    "logger",
+    "remaining_ms",
+    "solver_logger",
+]

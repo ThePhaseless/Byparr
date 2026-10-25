@@ -8,6 +8,16 @@ from fastapi.responses import RedirectResponse
 from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
+try:
+    from invisible_playwright._pw.async_api import (
+        Error as IPPlaywrightError,
+        TimeoutError as IPPlaywrightTimeoutError,
+    )
+except ImportError:
+    IPPlaywrightError = None  # type: ignore[assignment,misc]
+    IPPlaywrightTimeoutError = None  # type: ignore[assignment,misc]
+
+from src.browser_manager import BrowserDepClass, get_browser
 from src.challenge import challenge_present, solve_challenge
 from src.content import build_response_content
 from src.models import (
@@ -17,19 +27,26 @@ from src.models import (
     Solution,
 )
 from src.utils import (
-    BrowserDepClass,
     TimeoutTimer,
-    get_browser,
     logger,
     remaining_ms,
 )
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
-
 router = APIRouter()
 
 BrowserDep = Annotated[BrowserDepClass, Depends(get_browser)]
+
+TIMEOUT_EXCEPTIONS = tuple(
+    exc
+    for exc in (TimeoutError, PlaywrightTimeoutError, IPPlaywrightTimeoutError)
+    if exc is not None
+)
+
+PLAYWRIGHT_EXCEPTIONS = tuple(
+    exc for exc in (PlaywrightError, IPPlaywrightError) if exc is not None
+)
 
 
 @router.get("/", include_in_schema=False)
@@ -69,17 +86,23 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
         challenge_detected, page_html, page_request = await _navigate_and_solve(
             dep, request, timer
         )
-    except (TimeoutError, PlaywrightTimeoutError) as e:
-        logger.error("Timed out while loading the page or solving the challenge")
+    except TIMEOUT_EXCEPTIONS as e:
+        logger.error("Timed out while loading the page or solving the challenge: %s", e)
         raise HTTPException(
             status_code=408,
             detail="Timed out while loading the page or solving the challenge",
         ) from e
-    except PlaywrightError as e:
+    except PLAYWRIGHT_EXCEPTIONS as e:
         logger.error("Could not reach the target: %s", e)
         raise HTTPException(
             status_code=502,
             detail=f"Could not reach the target: {e}",
+        ) from e
+    except Exception as e:
+        logger.error("Unexpected error reaching the target: %s", e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Unexpected error: {e}",
         ) from e
 
     cookies = await dep.context.cookies()
@@ -149,7 +172,7 @@ async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:
     """Wait for network idle, tolerating post-DOM-load stalls."""
     try:
         await dep.page.wait_for_load_state("networkidle", timeout=remaining_ms(timer))
-    except PlaywrightTimeoutError:
+    except TIMEOUT_EXCEPTIONS:
         logger.info(
             "networkidle timed out after domcontentloaded; continuing with loaded page"
         )

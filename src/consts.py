@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     owui_api_key: str | None = None
     browser_locale: str | None = None
 
+    max_concurrency: int = 5
+    disable_http3: bool = True
+
 
 settings = Settings()
 
@@ -39,3 +42,6 @@ RETURN_ONLY_COOKIES = settings.return_only_cookies
 
 OWUI_API_KEY = settings.owui_api_key
 BROWSER_LOCALE = settings.browser_locale
+
+MAX_CONCURRENCY = settings.max_concurrency
+DISABLE_HTTP3 = settings.disable_http3

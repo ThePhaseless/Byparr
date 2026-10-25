@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+import asyncio
+from collections.abc import AsyncGenerator
+from typing import Annotated, Any, NamedTuple, cast
+
+from fastapi import Header
+from invisible_playwright.async_api import InvisiblePlaywright
+from playwright.async_api import Browser, BrowserContext, Page
+
+from src.consts import (
+    BROWSER_LOCALE,
+    DISABLE_HTTP3,
+    MAX_CONCURRENCY,
+    PROXY_PASSWORD,
+    PROXY_SERVER,
+    PROXY_USERNAME,
+)
+
+
+class BrowserDepClass(NamedTuple):
+    """Encapsulates the page and browser context allocated for a request."""
+    page: Page
+    context: BrowserContext
+
+
+class BrowserManager:
+    """
+    Manages browser lifecycle, configuration, and concurrency limits.
+    Ensures safe parallel execution and prevents resource exhaustion.
+    """
+
+    def __init__(self, max_concurrency: int = MAX_CONCURRENCY) -> None:
+        self.max_concurrency = max_concurrency
+        self._semaphore = asyncio.Semaphore(max_concurrency)
+
+    def _resolve_proxy_config(
+        self,
+        header_server: str | None = None,
+        header_username: str | None = None,
+        header_password: str | None = None,
+    ) -> dict[str, Any] | None:
+        if header_server:
+            return {
+                "server": header_server,
+                "username": header_username,
+                "password": header_password,
+            }
+        if PROXY_SERVER:
+            return {
+                "server": PROXY_SERVER,
+                "username": PROXY_USERNAME,
+                "password": PROXY_PASSWORD,
+            }
+        return None
+
+    def _build_extra_prefs(self) -> dict[str, Any]:
+        prefs: dict[str, Any] = {
+            "devtools.jsonview.enabled": False,
+            "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
+            "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
+        }
+        if DISABLE_HTTP3:
+            # Prevents NS_ERROR_NET_HTTP3_PROTOCOL_ERROR on Cloudflare targets
+            prefs["network.http.http3.enable"] = False
+        return prefs
+
+    async def acquire_browser(
+        self,
+        header_server: str | None = None,
+        header_username: str | None = None,
+        header_password: str | None = None,
+    ) -> AsyncGenerator[BrowserDepClass, None]:
+        """
+        Acquires an isolated browser instance within the concurrency limit.
+        """
+        proxy_config = self._resolve_proxy_config(
+            header_server, header_username, header_password
+        )
+        extra_prefs = self._build_extra_prefs()
+
+        async with self._semaphore:
+            async with InvisiblePlaywright(
+                headless=True,
+                proxy=proxy_config,
+                humanize=True,
+                locale=BROWSER_LOCALE or "auto",
+                extra_prefs=extra_prefs,
+            ) as browser_raw:
+                browser = cast("Browser", browser_raw)
+                context = await browser.new_context()
+                page = await context.new_page()
+                try:
+                    yield BrowserDepClass(page=page, context=context)
+                finally:
+                    try:
+                        await page.close()
+                    except Exception:
+                        pass
+                    try:
+                        await context.close()
+                    except Exception:
+                        pass
+
+
+browser_manager = BrowserManager()
+
+
+async def get_browser(
+    x_proxy_server: Annotated[
+        str | None,
+        Header(
+            alias="X-Proxy-Server",
+            description="Override proxy server for this request in protocol://host:port format.",
+        ),
+    ] = None,
+    x_proxy_username: Annotated[
+        str | None,
+        Header(
+            alias="X-Proxy-Username",
+        ),
+    ] = None,
+    x_proxy_password: Annotated[
+        str | None,
+        Header(
+            alias="X-Proxy-Password",
+        ),
+    ] = None,
+) -> AsyncGenerator[BrowserDepClass, None]:
+    """Dependency provider yielding an isolated stealth browser instance."""
+    async for dep in browser_manager.acquire_browser(
+        header_server=x_proxy_server,
+        header_username=x_proxy_username,
+        header_password=x_proxy_password,
+    ):
+        yield dep
