@@ -22,7 +22,7 @@ urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 
 test = [
     "httpx2==2.16.*",
-    "pytest==9.1.*",
+    "pytest==9.2.*",
     "pytest-asyncio==1.4.*",
     "pytest-retry==1.7.*",
     "pytest-xdist==3.8.*",
