@@ -65,7 +65,7 @@ docker compose up -d
 > shm_size: "1gb"
 > tmpfs:
 >   - /tmp:exec,mode=1777,size=1G
->   - /cache:mode=1777,size=512M
+>   - /cache:exec,mode=1777,size=2G
 >```
 
 ### Docker install
