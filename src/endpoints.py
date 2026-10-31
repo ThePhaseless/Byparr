@@ -1,3 +1,4 @@
+import asyncio
 import time
 import warnings
 from http import HTTPStatus
@@ -135,8 +136,16 @@ async def _navigate_and_solve(
 
     if await challenge_present(dep.page):
         await solve_challenge(dep.page, timer)
-    await _wait_for_networkidle(dep, timer)
+    await asyncio.gather(
+        _wait_for_networkidle(dep, timer), _wait_on_demand(request.wait_in_seconds)
+    )
     return page_request
+
+
+async def _wait_on_demand(seconds: int) -> None:
+    if seconds > 0:
+        logger.info("Waiting %s seconds before returning the response...", seconds)
+        await asyncio.sleep(seconds)
 
 
 async def _wait_for_networkidle(dep: BrowserDep, timer: TimeoutTimer) -> None:
