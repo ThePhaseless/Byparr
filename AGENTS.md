@@ -18,6 +18,7 @@
 - Models use Pydantic v2 with camelCase aliasing for responses (see src/models.py).
 - LinkResponse.invalid() is the standard error response shape; keep fields consistent with FlareSolverr style.
 - get_camoufox() constructs AsyncCamoufox with addons and optional proxy config from env vars.
+- src/utils.py memoizes invisible-core's egress-IP and GeoIP lookups by replacing the private module attributes invisible_core._geo.discover_egress_ip and invisible_core.download.ensure_geoip_mmdb with RememberedLookup wrappers; proxied egress lookups pass straight through. warm_up() runs them once at start from the FastAPI lifespan, and get_browser() awaits it first so paths without the lifespan (TestClient without `with`) are gated too.
 
 ## Config and environment
 
@@ -27,7 +28,6 @@
 ## Developer workflows
 
 - Local run: uv sync && uv run main.py
-- Init mode: uv run main.py --init (pre-warms health check via browser setup)
 - Tests: uv sync --group test && uv run pytest --retries 5
 - Docker troubleshooting: docker build --target test .
 

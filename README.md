@@ -30,9 +30,15 @@ Valid tags are maintained in the [IANA Language Subtag Registry](https://www.ian
 
 Set `BROWSER_TIMEZONE` to an [IANA timezone name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) like `Europe/Berlin` or `Asia/Shanghai` to fix the browser's timezone. An explicit value is used as is, also behind a proxy.
 
-When either `BROWSER_TIMEZONE` or `BROWSER_LOCALE` is unset, Byparr looks up its public IP through `api.ipify.org`, `icanhazip.com` or `checkip.amazonaws.com` and maps it to a timezone and language with a GeoIP database downloaded from GitHub. Without a proxy this happens once, on the first request, and the result is reused until Byparr restarts (restart it if its public IP moves to another country). If that lookup fails, the host timezone (`TZ`, otherwise the system's, otherwise UTC) and `en-US` are used, and the lookup is retried after 10 minutes. With a proxy (`PROXY_SERVER` or the `X-Proxy-Server` header) it runs for every request, through the proxy.
+When Byparr starts, it downloads the GeoIP database from GitHub before it accepts requests. The image does not include the database, so every new container downloads it once. Without `PROXY_SERVER`, Byparr also looks up its public IP through `api.ipify.org`, `icanhazip.com` or `checkip.amazonaws.com` at the same time. When `BROWSER_TIMEZONE` or `BROWSER_LOCALE` is unset, the database maps that IP to a timezone and language. Byparr keeps both results until it restarts, so restart it if its public IP moves to another country or to get a newer database.
 
-If those hosts are slow or blocked on your network, set both `BROWSER_TIMEZONE` and `BROWSER_LOCALE`. The public IP is still looked up, by Byparr and again each time the browser starts, because the browser uses it for WebRTC and geolocation, but the values you set no longer depend on it: a failed lookup keeps them. A blocked host can still delay each browser start by its connection timeout.
+This usually adds a few seconds to start-up, and the port stays closed until it is done. If GitHub is unreachable it can take about a minute, and a stalled download a few minutes. A download that keeps going but crawls is capped by `INVISIBLE_DOWNLOAD_DEADLINE`, in seconds per attempt (default 1800, up to 3 attempts). Because an open port means Byparr is ready, a TCP readiness probe on `PORT` (or an HTTP probe on `/docs`) keeps traffic away from a container that is still starting.
+
+If the lookup or the download fails, Byparr starts anyway and logs a warning. Browsers then get the host timezone (`TZ`, otherwise the system's, otherwise UTC) and `en-US`. Byparr tries the public IP again on the first request at least 10 minutes after the failure. The database is retried sooner, on the first request at least 30 seconds after; each failure in a row doubles that wait, up to 10 minutes.
+
+With a proxy (`PROXY_SERVER` or the `X-Proxy-Server` header), Byparr looks up the public IP through the proxy for every request, and all requests share the one database. If the database download failed, proxied requests fail until a retry succeeds, unless `BROWSER_TIMEZONE` is set.
+
+If those hosts are slow or blocked on your network, set both `BROWSER_TIMEZONE` and `BROWSER_LOCALE`. Byparr still looks up the public IP once at start, because the browser uses it for WebRTC and geolocation, but a failed lookup keeps the values you set.
 
 ## Proxy Recommendation
 

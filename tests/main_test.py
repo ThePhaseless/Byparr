@@ -1,7 +1,7 @@
 import base64
 from http import HTTPStatus
 from json import JSONDecodeError
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx2
 import pytest
@@ -91,6 +91,16 @@ def test_json_api():
     solution = response.json()["solution"]
     assert solution["userAgent"]
     assert '"ip"' in solution["response"]
+
+
+def test_lifespan_warms_up_before_serving():
+    """Uvicorn opens the port only after the GeoIP warm-up has finished."""
+    with patch("main.warm_up", new=AsyncMock()) as warm, TestClient(app) as local:
+        warm.assert_awaited_once()
+        assert (
+            local.get("/", follow_redirects=False).status_code
+            == HTTPStatus.MOVED_PERMANENTLY
+        )
 
 
 def test_health_check():
