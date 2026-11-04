@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, NamedTuple, cast
 
 from fastapi import Header
-from invisible_core import prepare_session_geo
+from invisible_core import GeoTimezoneError, SessionGeo, prepare_session_geo
 from invisible_playwright.async_api import InvisiblePlaywright
 from playwright.async_api import Browser, BrowserContext, Page
 from pydantic import BaseModel, Field
@@ -72,7 +72,15 @@ _geo: BrowserGeo | None = None
 
 def resolve_browser_geo() -> BrowserGeo:
     """Resolve the timezone and locale of a session without a proxy."""
-    geo = prepare_session_geo(BROWSER_TIMEZONE or "", None, BROWSER_LOCALE or "auto")
+    try:
+        geo = prepare_session_geo(
+            BROWSER_TIMEZONE or "", None, BROWSER_LOCALE or "auto"
+        )
+    except GeoTimezoneError as exc:
+        # Since invisible-core 49.46 a failed "auto" lookup raises instead of
+        # returning an empty zone; the host zone below is still the fallback.
+        logger.debug("Egress geo lookup failed: %s", exc)
+        geo = SessionGeo("", None)
     locale = BROWSER_LOCALE or (geo.locale.primary if geo.locale else "en-US")
     if geo.timezone:
         logger.info("Browser timezone %s, locale %s", geo.timezone, locale)
@@ -80,7 +88,7 @@ def resolve_browser_geo() -> BrowserGeo:
     timezone = get_localzone_name() or "UTC"
     logger.warning(
         "Could not resolve the timezone from the egress IP, using %s and locale %s "
-        "for %d seconds. Set BROWSER_TIMEZONE and BROWSER_LOCALE to skip the lookup.",
+        "for %d seconds. Set BROWSER_TIMEZONE and BROWSER_LOCALE to not depend on it.",
         timezone,
         locale,
         GEO_RETRY_SECONDS,

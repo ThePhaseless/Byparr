@@ -3,7 +3,7 @@ import math
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from invisible_core import SessionGeo, SessionLocale
+from invisible_core import GeoTimezoneError, SessionGeo, SessionLocale
 
 from src import utils
 
@@ -67,18 +67,33 @@ async def test_failed_lookup_without_a_host_zone_uses_utc():
 
 
 @pytest.mark.asyncio
-async def test_explicit_timezone_and_locale_touch_no_network():
-    """BROWSER_TIMEZONE with BROWSER_LOCALE needs neither egress IP nor geoip."""
+async def test_raised_lookup_falls_back_to_host_timezone():
+    """invisible-core >=49.46 raises on a failed "auto" lookup; it must not escape."""
+    with (
+        patch("src.utils.get_localzone_name", return_value="Asia/Shanghai"),
+        patch(
+            "src.utils.prepare_session_geo",
+            side_effect=GeoTimezoneError("egress IP discovery failed"),
+        ),
+    ):
+        geo = await utils.get_browser_geo()
+
+    assert (geo.timezone, geo.locale) == ("Asia/Shanghai", "en-US")
+    assert geo.expires_at != math.inf  # retried later, like any failed lookup
+
+
+@pytest.mark.asyncio
+async def test_explicit_timezone_and_locale_survive_a_failed_lookup():
+    """The egress IP is always looked up now, but explicit values do not need it."""
     with (
         patch("src.utils.BROWSER_TIMEZONE", "Asia/Shanghai"),
         patch("src.utils.BROWSER_LOCALE", "zh-CN"),
-        patch("invisible_core._geo.discover_egress_ip") as discover,
+        patch("invisible_core._geo.discover_egress_ip", side_effect=OSError("blocked")),
         patch("invisible_core.download.ensure_geoip_mmdb") as geoip,
     ):
         geo = await utils.get_browser_geo()
 
-    assert (geo.timezone, geo.locale) == ("Asia/Shanghai", "zh-CN")
-    discover.assert_not_called()
+    assert geo == utils.BrowserGeo("Asia/Shanghai", "zh-CN", math.inf)
     geoip.assert_not_called()
 
 
