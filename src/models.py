@@ -40,6 +40,14 @@ class LinkRequest(BaseModel):
         alias="returnOnlyCookies",
         description="Return only cookies, skip the page HTML content in the response.",
     )
+    wait_in_seconds: int = Field(
+        default=0,
+        alias="waitInSeconds",
+        description=(
+            "Length to wait in seconds after solving the challenge, and before returning the results. Useful to allow it to load dynamic content"
+        ),
+        ge=0,
+    )
 
     @field_validator("max_timeout")
     @classmethod
