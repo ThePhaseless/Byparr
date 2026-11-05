@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "fastapi[standard]==0.143.*",
+    "fastapi[standard]==0.162.*",
     "invisible-playwright>=0.15.0",
     "playwright==1.64.*",
     "playwright-captcha==0.1.*",
