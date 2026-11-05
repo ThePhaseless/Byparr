@@ -27,7 +27,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     yield
 
 
-app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, log_level=LOG_LEVEL, lifespan=lifespan)
+app = FastAPI(debug=LOG_LEVEL == logging.DEBUG, lifespan=lifespan)
 app.add_middleware(GZipMiddleware)
 app.add_middleware(LogRequest)
 
