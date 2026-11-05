@@ -59,4 +59,6 @@ ENV VERSION=${VERSION}
 USER 1000
 EXPOSE $PORT
 HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://127.0.0.1:${PORT}/health"
-ENTRYPOINT ["tini", "--", "/app/.venv/bin/python", "main.py"]
+# -s: register as a subreaper when tini is not PID 1 (e.g. a pod with a shared
+# process namespace), so orphaned browser processes are still reaped.
+ENTRYPOINT ["tini", "-s", "--", "/app/.venv/bin/python", "main.py"]
