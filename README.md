@@ -71,8 +71,9 @@ docker compose up -d
 > shm_size: "1gb"
 > tmpfs:
 >   - /tmp:exec,mode=1777,size=1G
->   - /cache:mode=1777,size=512M
 >```
+>
+> Do not mount a tmpfs over `/cache`: it holds the browser baked into the image, and hiding it makes Byparr download it again on every start.
 
 ### Docker install
 
