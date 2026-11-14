@@ -2,9 +2,9 @@ import time
 from asyncio import sleep
 from contextlib import suppress
 
-from playwright.async_api import Error as PlaywrightError
+from invisible_playwright.async_api import Error as PlaywrightError
+from invisible_playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import FloatRect, Page
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright_captcha.solvers.click.cloudflare.utils.detection import (
     CF_INTERSTITIAL_INDICATORS_SELECTORS,
     detect_cloudflare_challenge,

@@ -9,6 +9,7 @@ from playwright.async_api import Browser, BrowserContext, Page
 
 from src.consts import (
     BROWSER_LOCALE,
+    BROWSER_TIMEZONE,
     MAX_CONCURRENCY,
     PROXY_PASSWORD,
     PROXY_SERVER,
@@ -66,6 +67,7 @@ class BrowserManager:
             "devtools.jsonview.enabled": False,
             "browser.tabs.remote.useCrossOriginOpenerPolicy": False,
             "browser.tabs.remote.useCrossOriginEmbedderPolicy": False,
+            "dom.security.https_first": False,
         }
         if disable_http3:
             # Fallback to HTTP/2 and HTTP/1.1
@@ -85,17 +87,26 @@ class BrowserManager:
         """
         Acquires an isolated browser instance within the concurrency limit.
         """
+        from src.utils import get_browser_geo, warm_up
+
+        await warm_up()
+
         proxy_config = self._resolve_proxy_config(
             header_server, header_username, header_password
         )
         extra_prefs = self._build_extra_prefs(disable_http3=disable_http3)
+        timezone = BROWSER_TIMEZONE or ""
+        locale = BROWSER_LOCALE or "auto"
+        if proxy_config is None:
+            timezone, locale, _ = await get_browser_geo()
 
         async with self._semaphore:
             async with InvisiblePlaywright(
                 headless=True,
                 proxy=proxy_config,
                 humanize=True,
-                locale=BROWSER_LOCALE or "auto",
+                locale=locale,
+                timezone=timezone,
                 extra_prefs=extra_prefs,
             ) as browser_raw:
                 browser = cast("Browser", browser_raw)

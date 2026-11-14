@@ -8,26 +8,27 @@ version = "0.1.0"
 description = "API for getting cookies for Cloudflare challenges"
 readme = "README.md"
 dependencies = [
-    "fastapi[standard]==0.141.*",
-    "invisible-playwright>=0.6.1",
-    "playwright==1.62.*",
+    "fastapi[standard]==0.162.*",
+    "invisible-playwright>=0.15.0",
+    "playwright==1.64.*",
     "playwright-captcha==0.1.*",
     "pydantic==2.*",
     "pydantic-settings==2.*",
-    "trafilatura==2.2.*",
+    "trafilatura==2.3.*",
+    "tzlocal==5.*",
 ]
 urls = { repository = "https://github.com/ThePhaseless/Byparr" }
 [dependency-groups]
 
 test = [
-    "httpx2==2.12.*",
-    "pytest==9.1.*",
+    "httpx2==2.16.*",
+    "pytest==9.2.*",
     "pytest-asyncio==1.4.*",
     "pytest-retry==1.7.*",
     "pytest-xdist==3.8.*",
     "setuptools>=80.9.0",
 ]
-dev = ["deptry==0.25.*", "ruff==0.16.*"]
+dev = ["deptry==0.25.*", "ruff==0.17.*"]
 [tool.deptry.per_rule_ignores]
 DEP002 = ["pyautogui"]
 [tool.ruff.lint]

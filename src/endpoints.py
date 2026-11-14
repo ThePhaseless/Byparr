@@ -7,8 +7,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from fastapi.responses import RedirectResponse
-from playwright.async_api import Error as PlaywrightError
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from invisible_playwright.async_api import Error as PlaywrightError
+from invisible_playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 try:
     from invisible_playwright._pw.async_api import (
@@ -220,17 +220,15 @@ async def _execute_request_flow(
     await setup_routes(request, dep)
 
     try:
-        challenge_detected, page_html, page_request = await _navigate_and_solve(
-            dep, request, timer
-        )
-    except TIMEOUT_EXCEPTIONS as e:
+        page_request = await _navigate_and_solve(dep, request, timer)
+    except (TimeoutError, *TIMEOUT_EXCEPTIONS) as e:
         logger.error("Timed out while loading the page or solving the challenge: %s", e)
         raise HTTPException(
             status_code=408,
             detail="Timed out while loading the page or solving the challenge",
         ) from e
-    except Exception as e:
-        if protocol_fallback_manager.is_http3_error(e):
+    except PLAYWRIGHT_EXCEPTIONS as e:
+        if dep.http3_enabled and protocol_fallback_manager.is_http3_error(e):
             raise
         logger.error("Error navigating to target: %s", e)
         raise HTTPException(
@@ -238,24 +236,32 @@ async def _execute_request_flow(
             detail=f"Could not reach the target: {e}",
         ) from e
 
-    cookies = await dep.context.cookies()
-    headers = await page_request.all_headers() if page_request else {}
+    cookie_urls = [request.url]
+    if dep.page.url and dep.page.url not in cookie_urls:
+        cookie_urls.append(dep.page.url)
+    cookies = await dep.context.cookies(cookie_urls)
     content_type, response_content = await build_response_content(
         dep.page,
         request,
         page_request,
-        challenge_detected=challenge_detected,
-        page_html=page_html,
+    )
+
+    user_agent = (
+        page_request.request.headers.get("user-agent") or ""
+        if page_request and page_request.request
+        else ""
     )
 
     return LinkResponse(
+        message="Success",
         solution=Solution(
+            user_agent=user_agent,
             url=dep.page.url,
-            status=page_request.status if page_request else 200,
+            status=HTTPStatus.OK,
             cookies=cookies,
-            user_agent=await dep.page.evaluate("navigator.userAgent"),
-            headers=headers,
+            headers=page_request.headers if page_request else {},
             response=response_content,
+            content_type=content_type,
         ),
         start_timestamp=start_time,
         concurrency_limit=effective_limit,
@@ -280,22 +286,17 @@ async def _navigate_and_solve(
     dep: BrowserDepClass,
     request: LinkRequest,
     timer: TimeoutTimer,
-) -> tuple[bool, str | None, object]:
-    """Navigate to the URL, then solve a challenge or wait for network idle."""
-    page_html: str | None = None
+) -> object:
+    """Navigate to the URL, solve a challenge if one is up, then wait for network idle."""
     page_request = await dep.page.goto(request.url, timeout=remaining_ms(timer))
     await dep.page.wait_for_load_state(
         state="domcontentloaded", timeout=remaining_ms(timer)
     )
 
-    if not await challenge_present(dep.page):
-        page_html = await dep.page.content()
-        await _wait_for_networkidle(dep, timer)
-        return False, page_html, page_request
-
-    await solve_challenge(dep.page, timer)
+    if await challenge_present(dep.page):
+        await solve_challenge(dep.page, timer)
     await _wait_for_networkidle(dep, timer)
-    return True, page_html, page_request
+    return page_request
 
 
 async def _wait_for_networkidle(dep: BrowserDepClass, timer: TimeoutTimer) -> None:

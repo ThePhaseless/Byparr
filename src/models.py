@@ -70,12 +70,13 @@ class Solution(BaseModel):
     user_agent: str = ""
     headers: dict[str, Any] = {}
     response: str = ""
+    content_type: str = Field(default="text/html", alias="contentType")
 
 
 class LinkResponse(BaseModel):
     model_config = {"alias_generator": to_camel, "populate_by_name": True}
     status: str = "ok"
-    message: str = ""
+    message: str = "Success"
     solution: Solution
     start_timestamp: int
     end_timestamp: int = Field(default_factory=lambda: int(time.time() * 1000))

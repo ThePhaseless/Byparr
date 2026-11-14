@@ -1,7 +1,7 @@
 # Ubuntu is required by playwright.
 # Pin to 24.04 LTS: ubuntu:latest floats to 26.04, which Playwright 1.58
 # cannot install firefox deps for (no libgtk-3 -> camoufox fails to launch).
-FROM ubuntu:24.04 AS base
+FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c AS base
 
 ARG GITHUB_BUILD=false
 
@@ -18,7 +18,7 @@ RUN apt-get update &&\
     apt-get install -y --no-install-recommends curl ca-certificates git tini &&\
     apt-get clean &&\
     rm -rf /var/lib/apt/lists/*
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490 /uv /uvx /bin/
 
 FROM base AS devcontainer
 RUN apt-get update &&\
@@ -59,4 +59,6 @@ ENV VERSION=${VERSION}
 USER 1000
 EXPOSE $PORT
 HEALTHCHECK --interval=15m --timeout=30s --start-period=5s --retries=3 CMD curl "http://127.0.0.1:${PORT}/health"
-ENTRYPOINT ["tini", "--", "/app/.venv/bin/python", "main.py"]
+# -s: register as a subreaper when tini is not PID 1 (e.g. a pod with a shared
+# process namespace), so orphaned browser processes are still reaped.
+ENTRYPOINT ["tini", "-s", "--", "/app/.venv/bin/python", "main.py"]

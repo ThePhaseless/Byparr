@@ -1,4 +1,4 @@
-# Byparr
+# Byparr [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/ThePhaseless)
 
 <p align="center">
    <img src="icon/logo-byparr.svg" alt="Byparr logo" width="120" />
@@ -18,12 +18,27 @@
 | `PROXY_PASSWORD`     | None      | Password for proxy authentication.                                                                                                                                |
 | `OWUI_API_KEY`       | None      | Bearer token for `/load` endpoint authentication. Must match `EXTERNAL_WEB_LOADER_API_KEY` in Open WebUI.                                                         |
 | `BROWSER_LOCALE`     | None      | Override the browser's language with a [BCP-47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) tag, e.g. `en-US`, `de-DE`, `fr-FR`. When unset, the locale is derived from the egress country. |
+| `BROWSER_TIMEZONE`   | None      | Override the browser's timezone with an [IANA](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) name, e.g. `Europe/Berlin`, `Asia/Shanghai`. When unset, the timezone is derived from the egress IP. |
 
 #### Browser language
 
 Set `BROWSER_LOCALE` to a [BCP-47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt) language tag like `en-US`, `de-DE`, `fr-FR`, `pl-PL`, or `zh-CN` to fix the browser's language and `Accept-Language` header. When unset, Byparr derives the locale from the egress country (e.g. a French proxy → `fr-FR`), keeping the browser language consistent with the exit IP.
 
 Valid tags are maintained in the [IANA Language Subtag Registry](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry). For a friendlier list, see [List of ISO 639-1 codes](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (language) combined with an [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) region code for the full tag, e.g. `pt-BR`.
+
+#### Browser timezone
+
+Set `BROWSER_TIMEZONE` to an [IANA timezone name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) like `Europe/Berlin` or `Asia/Shanghai` to fix the browser's timezone. An explicit value is used as is, also behind a proxy.
+
+When Byparr starts, it downloads the GeoIP database from GitHub before it accepts requests. The image does not include the database, so every new container downloads it once. Without `PROXY_SERVER`, Byparr also looks up its public IP through `api.ipify.org`, `icanhazip.com` or `checkip.amazonaws.com` at the same time. When `BROWSER_TIMEZONE` or `BROWSER_LOCALE` is unset, the database maps that IP to a timezone and language. Byparr keeps both results until it restarts, so restart it if its public IP moves to another country or to get a newer database.
+
+This usually adds a few seconds to start-up, and the port stays closed until it is done. If GitHub is unreachable it can take about a minute, and a stalled download a few minutes. A download that keeps going but crawls is capped by `INVISIBLE_DOWNLOAD_DEADLINE`, in seconds per attempt (default 1800, up to 3 attempts). Because an open port means Byparr is ready, a TCP readiness probe on `PORT` (or an HTTP probe on `/docs`) keeps traffic away from a container that is still starting.
+
+If the lookup or the download fails, Byparr starts anyway and logs a warning. Browsers then get the host timezone (`TZ`, otherwise the system's, otherwise UTC) and `en-US`. Byparr tries the public IP again on the first request at least 10 minutes after the failure. The database is retried sooner, on the first request at least 30 seconds after; each failure in a row doubles that wait, up to 10 minutes.
+
+With a proxy (`PROXY_SERVER` or the `X-Proxy-Server` header), Byparr looks up the public IP through the proxy for every request, and all requests share the one database. If the database download failed, proxied requests fail until a retry succeeds, unless `BROWSER_TIMEZONE` is set.
+
+If those hosts are slow or blocked on your network, set both `BROWSER_TIMEZONE` and `BROWSER_LOCALE`. Byparr still looks up the public IP once at start, because the browser uses it for WebRTC and geolocation, but a failed lookup keeps the values you set.
 
 ## Proxy Recommendation
 
@@ -48,6 +63,17 @@ Recently I've partnered with a _new in town_ proxy service - ProxyBase - to offe
 ```bash
 docker compose up -d
 ```
+
+> [!WARNING]
+> Byparr performs a *lot* of R/W operations on your disk. To reduce disk wear, it is recommended to allocate temp storage in RAM by adding the following snippet to your Docker Compose configuration:
+>
+> ```yaml
+> shm_size: "1gb"
+> tmpfs:
+>   - /tmp:exec,mode=1777,size=1G
+>```
+>
+> Do not mount a tmpfs over `/cache`: it holds the browser baked into the image, and hiding it makes Byparr download it again on every start.
 
 ### Docker install
 
