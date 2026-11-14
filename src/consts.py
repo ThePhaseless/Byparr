@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     browser_locale: str | None = None
     browser_timezone: str | None = None
 
+    max_concurrency: int = 5
+    auto_sync_concurrency: bool = True
+    disable_http3: bool = True
+
 
 settings = Settings()
 
@@ -41,3 +45,7 @@ RETURN_ONLY_COOKIES = settings.return_only_cookies
 OWUI_API_KEY = settings.owui_api_key
 BROWSER_LOCALE = settings.browser_locale
 BROWSER_TIMEZONE = settings.browser_timezone
+
+MAX_CONCURRENCY = settings.max_concurrency
+AUTO_SYNC_CONCURRENCY = settings.auto_sync_concurrency
+DISABLE_HTTP3 = settings.disable_http3

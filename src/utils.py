@@ -11,10 +11,11 @@ from invisible_core import GeoTimezoneError, SessionGeo, prepare_session_geo
 from invisible_core import _geo as invisible_geo  # pyright: ignore[reportPrivateUsage]
 from invisible_core import download as invisible_download
 from invisible_playwright.async_api import InvisiblePlaywright
-from playwright.async_api import Browser, BrowserContext, Page
+from playwright.async_api import Browser
 from pydantic import BaseModel, Field
 from tzlocal import get_localzone_name
 
+from src.browser_manager import BrowserDepClass, BrowserManager, browser_manager
 from src.consts import (
     BROWSER_LOCALE,
     BROWSER_TIMEZONE,
@@ -53,11 +54,6 @@ MIN_WAIT_MS = 1.0
 def remaining_ms(timer: TimeoutTimer) -> float:
     """Milliseconds left, never 0 - Playwright reads that as no timeout at all."""
     return max(MIN_WAIT_MS, timer.remaining() * 1000)
-
-
-class BrowserDepClass(NamedTuple):
-    page: Page
-    context: BrowserContext
 
 
 GEO_RETRY_SECONDS = 600
