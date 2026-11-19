@@ -18,7 +18,7 @@ class LinkRequest(BaseModel):
 
     cmd: str = Field(
         default="request.get",
-        description="Type of request, currently only supports GET requests. This string is purely for compatibility with FlareSolverr.",
+        description="Type of request: 'request.get' or 'request.post'. FlareSolverr-compatible; any other value is treated as a GET.",
     )
     url: str = Field(pattern=r"^https?://", default="https://")
     max_timeout: int = Field(
@@ -34,6 +34,22 @@ class LinkRequest(BaseModel):
         default=consts.BLOCK_MEDIA,
         alias="blockMedia",
         description="Block image, media, and font resources from loading.",
+    )
+    post_data: str | None = Field(
+        default=None,
+        alias="postData",
+        description=(
+            "Form body for 'request.post' (application/x-www-form-urlencoded), "
+            "as in FlareSolverr's postData parameter."
+        ),
+    )
+    cookies: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description=(
+            "Cookies to set before navigating, as in FlareSolverr: name and value, "
+            "plus optional domain, path, url, expires, httpOnly, secure and sameSite. "
+            "Without domain or url a cookie applies to the request URL."
+        ),
     )
     return_only_cookies: bool = Field(
         default=consts.RETURN_ONLY_COOKIES,
