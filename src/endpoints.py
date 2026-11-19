@@ -16,6 +16,7 @@ from src.models import (
     LinkResponse,
     Solution,
 )
+from src.post import PostSubmitter
 from src.utils import (
     BrowserDepClass,
     TimeoutTimer,
@@ -25,6 +26,8 @@ from src.utils import (
 )
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)
+
+POST_CMD = "request.post"
 
 
 router = APIRouter()
@@ -63,10 +66,28 @@ async def read_item(request: LinkRequest, dep: BrowserDep) -> LinkResponse:
     timer = TimeoutTimer(duration=request.max_timeout)
     request.url = request.url.replace('"', "").strip()
 
+    poster = None
+    if request.cmd == POST_CMD:
+        if request.post_data is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Missing postData for request.post",
+            )
+        poster = PostSubmitter(dep.page, request.url, request.post_data)
+
     await setup_routes(request, dep)
+    if poster:
+        await poster.install()
+    try:
+        await add_request_cookies(request, dep)
+    except PlaywrightError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid cookie: {e}",
+        ) from e
 
     try:
-        page_request = await _navigate_and_solve(dep, request, timer)
+        page_request = await _navigate_and_solve(dep, request, timer, poster)
     except (TimeoutError, PlaywrightTimeoutError) as e:
         logger.error("Timed out while loading the page or solving the challenge")
         raise HTTPException(
@@ -122,19 +143,55 @@ async def setup_routes(request: LinkRequest, dep: BrowserDep) -> None:
         await dep.page.route("**/*", block_media_route)
 
 
+async def add_request_cookies(request: LinkRequest, dep: BrowserDep) -> None:
+    """Set the request's cookies; one without domain or url applies to the request URL."""
+    cookies = []
+    for cookie in request.cookies:
+        if cookie.get("url"):
+            cookies.append(cookie)
+        elif cookie.get("domain"):
+            cookies.append({"path": "/", **cookie})
+        else:
+            cookies.append({**cookie, "url": request.url})
+    if cookies:
+        await dep.context.add_cookies(cookies)
+
+
+async def _load(
+    dep: BrowserDep,
+    request: LinkRequest,
+    timer: TimeoutTimer,
+    poster: PostSubmitter | None,
+) -> object:
+    """Navigate to the URL (as a POST when asked) and wait for the DOM."""
+    if poster:
+        page_request = await poster.goto(remaining_ms(timer))
+    else:
+        page_request = await dep.page.goto(request.url, timeout=remaining_ms(timer))
+    await dep.page.wait_for_load_state(
+        state="domcontentloaded", timeout=remaining_ms(timer)
+    )
+    return page_request
+
+
 async def _navigate_and_solve(
     dep: BrowserDep,
     request: LinkRequest,
     timer: TimeoutTimer,
+    poster: PostSubmitter | None = None,
 ) -> object:
     """Navigate to the URL, solve a challenge if one is up, then wait for network idle."""
-    page_request = await dep.page.goto(request.url, timeout=remaining_ms(timer))
-    await dep.page.wait_for_load_state(
-        state="domcontentloaded", timeout=remaining_ms(timer)
-    )
+    page_request = await _load(dep, request, timer, poster)
 
     if await challenge_present(dep.page):
+        posts_before = poster.posts_seen if poster else 0
         await solve_challenge(dep.page, timer)
+        await _wait_for_networkidle(dep, timer)
+        if poster and poster.posts_seen == posts_before:
+            logger.info("The challenge swallowed the POST; sending it again")
+            page_request = await _load(dep, request, timer, poster)
+            if await challenge_present(dep.page):
+                await solve_challenge(dep.page, timer)
     await _wait_for_networkidle(dep, timer)
     return page_request
 
