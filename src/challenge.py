@@ -5,10 +5,6 @@ from contextlib import suppress
 from invisible_playwright.async_api import Error as PlaywrightError
 from invisible_playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import FloatRect, Page
-from playwright_captcha.solvers.click.cloudflare.utils.detection import (
-    CF_INTERSTITIAL_INDICATORS_SELECTORS,
-    detect_cloudflare_challenge,
-)
 
 from src.utils import TimeoutTimer, logger
 
@@ -30,11 +26,18 @@ WIDGET_ANCESTOR_DEPTHS = (1, 2, 3, 4)
 WIDGET_MIN_WIDTH = 40
 WIDGET_MIN_HEIGHT = 20
 WIDGET_MAX_HEIGHT = 120
+CF_INTERSTITIAL_INDICATORS_SELECTORS = (
+    'script[src*="/cdn-cgi/challenge-platform/"][src*="/orchestrate/"]',
+    "#challenge-form",
+)
 
 
 async def challenge_present(page: Page) -> bool:
     """Report whether the Cloudflare interstitial is up."""
-    return await detect_cloudflare_challenge(page, "interstitial")
+    for selector in CF_INTERSTITIAL_INDICATORS_SELECTORS:
+        if await page.locator(selector).count():
+            return True
+    return False
 
 
 async def widget_box(page: Page) -> FloatRect | None:
