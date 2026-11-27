@@ -29,12 +29,30 @@ RUN apt-get update &&\
     rm -rf /var/lib/apt/lists/*
 ENTRYPOINT [ "sleep", "infinity" ]
 
-FROM base AS app
+FROM base AS engine-amd64
+
+FROM base AS engine-arm64
+ARG ARM64_ENGINE_URL=https://github.com/ThePhaseless/firefox_antidetect_patch/releases/download/firefox-58-arm64
+ARG ARM64_SEAL_SHA256=cf5256b2c7f54fc4b496fffc77e853410c683f3bee8b0afaf92075c4d4f03f80
+ARG ARM64_ARCHIVE_SHA256=49bd7233b290c5d8ac7487e36adba22272f401c13abbef084530b20b5f27e61b
+ARG ARM64_ENGINE_TREE=firefox-58_159.0_20261108115355
+ENV INVISIBLE_SEAL_FILE=/opt/invisible/seal.json \
+    INVISIBLE_PLAYWRIGHT_ENGINE_DIR=/opt/invisible/engine
+RUN mkdir -p "/opt/invisible/engine/$ARM64_ENGINE_TREE" &&\
+    curl -fsSL --retry 3 --retry-all-errors -o /opt/invisible/seal.json "$ARM64_ENGINE_URL/seal.json" &&\
+    curl -fsSL --retry 3 --retry-all-errors -o /tmp/engine.tar.gz "$ARM64_ENGINE_URL/firefox-159.0-stealth-linux-arm64.tar.gz" &&\
+    echo "$ARM64_SEAL_SHA256  /opt/invisible/seal.json" | sha256sum -c - &&\
+    echo "$ARM64_ARCHIVE_SHA256  /tmp/engine.tar.gz" | sha256sum -c - &&\
+    tar xzf /tmp/engine.tar.gz --no-same-owner -C "/opt/invisible/engine/$ARM64_ENGINE_TREE" &&\
+    rm /tmp/engine.tar.gz
+
+FROM engine-${TARGETARCH} AS app
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 RUN mkdir -p /cache &&\
     uv sync &&\
+    if [ -n "${INVISIBLE_SEAL_FILE:-}" ]; then uv run python -c 'import os, sys; from invisible_core.seal import load_seal, packaged_seal_path; p, e = load_seal(packaged_seal_path()), load_seal(os.environ["INVISIBLE_SEAL_FILE"]); k = lambda s: (s.tag, s.upstream_version, s.source_commit); k(p) == k(e) or sys.exit(f"invisible-core is sealed to {p.tag} ({p.upstream_version}, {p.source_commit}) but the arm64 engine seal is {e.tag} ({e.upstream_version}, {e.source_commit}): publish a matching arm64 release in ThePhaseless/firefox_antidetect_patch and update the ARM64_* args")'; fi &&\
     uv run python -m invisible_playwright fetch &&\
     apt-get update &&\
     uv run playwright install-deps firefox &&\
