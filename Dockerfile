@@ -1,7 +1,7 @@
 # Ubuntu is required by playwright.
 # Pin to 24.04 LTS: ubuntu:latest floats to 26.04, which Playwright 1.58
 # cannot install firefox deps for (no libgtk-3 -> camoufox fails to launch).
-FROM ubuntu:26.04@sha256:6a06111c3b0a8600feadb270aec771dc239bf407b25625f93f44ab00e11f4d3c AS base
+FROM ubuntu:26.04@sha256:d66b366dac61b575bee2aef07e9c26e8070096fbe84a3d4d3eb0da069b5d76db AS base
 
 ARG GITHUB_BUILD=false
 
@@ -18,7 +18,7 @@ RUN apt-get update &&\
     apt-get install -y --no-install-recommends curl ca-certificates git tini &&\
     apt-get clean &&\
     rm -rf /var/lib/apt/lists/*
-COPY --from=ghcr.io/astral-sh/uv:latest@sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:a3ea1357342c1a4bf9a0c53a3deb1b55379aefa037338d8113d5771efa01774f /uv /uvx /bin/
 
 FROM base AS devcontainer
 RUN apt-get update &&\
